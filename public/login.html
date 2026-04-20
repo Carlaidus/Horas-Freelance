@@ -28,14 +28,10 @@
     }
     .login-wrap { width: 100%; max-width: 420px; }
 
-    .login-logo {
-      text-align: center; margin-bottom: 36px;
-    }
+    .login-logo { text-align: center; margin-bottom: 36px; }
     .login-logo-icon {
       width: 56px; height: 56px;
-      background: var(--gold-glow);
-      border: 1px solid var(--gold2);
-      border-radius: 14px;
+      background: var(--gold-glow); border: 1px solid var(--gold2); border-radius: 14px;
       display: inline-flex; align-items: center; justify-content: center;
       color: var(--gold); margin-bottom: 14px;
     }
@@ -43,12 +39,7 @@
     .login-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: 3px; color: var(--gold); }
     .login-logo p { font-size: 12px; color: var(--text3); letter-spacing: 2px; margin-top: 3px; }
 
-    .login-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-    }
+    .login-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
 
     .tabs {
       display: flex; gap: 4px;
@@ -71,8 +62,7 @@
       width: 100%; background: var(--bg);
       border: 1px solid var(--border2); border-radius: 8px;
       color: var(--text); padding: 11px 14px; font-size: 14px;
-      font-family: inherit; outline: none;
-      transition: border-color 0.2s;
+      font-family: inherit; outline: none; transition: border-color 0.2s;
     }
     input:focus { border-color: var(--gold2); }
     input::placeholder { color: var(--text3); }
@@ -88,18 +78,46 @@
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .error-msg {
-      background: rgba(255,85,118,0.1);
-      border: 1px solid rgba(255,85,118,0.3);
-      border-radius: 8px; padding: 10px 14px;
-      font-size: 13px; color: var(--red);
-      display: none;
+      background: rgba(255,85,118,0.1); border: 1px solid rgba(255,85,118,0.3);
+      border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); display: none;
     }
     .error-msg.visible { display: block; }
 
-    .login-footer {
-      text-align: center; margin-top: 20px;
-      font-size: 12px; color: var(--text3);
+    .success-msg {
+      background: rgba(82,232,117,0.08); border: 1px solid rgba(82,232,117,0.25);
+      border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--green); display: none;
     }
+    .success-msg.visible { display: block; }
+
+    .forgot-link {
+      font-size: 12px; color: var(--text3); text-align: right;
+      cursor: pointer; transition: color 0.2s; background: none; border: none;
+      font-family: inherit; padding: 0; margin-top: -8px;
+    }
+    .forgot-link:hover { color: var(--gold); }
+
+    /* Password strength */
+    .pw-strength { margin-top: 6px; }
+    .pw-bars { display: flex; gap: 4px; margin-bottom: 5px; }
+    .pw-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--border2); transition: background 0.3s; }
+    .pw-bar.active-1 { background: var(--red); }
+    .pw-bar.active-2 { background: #f5a623; }
+    .pw-bar.active-3 { background: var(--gold); }
+    .pw-bar.active-4 { background: var(--green); }
+    .pw-hint { font-size: 11px; color: var(--text3); }
+    .pw-rule { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; }
+    .pw-rule.ok { color: var(--green); }
+    .pw-rule.ok::before { content: '✓ '; }
+    .pw-rule:not(.ok)::before { content: '· '; }
+
+    .login-footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text3); }
+
+    .first-time-banner {
+      background: var(--gold-glow); border: 1px solid rgba(245,200,66,0.2);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+      font-size: 13px; color: var(--gold); display: none;
+    }
+    .first-time-banner.visible { display: block; }
   </style>
 </head>
 <body>
@@ -114,9 +132,14 @@
     </div>
 
     <div class="login-card">
-      <div class="tabs">
+      <div id="first-time-banner" class="first-time-banner">
+        Primera vez aquí — crea tu cuenta para empezar
+      </div>
+
+      <div class="tabs" id="tabs-bar">
         <button class="tab active" id="tab-login" onclick="showTab('login')">Entrar</button>
         <button class="tab" id="tab-register" onclick="showTab('register')">Crear cuenta</button>
+        <button class="tab" id="tab-forgot" onclick="showTab('forgot')" style="display:none">Recuperar</button>
       </div>
 
       <!-- LOGIN -->
@@ -130,6 +153,7 @@
           <label>Contraseña</label>
           <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password">
         </div>
+        <button type="button" class="forgot-link" onclick="showTab('forgot')">¿Olvidaste tu contraseña?</button>
         <button type="submit" class="btn-submit" id="btn-login">Entrar</button>
       </form>
 
@@ -146,7 +170,21 @@
         </div>
         <div>
           <label>Contraseña</label>
-          <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+          <input type="password" id="reg-pass" placeholder="Mín. 8 car., mayúscula, número y símbolo" required autocomplete="new-password" oninput="checkStrength(this.value)">
+          <div class="pw-strength" id="pw-strength" style="display:none">
+            <div class="pw-bars">
+              <div class="pw-bar" id="bar1"></div>
+              <div class="pw-bar" id="bar2"></div>
+              <div class="pw-bar" id="bar3"></div>
+              <div class="pw-bar" id="bar4"></div>
+            </div>
+            <div class="pw-hint">
+              <span class="pw-rule" id="r-len">8+ caracteres</span>
+              <span class="pw-rule" id="r-upper">Mayúscula</span>
+              <span class="pw-rule" id="r-num">Número</span>
+              <span class="pw-rule" id="r-sym">Símbolo</span>
+            </div>
+          </div>
         </div>
         <div>
           <label>Confirmar contraseña</label>
@@ -154,26 +192,65 @@
         </div>
         <button type="submit" class="btn-submit" id="btn-register">Crear cuenta</button>
       </form>
+
+      <!-- FORGOT PASSWORD -->
+      <form class="form" id="form-forgot" onsubmit="doForgot(event)">
+        <div id="forgot-error" class="error-msg"></div>
+        <div id="forgot-success" class="success-msg"></div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:4px">Introduce tu email y te enviaremos un enlace para restablecer la contraseña.</p>
+        <div>
+          <label>Email</label>
+          <input type="email" id="forgot-email" placeholder="tu@email.com" required autocomplete="email">
+        </div>
+        <button type="submit" class="btn-submit" id="btn-forgot">Enviar enlace</button>
+        <button type="button" class="forgot-link" style="text-align:center" onclick="showTab('login')">Volver al inicio de sesión</button>
+      </form>
     </div>
 
     <div class="login-footer">VFX Hours Tracker &nbsp;·&nbsp; Para compositores freelance</div>
   </div>
 
   <script>
+    // Check first time
+    fetch('/api/auth/has-users').then(r => r.json()).then(d => {
+      if (!d.hasUsers) {
+        document.getElementById('first-time-banner').classList.add('visible');
+        showTab('register');
+      }
+    }).catch(() => {});
+
     function showTab(tab) {
-      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-      document.getElementById('form-login').classList.toggle('active', tab === 'login');
-      document.getElementById('form-register').classList.toggle('active', tab === 'register');
+      ['login','register','forgot'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('form-' + t).classList.toggle('active', t === tab);
+      });
+      document.getElementById('tab-forgot').style.display = tab === 'forgot' ? '' : 'none';
     }
 
     function showError(id, msg) {
       const el = document.getElementById(id);
-      el.textContent = msg;
-      el.classList.add('visible');
+      el.textContent = msg; el.classList.add('visible');
     }
-    function clearError(id) {
-      document.getElementById(id).classList.remove('visible');
+    function clearError(id) { document.getElementById(id).classList.remove('visible'); }
+
+    function checkStrength(val) {
+      const el = document.getElementById('pw-strength');
+      el.style.display = val.length > 0 ? '' : 'none';
+      const rules = {
+        len: val.length >= 8,
+        upper: /[A-Z]/.test(val),
+        num: /\d/.test(val),
+        sym: /[^A-Za-z0-9]/.test(val)
+      };
+      document.getElementById('r-len').classList.toggle('ok', rules.len);
+      document.getElementById('r-upper').classList.toggle('ok', rules.upper);
+      document.getElementById('r-num').classList.toggle('ok', rules.num);
+      document.getElementById('r-sym').classList.toggle('ok', rules.sym);
+      const score = Object.values(rules).filter(Boolean).length;
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById('bar' + i);
+        bar.className = 'pw-bar' + (i <= score ? ' active-' + score : '');
+      }
     }
 
     async function doLogin(e) {
@@ -183,16 +260,13 @@
       btn.disabled = true; btn.textContent = 'Entrando...';
       try {
         const r = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-pass').value })
         });
         const data = await r.json();
         if (!r.ok) { showError('login-error', data.error); btn.disabled = false; btn.textContent = 'Entrar'; return; }
         window.location.href = '/';
-      } catch {
-        showError('login-error', 'Error de conexión'); btn.disabled = false; btn.textContent = 'Entrar';
-      }
+      } catch { showError('login-error', 'Error de conexión'); btn.disabled = false; btn.textContent = 'Entrar'; }
     }
 
     async function doRegister(e) {
@@ -205,16 +279,33 @@
       btn.disabled = true; btn.textContent = 'Creando cuenta...';
       try {
         const r = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: document.getElementById('reg-name').value, email: document.getElementById('reg-email').value, password: pass })
         });
         const data = await r.json();
         if (!r.ok) { showError('register-error', data.error); btn.disabled = false; btn.textContent = 'Crear cuenta'; return; }
         window.location.href = '/';
-      } catch {
-        showError('register-error', 'Error de conexión'); btn.disabled = false; btn.textContent = 'Crear cuenta';
-      }
+      } catch { showError('register-error', 'Error de conexión'); btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+    }
+
+    async function doForgot(e) {
+      e.preventDefault();
+      clearError('forgot-error');
+      document.getElementById('forgot-success').classList.remove('visible');
+      const btn = document.getElementById('btn-forgot');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      try {
+        const r = await fetch('/api/auth/forgot-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: document.getElementById('forgot-email').value })
+        });
+        const data = await r.json();
+        if (!r.ok) { showError('forgot-error', data.error); btn.disabled = false; btn.textContent = 'Enviar enlace'; return; }
+        const s = document.getElementById('forgot-success');
+        s.textContent = 'Si el email existe, recibirás el enlace en breve. Revisa también el spam.';
+        s.classList.add('visible');
+        btn.textContent = 'Enviado';
+      } catch { showError('forgot-error', 'Error de conexión'); btn.disabled = false; btn.textContent = 'Enviar enlace'; }
     }
   </script>
 </body>

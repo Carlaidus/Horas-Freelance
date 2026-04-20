@@ -61,6 +61,14 @@ db.exec(`
   );
 
   INSERT OR IGNORE INTO users (id, name) VALUES (1, '');
+
+  CREATE TABLE IF NOT EXISTS reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migraciones seguras (no fallan si la columna ya existe)
@@ -297,6 +305,18 @@ const createAuthUser = (data) => db.prepare(`
   INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate)
   VALUES (@name, @email, @password_hash, 21.0, 15.0)
 `).run(data).lastInsertRowid;
+const countUsers = () => db.prepare('SELECT COUNT(*) as n FROM users WHERE password_hash IS NOT NULL').get().n;
+
+// RESET TOKENS
+const createResetToken = (userId, token, expiresAt) => db.prepare(
+  'INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)'
+).run(userId, token, expiresAt);
+const findResetToken = (token) => db.prepare(
+  "SELECT * FROM reset_tokens WHERE token = ? AND expires_at > datetime('now')"
+).get(token);
+const deleteResetToken = (token) => db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
+const deleteExpiredTokens = () => db.prepare("DELETE FROM reset_tokens WHERE expires_at <= datetime('now')").run();
+const updatePassword = (userId, hash) => db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
 
 module.exports = {
   getUser, saveUser, findUserByEmail, createAuthUser,
@@ -305,5 +325,6 @@ module.exports = {
   getEntries, createEntry, updateEntry, deleteEntry,
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
-  getProjectStatsDetail, getTreasuryData
+  getProjectStatsDetail, getTreasuryData,
+  countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword
 };

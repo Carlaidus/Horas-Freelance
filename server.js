@@ -2,8 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const path = require('path');
 const db = require('./database/db');
+const { Resend } = require('resend');
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+const FROM_EMAIL = process.env.RESEND_FROM || 'onboarding@resend.dev';
+
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const PASSWORD_HINT = 'Mínimo 8 caracteres, una mayúscula, un número y un símbolo';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,7 +31,7 @@ app.use(session({
 const getUserId = (req) => req.session.userId || 1;
 
 app.use((req, res, next) => {
-  const isPublic = req.path === '/login.html' || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/') || req.path.startsWith('/js/');
+  const isPublic = req.path === '/login.html' || req.path === '/reset-password.html' || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/') || req.path.startsWith('/js/');
   if (!REQUIRE_AUTH || isPublic || req.session.userId) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado' });
   res.redirect('/login.html');
@@ -34,10 +43,14 @@ app.get('/api/auth/me', (req, res) => {
   res.json({ userId: getUserId(req), requireAuth: REQUIRE_AUTH });
 });
 
+app.get('/api/auth/has-users', (req, res) => {
+  res.json({ hasUsers: db.countUsers() > 0 });
+});
+
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
   if (db.findUserByEmail(email)) return res.status(400).json({ error: 'Ese email ya está registrado' });
   const hash = bcrypt.hashSync(password, 10);
   const userId = db.createAuthUser({ name, email, password_hash: hash });
@@ -56,6 +69,49 @@ app.post('/api/auth/login', (req, res) => {
 
 app.post('/api/auth/logout', (req, res) => {
   req.session.destroy(() => res.json({ success: true }));
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Falta el email' });
+  const user = db.findUserByEmail(email);
+  // Always return success to avoid user enumeration
+  if (!user || !user.password_hash) return res.json({ success: true });
+  if (!resend) return res.status(503).json({ error: 'Servicio de email no configurado' });
+
+  db.deleteExpiredTokens();
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
+  db.createResetToken(user.id, token, expiresAt);
+
+  const resetUrl = `${APP_URL}/reset-password.html?token=${token}`;
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: 'Restablecer contraseña — VFX Hours',
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#06060f;color:#dde0f5;padding:32px;border-radius:12px">
+        <h2 style="color:#f5c842;margin-bottom:16px">VFX Hours Tracker</h2>
+        <p style="margin-bottom:24px">Hola ${user.name || 'compositor'},<br><br>
+        Recibimos una solicitud para restablecer tu contraseña.</p>
+        <a href="${resetUrl}" style="display:inline-block;background:#f5c842;color:#000;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none">Restablecer contraseña</a>
+        <p style="margin-top:24px;color:#555580;font-size:12px">Este enlace caduca en 1 hora. Si no solicitaste esto, ignora este email.</p>
+      </div>
+    `
+  });
+  res.json({ success: true });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Faltan datos' });
+  if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
+  const record = db.findResetToken(token);
+  if (!record) return res.status(400).json({ error: 'Enlace inválido o caducado' });
+  const hash = bcrypt.hashSync(password, 10);
+  db.updatePassword(record.user_id, hash);
+  db.deleteResetToken(token);
+  res.json({ success: true });
 });
 
 // ── USER ──────────────────────────────────────────────────────
