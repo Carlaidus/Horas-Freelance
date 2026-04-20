@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VFX Hours — Freelance Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="grain-overlay"></div>
+  <div class="scanlines"></div>
+
+  <div class="app-layout" id="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-hex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-main">VFX</span>
+          <span class="logo-sub">HOURS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" onclick="VFX.navigate('dashboard')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="proyecto" onclick="VFX.navigate('proyecto')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Proyecto en curso</span>
+        </button>
+        <button class="nav-item" data-view="stats" onclick="VFX.navigate('stats')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          <span>Estadísticas</span>
+        </button>
+        <button class="nav-item" data-view="companies" onclick="VFX.navigate('companies')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21h18M9 21V7l6-4v18M9 11h6M13 21v-4h-2v4"/></svg>
+          <span>Empresas</span>
+        </button>
+        <button class="nav-item" data-view="settings" onclick="VFX.navigate('settings')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span>Ajustes</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer" onclick="VFX.navigate('settings')">
+        <div class="user-avatar" id="sidebar-avatar">?</div>
+        <div class="user-info-small">
+          <span class="user-name-small" id="sidebar-name">Sin configurar</span>
+          <span class="user-profession" id="sidebar-profession">VFX Compositor</span>
+        </div>
+      </div>
+      <button id="sidebar-logout" onclick="VFX.logout()" style="display:none;align-items:center;gap:8px;width:100%;padding:9px 14px;background:transparent;border:1px solid rgba(255,85,118,0.2);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit" onmouseover="this.style.background='rgba(255,85,118,0.08)'" onmouseout="this.style.background='transparent'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="main-content">
+      <div id="view-dashboard" class="view active"></div>
+      <div id="view-proyecto" class="view"></div>
+      <div id="view-stats" class="view"></div>
+      <div id="view-companies" class="view"></div>
+      <div id="view-settings" class="view"></div>
+    </main>
+
+    <!-- COCKPIT PANEL -->
+    <aside class="cockpit" id="cockpit">
+      <div class="cockpit-header">
+        <span class="cockpit-label">PANEL DE CONTROL</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="privacy-toggle" onclick="VFX.togglePrivacy()" title="Ocultar cifras (modo privacidad)">
+            <svg id="privacy-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="privacy-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <div class="cockpit-signal"></div>
+        </div>
+      </div>
+      <div id="cockpit-body">
+        <div class="cockpit-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+          <p>Selecciona un<br>proyecto</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- MODAL OVERLAY -->
+  <div class="modal-overlay" id="modal-overlay" onclick="VFX.closeModal(event)">
+    <div class="modal" id="modal" onclick="event.stopPropagation()">
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

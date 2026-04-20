@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3000/api/user)",
+      "Bash(start *)",
+      "Bash(curl -s http://localhost:3000/api/auth/me)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(findstr LISTENING)",
+      "Bash(taskkill /PID 29176 /F)",
+      "Bash(cmd *)",
+      "Bash(powershell *)",
+      "Bash(node -e \"const db = require\\('./database/db'\\); console.log\\('DB OK'\\)\")",
+      "Bash(node -e \"require\\('./server'\\)\")",
+      "Bash(curl -s http://localhost:3000/api/stats/treasury)",
+      "Bash(curl -s \"http://localhost:3000/api/stats/monthly?from=2025-01-01&to=2026-04-21&group=month\")",
+      "Bash(node --check server.js)",
+      "Bash(node --check database/db.js)",
+      "Bash(node --check \"T:/20-PROYECTOS/HORAS_FREELANCE/public/js/app.js\")",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)"
+    ]
+  }
+}
