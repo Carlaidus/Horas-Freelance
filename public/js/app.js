@@ -341,6 +341,15 @@ const VFX = {
     this.state.user = user;
     this.state.projects = projects;
     this.state.companies = companies;
+    // Limpiar slots que apuntan a proyectos que este usuario ya no posee
+    let slotsDirty = false;
+    this.state.slots.forEach(s => {
+      if (s.projectId && !projects.find(p => p.id === s.projectId)) {
+        s.projectId = null; s.timerProjectId = null; s.entries = [];
+        slotsDirty = true;
+      }
+    });
+    if (slotsDirty) this._slotsSave();
     this.updateSidebarUser();
   },
 
@@ -705,7 +714,7 @@ const VFX = {
     `;
 
     const noProjects = this.state.projects.length === 0;
-    const entriesHtml = slot.projectId && slot.entries
+    const entriesHtml = slot.projectId && Array.isArray(slot.entries)
       ? this.renderEntriesTable(slot.entries, slot.projectId, idx)
       : (!slot.projectId && noProjects ? this.renderNoProjectHint() : '');
 
