@@ -18,6 +18,7 @@ db.exec(`
     profession TEXT DEFAULT 'VFX Compositor',
     iva_rate REAL DEFAULT 21.0,
     irpf_rate REAL DEFAULT 15.0,
+    iban TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -128,6 +129,7 @@ db.exec(`
 
 // Migraciones seguras (no fallan si la columna ya existe)
 try { db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT NULL'); } catch(_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN iban TEXT DEFAULT ''"); } catch(_) {}
 try { db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0'); } catch(_) {}
 try { db.exec('ALTER TABLE companies ADD COLUMN payment_days INTEGER DEFAULT 30'); } catch(_) {}
 try { db.exec("ALTER TABLE projects ADD COLUMN budget_type TEXT DEFAULT 'hourly'"); } catch(_) {}
@@ -139,9 +141,9 @@ try { db.exec('ALTER TABLE projects ADD COLUMN expected_payment_date DATE DEFAUL
 // USER
 const getUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 const saveUser = (data) => db.prepare(`
-  INSERT OR REPLACE INTO users (id, name, email, nif, address, city, postal_code, phone, profession, iva_rate, irpf_rate)
-  VALUES (@id, @name, @email, @nif, @address, @city, @postal_code, @phone, @profession, @iva_rate, @irpf_rate)
-`).run({ id: 1, name: '', email: '', nif: '', address: '', city: '', postal_code: '', phone: '', profession: 'VFX Compositor', iva_rate: 21.0, irpf_rate: 15.0, ...data });
+  INSERT OR REPLACE INTO users (id, name, email, nif, address, city, postal_code, phone, profession, iva_rate, irpf_rate, iban)
+  VALUES (@id, @name, @email, @nif, @address, @city, @postal_code, @phone, @profession, @iva_rate, @irpf_rate, @iban)
+`).run({ id: 1, name: '', email: '', nif: '', address: '', city: '', postal_code: '', phone: '', profession: 'VFX Compositor', iva_rate: 21.0, irpf_rate: 15.0, iban: '', ...data });
 
 // COMPANIES
 const getCompanies = (userId) => db.prepare('SELECT * FROM companies WHERE user_id = ? ORDER BY name').all(userId);

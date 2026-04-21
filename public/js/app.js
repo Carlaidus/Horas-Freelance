@@ -1589,6 +1589,10 @@ const VFX = {
                 <label>Código postal</label>
                 <input type="text" name="postal_code" value="${u.postal_code||''}" placeholder="28001">
               </div>
+              <div class="form-group span2">
+                <label>IBAN (cuenta bancaria)</label>
+                <input type="text" name="iban" value="${u.iban||''}" placeholder="ES00 0000 0000 0000 0000 0000" style="font-family:var(--font-mono);letter-spacing:0.5px">
+              </div>
             </div>
 
             <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
@@ -2473,6 +2477,7 @@ const VFX = {
           ${(user.city || user.postal_code) ? '<br>' + [user.postal_code, user.city].filter(Boolean).join(' ') : ''}
           ${user.email ? '<br>' + user.email : ''}
           ${user.phone ? '<br>' + user.phone : ''}
+          ${user.iban ? '<br><strong>IBAN:</strong> ' + user.iban : ''}
         </div>
       </div>
       <div class="party-block">
@@ -2511,6 +2516,13 @@ const VFX = {
         <div class="totals-row highlight"><span class="label">Total</span><span>${fmt(total)}</span></div>
       </div>
     </div>
+
+    ${user.iban ? `
+    <div style="margin-top:32px;padding:16px 20px;background:#f7f7fa;border-radius:8px;border-left:3px solid #1a1a2e">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;margin-bottom:8px">Datos de pago</div>
+      <div style="font-size:12px;color:#333">Titular: <strong>${user.name || ''}</strong></div>
+      <div style="font-size:12px;color:#333;margin-top:4px;font-family:monospace;letter-spacing:0.5px">IBAN: <strong>${user.iban}</strong></div>
+    </div>` : ''}
 
     <div class="footer">
       <span>${user.name || ''}${user.nif ? ' · NIF ' + user.nif : ''}</span>
