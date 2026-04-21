@@ -406,6 +406,7 @@ const VFX = {
     document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
 
     if (view === 'dashboard') this.renderDashboard();
+    if (view === 'projects') this.renderProjects();
     if (view === 'proyecto') this.renderProyecto();
     if (view === 'stats') this.renderStats();
     if (view === 'facturas') this.renderFacturas();
@@ -1493,6 +1494,215 @@ const VFX = {
   },
 
   // ── COMPANIES ──────────────────────────────────────────────
+  // ── PROYECTOS (listado histórico) ─────────────────────────
+  _projectStatus(p) {
+    if (p.status === 'paid')        return { label: 'Cobrado',    cls: 'badge-paid' };
+    if (p.status === 'sent')        return { label: 'Facturado',  cls: 'badge-sent' };
+    if (p.is_completed)             return { label: 'Terminado',  cls: 'badge-completed' };
+    return                                 { label: 'En curso',   cls: 'badge-pending' };
+  },
+
+  renderProjects() {
+    const projects = this.state.projects;
+    const el = document.getElementById('view-projects');
+    const total = projects.length;
+    const completed = projects.filter(p => p.is_completed || p.status === 'paid').length;
+    const active = total - completed;
+
+    const rows = projects.map(p => {
+      const st = this._projectStatus(p);
+      const endDate = p.completed_at || (p.is_completed || p.status === 'paid' ? p.last_entry_date : null);
+      return `
+        <tr style="cursor:pointer" onclick="VFX.renderProjectDetail(${p.id})">
+          <td>
+            <div style="font-weight:600;color:var(--text)">${p.name}</div>
+            ${p.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">${p.notes}</div>` : ''}
+          </td>
+          <td style="color:var(--text2)">${p.company_name || '—'}</td>
+          <td style="color:var(--text3);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.date(p.first_entry_date || p.created_at)}</td>
+          <td style="color:var(--text3);font-family:'Space Mono',monospace;font-size:12px">${endDate ? this.fmt.date(endDate) : '<span style="color:var(--amber);font-size:11px">En curso</span>'}</td>
+          <td class="mono dim" style="text-align:right">${this.fmt.hours(p.total_hours)}</td>
+          <td class="gold" style="text-align:right" data-private>${this.fmt.currency(p.total_amount)}</td>
+          <td><span class="badge ${st.cls}">${st.label}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Proyectos</div>
+          <div class="page-subtitle">${total} proyecto${total !== 1 ? 's' : ''} — ${active} en curso, ${completed} completado${completed !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+
+      ${total === 0 ? `
+        <div class="no-project-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          <h3>Sin proyectos</h3>
+          <p>Empieza creando un proyecto en la sección "Proyecto en curso".</p>
+          <button class="btn btn-primary btn-lg" onclick="VFX.navigate('proyecto')">Ir a Proyecto en curso</button>
+        </div>
+      ` : `
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Proyecto</th>
+                <th>Cliente</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th style="text-align:right">Horas</th>
+                <th style="text-align:right">Ingresos</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `}
+    `;
+  },
+
+  async renderProjectDetail(id) {
+    const el = document.getElementById('view-projects');
+    el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
+
+    const [p, entries] = await Promise.all([
+      this.api.get(`/api/projects/${id}`),
+      this.api.get(`/api/projects/${id}/entries`)
+    ]);
+
+    const u = this.state.user;
+    const ivaRate  = u.iva_rate  ?? 21;
+    const irpfRate = u.irpf_rate ?? 15;
+    const gross    = p.total_amount || 0;
+    const ivaAmt   = gross * (ivaRate / 100);
+    const irpfAmt  = gross * (irpfRate / 100);
+    const net      = gross + ivaAmt - irpfAmt;
+    const avgRate  = p.total_hours > 0 ? gross / p.total_hours : 0;
+
+    const st = this._projectStatus(p);
+    const endDate = p.completed_at || (p.is_completed || p.status === 'paid' ? p.last_entry_date : null);
+
+    const entryRows = entries.map(e => {
+      const rate   = e.hourly_rate_override ?? p.hourly_rate;
+      const amount = e.hours * rate;
+      return `
+        <tr>
+          <td style="color:var(--text3);font-family:'Space Mono',monospace;font-size:12px;white-space:nowrap">${this.fmt.date(e.date)}</td>
+          <td style="color:var(--text2)">${e.description || '—'}</td>
+          <td class="mono dim" style="text-align:right">${this.fmt.hours(e.hours)}</td>
+          <td class="mono dim" style="text-align:right">${this.fmt.currency(rate)}/h</td>
+          <td class="gold" style="text-align:right" data-private>${this.fmt.currency(amount)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="page-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn btn-ghost btn-sm" onclick="VFX.renderProjects()" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Todos los proyectos
+          </button>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="VFX.downloadProjectReport(${p.id})" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar PDF
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <h2 style="font-size:22px;font-weight:700;color:var(--text)">${p.name}</h2>
+          <span class="badge ${st.cls}">${st.label}</span>
+        </div>
+        <div style="color:var(--text2);font-size:14px">${p.company_name || '—'}</div>
+        ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div class="table-container" style="padding:20px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Información del proyecto</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Inicio</span>
+              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.date(p.first_entry_date || p.created_at)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Fin</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:${endDate ? 'var(--text)' : 'var(--amber)'}">${endDate ? this.fmt.date(endDate) : 'En curso'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Total horas</span>
+              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.hours(p.total_hours)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Tarifa media</span>
+              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate)}/h</span>
+            </div>
+            ${p.invoice_number ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Nº Factura</span><span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${p.invoice_number}</span></div>` : ''}
+          </div>
+        </div>
+
+        <div class="table-container" style="padding:20px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Resumen financiero</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Base imponible</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text)" data-private>${this.fmt.currency(gross)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">IVA (${ivaRate}%)</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan)" data-private>+${this.fmt.currency(ivaAmt)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text2);font-size:13px">Retención IRPF (${irpfRate}%)</span>
+              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--red)" data-private>−${this.fmt.currency(irpfAmt)}</span>
+            </div>
+            <div style="height:1px;background:var(--border);margin:4px 0"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text);font-size:14px;font-weight:700">Total neto</span>
+              <span style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--gold)" data-private>${this.fmt.currency(net)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <span class="table-title">ENTRADAS DE TRABAJO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${entries.length === 0 ? `
+          <div class="empty-table">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <p>Sin entradas registradas</p>
+          </div>
+        ` : `
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th style="text-align:right">Horas</th>
+                <th style="text-align:right">Tarifa</th>
+                <th style="text-align:right">Importe</th>
+              </tr>
+            </thead>
+            <tbody>${entryRows}</tbody>
+          </table>
+        `}
+      </div>
+    `;
+  },
+
+  downloadProjectReport(id) {
+    window.open(`/api/projects/${id}/report`, '_blank');
+  },
+
   renderCompanies() {
     const companies = this.state.companies;
     const el = document.getElementById('view-companies');

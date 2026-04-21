@@ -7,6 +7,7 @@ const path = require('path');
 const db = require('./database/db');
 const { Resend } = require('resend');
 const { generateInvoicePdf } = require('./lib/invoice-pdf');
+const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
@@ -207,6 +208,17 @@ app.get('/api/invoices/:id/pdf', (req, res) => {
     if (!invoice) return res.status(404).json({ error: 'No encontrada' });
     const lines = db.getInvoiceLines(invoice.id);
     generateInvoicePdf(invoice, lines, res);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PROJECT REPORT PDF ────────────────────────────────────────
+app.get('/api/projects/:id/report', (req, res) => {
+  try {
+    const project = db.getProject(+req.params.id);
+    if (!project) return res.status(404).json({ error: 'No encontrado' });
+    const entries = db.getEntries(+req.params.id);
+    const user = db.getUser(getUserId(req));
+    generateProjectReportPdf(project, entries, user, res);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -137,6 +137,7 @@ try { db.exec('ALTER TABLE projects ADD COLUMN fixed_budget REAL DEFAULT NULL');
 try { db.exec('ALTER TABLE projects ADD COLUMN is_completed INTEGER DEFAULT 0'); } catch(_) {}
 try { db.exec('ALTER TABLE projects ADD COLUMN invoiced_at DATE DEFAULT NULL'); } catch(_) {}
 try { db.exec('ALTER TABLE projects ADD COLUMN expected_payment_date DATE DEFAULT NULL'); } catch(_) {}
+try { db.exec('ALTER TABLE projects ADD COLUMN completed_at DATE DEFAULT NULL'); } catch(_) {}
 
 // USER
 const getUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
@@ -162,7 +163,9 @@ const deleteCompany = (id) => db.prepare('DELETE FROM companies WHERE id = ?').r
 const getProjects = (userId) => db.prepare(`
   SELECT p.*, c.name as company_name,
     COALESCE(SUM(e.hours), 0) as total_hours,
-    COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount
+    COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount,
+    MIN(e.date) as first_entry_date,
+    MAX(e.date) as last_entry_date
   FROM projects p
   LEFT JOIN companies c ON p.company_id = c.id
   LEFT JOIN entries e ON e.project_id = p.id
@@ -176,7 +179,9 @@ const getProject = (id) => db.prepare(`
     c.city as company_city, c.postal_code as company_postal_code, c.email as company_email,
     c.phone as company_phone, c.contact_person as company_contact,
     COALESCE(SUM(e.hours), 0) as total_hours,
-    COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount
+    COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount,
+    MIN(e.date) as first_entry_date,
+    MAX(e.date) as last_entry_date
   FROM projects p
   LEFT JOIN companies c ON p.company_id = c.id
   LEFT JOIN entries e ON e.project_id = p.id
@@ -193,9 +198,10 @@ const updateProject = (id, data) => db.prepare(`
   UPDATE projects SET name=@name, company_id=@company_id, hourly_rate=@hourly_rate,
   status=@status, invoice_number=@invoice_number, notes=@notes,
   budget_type=@budget_type, fixed_budget=@fixed_budget, is_completed=@is_completed,
-  invoiced_at=@invoiced_at, expected_payment_date=@expected_payment_date WHERE id=@id
+  invoiced_at=@invoiced_at, expected_payment_date=@expected_payment_date,
+  completed_at=@completed_at WHERE id=@id
 `).run({ invoice_number: '', notes: '', budget_type: 'hourly', fixed_budget: null,
-         is_completed: 0, invoiced_at: null, expected_payment_date: null, ...data, id });
+         is_completed: 0, invoiced_at: null, expected_payment_date: null, completed_at: null, ...data, id });
 
 const deleteProject = (id) => {
   db.prepare('DELETE FROM entries WHERE project_id = ?').run(id);
