@@ -138,6 +138,7 @@ try { db.exec('ALTER TABLE projects ADD COLUMN is_completed INTEGER DEFAULT 0');
 try { db.exec('ALTER TABLE projects ADD COLUMN invoiced_at DATE DEFAULT NULL'); } catch(_) {}
 try { db.exec('ALTER TABLE projects ADD COLUMN expected_payment_date DATE DEFAULT NULL'); } catch(_) {}
 try { db.exec('ALTER TABLE projects ADD COLUMN completed_at DATE DEFAULT NULL'); } catch(_) {}
+try { db.exec("ALTER TABLE projects ADD COLUMN purchase_order TEXT DEFAULT ''"); } catch(_) {}
 
 // USER
 const getUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
@@ -199,9 +200,10 @@ const updateProject = (id, data) => db.prepare(`
   status=@status, invoice_number=@invoice_number, notes=@notes,
   budget_type=@budget_type, fixed_budget=@fixed_budget, is_completed=@is_completed,
   invoiced_at=@invoiced_at, expected_payment_date=@expected_payment_date,
-  completed_at=@completed_at WHERE id=@id
+  completed_at=@completed_at, purchase_order=@purchase_order WHERE id=@id
 `).run({ invoice_number: '', notes: '', budget_type: 'hourly', fixed_budget: null,
-         is_completed: 0, invoiced_at: null, expected_payment_date: null, completed_at: null, ...data, id });
+         is_completed: 0, invoiced_at: null, expected_payment_date: null, completed_at: null,
+         purchase_order: '', ...data, id });
 
 const deleteProject = (id) => {
   db.prepare('DELETE FROM entries WHERE project_id = ?').run(id);

@@ -929,6 +929,7 @@ const VFX = {
       <div class="cockpit-project">
         <div class="cockpit-project-name">${project.name}</div>
         <div class="cockpit-company">${project.company_name}</div>
+        ${project.purchase_order ? `<div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:3px">PO: ${project.purchase_order}</div>` : ''}
         <div style="margin-top:8px">${this.renderBadge(project.status)}</div>
       </div>
 
@@ -1503,6 +1504,15 @@ const VFX = {
   },
 
   renderProjects() {
+    // Limpiar cockpit al ver la lista de proyectos
+    document.getElementById('cockpit-body').innerHTML = `
+      <div class="cockpit-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        <p>Haz clic en un<br>proyecto para ver<br>su panel de control</p>
+      </div>
+    `;
+    document.querySelector('.cockpit-signal')?.classList.remove('live');
+
     const projects = this.state.projects;
     const el = document.getElementById('view-projects');
     const total = projects.length;
@@ -1573,6 +1583,11 @@ const VFX = {
       this.api.get(`/api/projects/${id}/entries`)
     ]);
 
+    // Poblar cockpit con datos de este proyecto
+    this.state.currentProjectId = p.id;
+    this.state.entries = entries;
+    this.refreshCockpit();
+
     const u = this.state.user;
     const ivaRate  = u.iva_rate  ?? 21;
     const irpfRate = u.irpf_rate ?? 15;
@@ -1608,6 +1623,14 @@ const VFX = {
           </button>
         </div>
         <div class="page-actions">
+          <button class="btn btn-ghost btn-sm" onclick="VFX.goToProjectInCurso(${p.id})" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Ver en Proyecto en curso
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="VFX.modals.editProject(${p.id})" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+          </button>
           <button class="btn btn-ghost btn-sm" onclick="VFX.downloadProjectReport(${p.id})" style="display:flex;align-items:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar PDF
@@ -1621,6 +1644,7 @@ const VFX = {
           <span class="badge ${st.cls}">${st.label}</span>
         </div>
         <div style="color:var(--text2);font-size:14px">${p.company_name || '—'}</div>
+        ${p.purchase_order ? `<div style="color:var(--text3);font-size:12px;margin-top:4px;font-family:'Space Mono',monospace">PO: ${p.purchase_order}</div>` : ''}
         ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
       </div>
 
@@ -1644,6 +1668,7 @@ const VFX = {
               <span style="color:var(--text2);font-size:13px">Tarifa media</span>
               <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate)}/h</span>
             </div>
+            ${p.purchase_order ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Orden de compra</span><span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:12px">${p.purchase_order}</span></div>` : ''}
             ${p.invoice_number ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Nº Factura</span><span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${p.invoice_number}</span></div>` : ''}
           </div>
         </div>
@@ -1701,6 +1726,21 @@ const VFX = {
 
   downloadProjectReport(id) {
     window.open(`/api/projects/${id}/report`, '_blank');
+  },
+
+  async goToProjectInCurso(id) {
+    // Si el proyecto ya está en un slot, no hace falta añadirlo
+    let slot = this.state.slots.find(s => s.projectId === id);
+    if (!slot) {
+      // Usar el primer slot vacío, o el primero si todos tienen proyecto
+      slot = this.state.slots.find(s => !s.projectId) || this.state.slots[0];
+      slot.projectId = id;
+      slot.entries = await this.api.get(`/api/projects/${id}/entries`);
+      this._slotsSave();
+    }
+    this.state.currentProjectId = id;
+    localStorage.setItem('vfx_current_project', id);
+    this.navigate('proyecto');
   },
 
   renderCompanies() {
@@ -2097,6 +2137,10 @@ const VFX = {
             <input type="text" id="edit-proj-invoice" value="${project.invoice_number||''}" placeholder="Ej: 2026-001">
           </div>
           <div class="form-group">
+            <label>Orden de compra (PO)</label>
+            <input type="text" id="edit-proj-po" value="${project.purchase_order||''}" placeholder="Ej: PO-2026-0042">
+          </div>
+          <div class="form-group">
             <label>Fecha de envío de factura</label>
             <input type="date" id="edit-proj-invoiced-at" value="${project.invoiced_at||''}">
           </div>
@@ -2364,6 +2408,7 @@ const VFX = {
       company_id: parseInt(document.getElementById('edit-proj-company').value),
       hourly_rate: getDailyRateValue('edit-proj-rate') / 8,
       invoice_number: document.getElementById('edit-proj-invoice').value,
+      purchase_order: document.getElementById('edit-proj-po')?.value || '',
       notes: document.getElementById('edit-proj-notes').value,
       status: project.status || 'pending',
       budget_type: budgetType,
@@ -2434,8 +2479,8 @@ const VFX = {
   async deleteEntry(id) {
     if (!confirm('¿Eliminar esta entrada?')) return;
     await this.api.del(`/api/entries/${id}`);
-    const entries = await this.api.get(`/api/projects/${this.state.currentProjectId}/entries`);
-    this.state.entries = entries;
+    // Limpiar slot.entries para forzar recarga en renderProyecto
+    this.state.slots.forEach(s => { if (s.entries.some(e => e.id === id)) s.entries = []; });
     await this.loadAll();
     this.renderProyecto();
   },

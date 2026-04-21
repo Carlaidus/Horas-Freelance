@@ -749,7 +749,7 @@ select option { background: var(--card2); }
   cursor: pointer;
 }
 .privacy-mode [data-private]:hover {
-  filter: blur(0px);
+  filter: blur(7px);
 }
 
 #privacy-toggle {
