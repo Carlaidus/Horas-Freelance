@@ -761,7 +761,7 @@ const VFX = {
       const days = e.hours / 8;
       return `
         <tr>
-          <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" onchange="VFX._onEntryCbChange()"></td>
+          <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
           <td class="dim">${this.fmt.date(e.date)}</td>
           <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
           <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
@@ -784,7 +784,7 @@ const VFX = {
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
           <div style="display:flex;gap:6px;align-items:center">
-            <span id="bulk-rate-btn" style="display:none">
+            <span id="bulk-rate-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Cambiar tarifa seleccionadas
@@ -800,7 +800,7 @@ const VFX = {
           <table>
             <thead>
               <tr>
-                <th style="width:28px;padding-right:0"><input type="checkbox" id="entry-cb-all" onchange="VFX._toggleAllEntries(this.checked)"></th>
+                <th style="width:28px;padding-right:0"><input type="checkbox" id="entry-cb-all-${projectId}" onchange="VFX._toggleAllEntries(this.checked, ${projectId})"></th>
                 <th>Fecha</th>
                 <th>Descripción</th>
                 <th>Horas / Días</th>
@@ -821,34 +821,33 @@ const VFX = {
     `;
   },
 
-  _toggleAllEntries(checked) {
-    document.querySelectorAll('.entry-cb').forEach(cb => { cb.checked = checked; });
-    this._onEntryCbChange();
+  _toggleAllEntries(checked, projectId) {
+    document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`).forEach(cb => { cb.checked = checked; });
+    this._onEntryCbChange(projectId);
   },
 
-  _onEntryCbChange() {
-    const any = document.querySelectorAll('.entry-cb:checked').length > 0;
-    const btn = document.getElementById('bulk-rate-btn');
-    if (btn) btn.style.display = any ? 'inline' : 'none';
-    const cbAll = document.getElementById('entry-cb-all');
+  _onEntryCbChange(projectId) {
+    const all     = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`);
+    const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`);
+    const btn  = document.getElementById(`bulk-rate-btn-${projectId}`);
+    if (btn) btn.style.display = checked.length > 0 ? 'inline' : 'none';
+    const cbAll = document.getElementById(`entry-cb-all-${projectId}`);
     if (cbAll) {
-      const total = document.querySelectorAll('.entry-cb').length;
-      const checked = document.querySelectorAll('.entry-cb:checked').length;
-      cbAll.indeterminate = checked > 0 && checked < total;
-      cbAll.checked = checked === total;
+      cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
+      cbAll.checked = all.length > 0 && checked.length === all.length;
     }
   },
 
   openBulkRateModal(projectId) {
     const proj = this.state.projects.find(p => p.id === projectId);
-    const defaultDaily = proj ? Math.round(proj.hourly_rate * 8) : 0;
-    const ids = [...document.querySelectorAll('.entry-cb:checked')].map(cb => parseInt(cb.dataset.id));
+    const defaultHourly = proj ? proj.hourly_rate : 0;
+    const ids = [...document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
     if (!ids.length) return;
     this.openModal(`
       <p style="color:var(--text2);margin-bottom:16px">Cambiando tarifa de <strong style="color:var(--text)">${ids.length} entrada${ids.length !== 1 ? 's' : ''}</strong>.</p>
       <div class="form-group">
         <label>Nueva tarifa (€/día)</label>
-        ${dailyRateSelect('bulk-rate', defaultDaily)}
+        ${dailyRateSelect('bulk-rate', defaultHourly)}
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:8px">Selecciona "— Selecciona tarifa —" para eliminar la tarifa personalizada y usar la del proyecto.</p>
       <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
