@@ -323,6 +323,8 @@ const VFX = {
       document.querySelectorAll('[id^="status-dd-"]').forEach(d => d.style.display = 'none');
     });
 
+    this._restoreSidebar();
+
     if (!this.state.user.name) {
       setTimeout(() => this.modals.settings(), 300);
     }
@@ -440,7 +442,7 @@ const VFX = {
       if (!isAdmin && days !== null) {
         const color = days <= 7 ? '#ff5576' : days <= 15 ? '#ff9f43' : 'var(--text3)';
         const msg   = days <= 0 ? 'Suscripción expirada' : `Suscripción termina en ${days} día${days === 1 ? '' : 's'}`;
-        expiryEl.style.cssText = `display:block;margin-top:6px;font-size:11px;color:${color};text-align:center`;
+        expiryEl.style.cssText = `display:block;margin-top:3px;font-size:10px;color:${color}`;
         expiryEl.textContent = msg;
       } else {
         expiryEl.style.display = 'none';
@@ -454,6 +456,39 @@ const VFX = {
   async logout() {
     await this.api.post('/api/auth/logout', {});
     window.location.href = '/login.html';
+  },
+
+  toggleSidebar() {
+    const isMobile = window.innerWidth <= 768;
+    const sidebar  = document.getElementById('sidebar');
+    const layout   = document.getElementById('app');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (isMobile) {
+      const open = sidebar.classList.toggle('mobile-open');
+      if (backdrop) backdrop.classList.toggle('show', open);
+    } else {
+      const collapsed = sidebar.classList.toggle('collapsed');
+      layout.classList.toggle('sidebar-collapsed', collapsed);
+      localStorage.setItem('vfx_sidebar_collapsed', collapsed);
+    }
+  },
+
+  _restoreSidebar() {
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile && localStorage.getItem('vfx_sidebar_collapsed') === 'true') {
+      document.getElementById('sidebar')?.classList.add('collapsed');
+      document.getElementById('app')?.classList.add('sidebar-collapsed');
+    }
+    // Botón flotante en móvil para abrir sidebar
+    if (isMobile && !document.getElementById('mobile-menu-btn')) {
+      const btn = document.createElement('button');
+      btn.id = 'mobile-menu-btn';
+      btn.onclick = () => VFX.toggleSidebar();
+      btn.title = 'Menú';
+      btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:51;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text2);display:flex;align-items:center;cursor:pointer';
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+      document.body.appendChild(btn);
+    }
   },
 
   // ── NAVIGATION ─────────────────────────────────────────────
