@@ -572,7 +572,14 @@ const VFX = {
   },
 
   // ── PROYECTO EN CURSO ──────────────────────────────────────
-  renderProyecto() {
+  async renderProyecto() {
+    // Cargar entradas de slots que tienen proyecto pero entries vacío
+    await Promise.all(this.state.slots.map(async (slot, idx) => {
+      if (slot.projectId && slot.entries.length === 0) {
+        slot.entries = await this.api.get(`/api/projects/${slot.projectId}/entries`);
+      }
+    }));
+
     const el = document.getElementById('view-proyecto');
     const slotsHtml = this.state.slots.map((_, idx) => this._renderSlot(idx)).join('');
 
