@@ -62,6 +62,61 @@ db.exec(`
 
   INSERT OR IGNORE INTO users (id, name) VALUES (1, '');
 
+  CREATE TABLE IF NOT EXISTS invoice_series (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL DEFAULT 1,
+    code TEXT DEFAULT '',
+    description TEXT DEFAULT 'Serie general',
+    next_number INTEGER DEFAULT 354,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS invoices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL DEFAULT 1,
+    series_id INTEGER,
+    number INTEGER,
+    full_number TEXT DEFAULT '',
+    status TEXT DEFAULT 'draft',
+    project_id INTEGER DEFAULT NULL,
+    company_id INTEGER DEFAULT NULL,
+    issuer_name TEXT DEFAULT '',
+    issuer_nif TEXT DEFAULT '',
+    issuer_address TEXT DEFAULT '',
+    issuer_city TEXT DEFAULT '',
+    issuer_postal_code TEXT DEFAULT '',
+    customer_name TEXT DEFAULT '',
+    customer_nif TEXT DEFAULT '',
+    customer_address TEXT DEFAULT '',
+    customer_city TEXT DEFAULT '',
+    customer_postal_code TEXT DEFAULT '',
+    customer_country TEXT DEFAULT 'España',
+    issue_date DATE,
+    operation_date DATE DEFAULT NULL,
+    subtotal REAL DEFAULT 0,
+    iva_rate REAL DEFAULT 21.0,
+    iva_exempt INTEGER DEFAULT 0,
+    iva_amount REAL DEFAULT 0,
+    irpf_rate REAL DEFAULT 15.0,
+    irpf_amount REAL DEFAULT 0,
+    total REAL DEFAULT 0,
+    notes TEXT DEFAULT '',
+    issued_at DATETIME DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS invoice_lines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    description TEXT DEFAULT '',
+    quantity REAL DEFAULT 1,
+    unit_price REAL DEFAULT 0,
+    line_total REAL DEFAULT 0,
+    sort_order INTEGER DEFAULT 0
+  );
+
   CREATE TABLE IF NOT EXISTS reset_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -299,6 +354,122 @@ const getTreasuryData = (userId) => db.prepare(`
     p.created_at DESC
 `).all(userId);
 
+// INVOICE SERIES
+const getOrCreateDefaultSeries = (userId) => {
+  let s = db.prepare("SELECT * FROM invoice_series WHERE user_id = ? AND is_active = 1 ORDER BY id LIMIT 1").get(userId);
+  if (!s) {
+    const id = db.prepare("INSERT INTO invoice_series (user_id, description, next_number) VALUES (?, 'Serie general', 354)").run(userId).lastInsertRowid;
+    s = db.prepare("SELECT * FROM invoice_series WHERE id = ?").get(id);
+  }
+  return s;
+};
+const getInvoiceSeries = (userId) => db.prepare("SELECT * FROM invoice_series WHERE user_id = ? ORDER BY id").all(userId);
+const getNextInvoiceNumber = (userId) => getOrCreateDefaultSeries(userId).next_number;
+
+// INVOICES
+const getInvoices = (userId) => db.prepare(`
+  SELECT i.*, c.name as company_display_name
+  FROM invoices i
+  LEFT JOIN companies c ON i.company_id = c.id
+  WHERE i.user_id = ?
+  ORDER BY
+    CASE i.status WHEN 'issued' THEN 1 ELSE 2 END,
+    i.number DESC,
+    i.created_at DESC
+`).all(userId);
+
+const getInvoice = (id) => db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+const getInvoiceLines = (invoiceId) => db.prepare("SELECT * FROM invoice_lines WHERE invoice_id = ? ORDER BY sort_order, id").all(invoiceId);
+
+const createInvoice = (data) => db.prepare(`
+  INSERT INTO invoices (user_id, series_id, company_id, project_id, issue_date, operation_date,
+    issuer_name, issuer_nif, issuer_address, issuer_city, issuer_postal_code,
+    customer_name, customer_nif, customer_address, customer_city, customer_postal_code, customer_country,
+    subtotal, iva_rate, iva_exempt, iva_amount, irpf_rate, irpf_amount, total, notes)
+  VALUES (@user_id, @series_id, @company_id, @project_id, @issue_date, @operation_date,
+    @issuer_name, @issuer_nif, @issuer_address, @issuer_city, @issuer_postal_code,
+    @customer_name, @customer_nif, @customer_address, @customer_city, @customer_postal_code, @customer_country,
+    @subtotal, @iva_rate, @iva_exempt, @iva_amount, @irpf_rate, @irpf_amount, @total, @notes)
+`).run({
+  user_id: 1, series_id: null, company_id: null, project_id: null,
+  issue_date: new Date().toISOString().split('T')[0], operation_date: null,
+  issuer_name: '', issuer_nif: '', issuer_address: '', issuer_city: '', issuer_postal_code: '',
+  customer_name: '', customer_nif: '', customer_address: '', customer_city: '', customer_postal_code: '', customer_country: 'España',
+  subtotal: 0, iva_rate: 21, iva_exempt: 0, iva_amount: 0, irpf_rate: 15, irpf_amount: 0, total: 0, notes: '',
+  ...data
+}).lastInsertRowid;
+
+const updateInvoice = (id, data) => {
+  const inv = db.prepare("SELECT status FROM invoices WHERE id = ?").get(id);
+  if (inv?.status === 'issued') throw new Error('No se puede editar una factura emitida');
+  return db.prepare(`
+    UPDATE invoices SET
+      company_id=@company_id, project_id=@project_id, issue_date=@issue_date, operation_date=@operation_date,
+      issuer_name=@issuer_name, issuer_nif=@issuer_nif, issuer_address=@issuer_address, issuer_city=@issuer_city, issuer_postal_code=@issuer_postal_code,
+      customer_name=@customer_name, customer_nif=@customer_nif, customer_address=@customer_address, customer_city=@customer_city,
+      customer_postal_code=@customer_postal_code, customer_country=@customer_country,
+      subtotal=@subtotal, iva_rate=@iva_rate, iva_exempt=@iva_exempt, iva_amount=@iva_amount,
+      irpf_rate=@irpf_rate, irpf_amount=@irpf_amount, total=@total, notes=@notes,
+      updated_at=datetime('now')
+    WHERE id=@id AND status='draft'
+  `).run({ ...data, id });
+};
+
+const issueInvoice = (id, userId) => {
+  const tx = db.transaction(() => {
+    const inv = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+    if (!inv) throw new Error('Factura no encontrada');
+    if (inv.status === 'issued') throw new Error('Esta factura ya está emitida');
+    if (!inv.issuer_nif) throw new Error('Falta el NIF del emisor. Completa tus datos en Ajustes.');
+    if (!inv.customer_name) throw new Error('Falta el nombre del cliente');
+    if (!inv.issue_date) throw new Error('Falta la fecha de emisión');
+    if (inv.subtotal <= 0) throw new Error('La factura no tiene importe');
+
+    let number = inv.number;
+    let fullNumber = inv.full_number;
+
+    if (!number) {
+      const series = getOrCreateDefaultSeries(userId);
+      number = series.next_number;
+      fullNumber = String(number);
+      // Check no duplicate
+      const dup = db.prepare("SELECT id FROM invoices WHERE user_id=? AND full_number=? AND status='issued' AND id!=?").get(userId, fullNumber, id);
+      if (dup) throw new Error(`El número ${fullNumber} ya está en uso`);
+      db.prepare("UPDATE invoice_series SET next_number = next_number + 1 WHERE id = ?").run(series.id);
+    }
+
+    db.prepare(`
+      UPDATE invoices SET status='issued', number=?, full_number=?, issued_at=datetime('now'), updated_at=datetime('now')
+      WHERE id=?
+    `).run(number, fullNumber, id);
+
+    return db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+  });
+  return tx();
+};
+
+const deleteInvoiceDraft = (id) => {
+  const inv = db.prepare("SELECT status FROM invoices WHERE id = ?").get(id);
+  if (inv?.status === 'issued') throw new Error('No se puede eliminar una factura emitida');
+  db.prepare("DELETE FROM invoice_lines WHERE invoice_id = ?").run(id);
+  db.prepare("DELETE FROM invoices WHERE id = ? AND status = 'draft'").run(id);
+};
+
+const setInvoiceLines = (invoiceId, lines) => {
+  db.prepare("DELETE FROM invoice_lines WHERE invoice_id = ?").run(invoiceId);
+  const stmt = db.prepare("INSERT INTO invoice_lines (invoice_id, description, quantity, unit_price, line_total, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+  lines.forEach((l, i) => stmt.run(invoiceId, l.description || '', l.quantity || 1, l.unit_price || 0, l.line_total || 0, i));
+};
+
+const updateInvoiceNumber = (id, userId, number) => {
+  const inv = db.prepare("SELECT * FROM invoices WHERE id = ?").get(id);
+  if (!inv) throw new Error('Factura no encontrada');
+  const fullNumber = String(number);
+  const dup = db.prepare("SELECT id FROM invoices WHERE user_id=? AND full_number=? AND status='issued' AND id!=?").get(userId, fullNumber, id);
+  if (dup) throw new Error(`El número ${fullNumber} ya está en uso`);
+  db.prepare("UPDATE invoices SET number=?, full_number=?, updated_at=datetime('now') WHERE id=?").run(number, fullNumber, id);
+};
+
 // AUTH
 const findUserByEmail = (email) => db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 const createAuthUser = (data) => db.prepare(`
@@ -326,5 +497,7 @@ module.exports = {
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
   getProjectStatsDetail, getTreasuryData,
-  countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword
+  countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword,
+  getInvoices, getInvoice, getInvoiceLines, createInvoice, updateInvoice, issueInvoice,
+  deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries
 };

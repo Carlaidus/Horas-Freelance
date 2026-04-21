@@ -43,6 +43,7 @@ const VFX = {
     projects: [],
     companies: [],
     entries: [],
+    invoices: [],
     user: {},
     stats: { periodic: [], heatmap: [], clients: [], summary: {} },
     treasury: []
@@ -397,6 +398,7 @@ const VFX = {
     if (view === 'dashboard') this.renderDashboard();
     if (view === 'proyecto') this.renderProyecto();
     if (view === 'stats') this.renderStats();
+    if (view === 'facturas') this.renderFacturas();
     if (view === 'companies') this.renderCompanies();
     if (view === 'settings') this.renderSettings();
   },
@@ -2334,7 +2336,451 @@ const VFX = {
     w.document.write(html);
     w.document.close();
     setTimeout(() => w.print(), 500);
-  }
+  },
+
+  // ── FACTURAS ────────────────────────────────────────────────
+
+  async renderFacturas() {
+    const el = document.getElementById('view-facturas');
+    el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
+    const invoices = await this.api.get('/api/invoices');
+    this.state.invoices = invoices;
+
+    const totalEmitidas = invoices.filter(i => i.status === 'issued').reduce((s, i) => s + (i.total || 0), 0);
+    const totalBorradores = invoices.filter(i => i.status === 'draft').length;
+
+    el.innerHTML = `
+      <div class="view-header">
+        <div>
+          <h1 class="view-title">Facturas</h1>
+          <p class="view-subtitle">${invoices.length} facturas · ${totalBorradores} borrador${totalBorradores !== 1 ? 'es' : ''}</p>
+        </div>
+        <button class="btn-primary" onclick="VFX.openInvoiceForm()">+ Nueva factura</button>
+      </div>
+
+      <div class="stats-row" style="margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-label">Total facturado</div>
+          <div class="stat-value">${this.fmt.currency(totalEmitidas)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Facturas emitidas</div>
+          <div class="stat-value">${invoices.filter(i => i.status === 'issued').length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Borradores</div>
+          <div class="stat-value">${totalBorradores}</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th style="text-align:right">Base</th>
+              <th style="text-align:right">Total</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoices.length === 0 ? `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No hay facturas aún</td></tr>` :
+              invoices.map(inv => `
+                <tr>
+                  <td><span class="mono">${inv.full_number || '—'}</span></td>
+                  <td>${inv.customer_name || inv.company_display_name || '—'}</td>
+                  <td>${this.fmt.date(inv.issue_date)}</td>
+                  <td style="text-align:right">${this.fmt.currency(inv.subtotal)}</td>
+                  <td style="text-align:right"><strong>${this.fmt.currency(inv.total)}</strong></td>
+                  <td>
+                    <span class="badge ${inv.status === 'issued' ? 'badge-sent' : 'badge-pending'}">
+                      ${inv.status === 'issued' ? 'Emitida' : 'Borrador'}
+                    </span>
+                  </td>
+                  <td style="text-align:right;white-space:nowrap">
+                    ${inv.status === 'issued' ? `
+                      <button class="btn-icon" title="Descargar PDF" onclick="VFX.downloadInvoicePdf(${inv.id})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </button>
+                    ` : `
+                      <button class="btn-icon" title="Editar" onclick="VFX.openInvoiceForm(${inv.id})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn-icon btn-icon-red" title="Eliminar borrador" onclick="VFX.deleteInvoice(${inv.id})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                      </button>
+                    `}
+                  </td>
+                </tr>
+              `).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
+
+  async openInvoiceForm(invoiceId = null, prefillProjectId = null) {
+    const [nextNum, companies] = await Promise.all([
+      this.api.get('/api/invoices/next-number'),
+      Promise.resolve(this.state.companies)
+    ]);
+
+    let inv = null;
+    let lines = [{ description: '', quantity: 1, unit_price: 0, line_total: 0 }];
+
+    if (invoiceId) {
+      const data = await this.api.get(`/api/invoices/${invoiceId}`);
+      inv = data;
+      lines = data.lines?.length ? data.lines : lines;
+    }
+
+    // Pre-fill from project if provided
+    let prefillCompanyId = inv?.company_id || null;
+    if (prefillProjectId && !inv) {
+      const proj = this.state.projects.find(p => p.id === prefillProjectId);
+      if (proj) {
+        prefillCompanyId = proj.company_id;
+        const entries = await this.api.get(`/api/projects/${prefillProjectId}/entries`);
+        if (entries.length) {
+          const totalHours = entries.reduce((s, e) => s + e.hours, 0);
+          const rate = proj.hourly_rate;
+          lines = [{
+            description: `Servicios de ${proj.name}`,
+            quantity: totalHours,
+            unit_price: rate,
+            line_total: totalHours * rate
+          }];
+        }
+      }
+    }
+
+    const u = this.state.user;
+    const today = new Date().toISOString().split('T')[0];
+    const isIssued = inv?.status === 'issued';
+
+    const companyOptions = companies.map(c =>
+      `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
+    ).join('');
+
+    const linesHtml = () => lines.map((l, i) => `
+      <tr data-line="${i}">
+        <td><input type="text" class="line-desc" value="${(l.description||'').replace(/"/g,'&quot;')}" placeholder="Descripción del servicio" ${isIssued?'disabled':''}></td>
+        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:70px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:90px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td class="line-total-cell" style="text-align:right;font-weight:600">${this.fmt.currency(l.line_total||0)}</td>
+        ${isIssued ? '<td></td>' : `<td><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
+      </tr>
+    `).join('');
+
+    this._invoiceFormLines = lines.map(l => ({...l}));
+    this._invoiceFormIvaRate = inv?.iva_rate ?? 21;
+    this._invoiceFormIvaExempt = inv?.iva_exempt ?? 0;
+    this._invoiceFormIrpfRate = inv?.irpf_rate ?? 15;
+
+    const content = `
+      <div class="invoice-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Nº de factura</label>
+            <input type="number" id="inv-number" value="${inv?.number || nextNum.number}" min="1" ${isIssued?'disabled':''}>
+          </div>
+          <div class="form-group">
+            <label>Fecha de emisión</label>
+            <input type="date" id="inv-date" value="${inv?.issue_date || today}" ${isIssued?'disabled':''}>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Cliente</label>
+          <select id="inv-company" onchange="VFX._fillInvoiceCustomer()" ${isIssued?'disabled':''}>
+            <option value="">— Selecciona empresa —</option>
+            ${companyOptions}
+          </select>
+        </div>
+
+        <details style="margin:12px 0" ${isIssued?'open':''}>
+          <summary style="cursor:pointer;color:var(--text2);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Datos del cliente (auto desde empresa)</summary>
+          <div style="margin-top:10px" class="form-row-2">
+            <div class="form-group">
+              <label>Nombre / Razón social</label>
+              <input type="text" id="inv-cust-name" value="${inv?.customer_name||''}" placeholder="Empresa S.L." ${isIssued?'disabled':''}>
+            </div>
+            <div class="form-group">
+              <label>NIF / CIF</label>
+              <input type="text" id="inv-cust-nif" value="${inv?.customer_nif||''}" placeholder="B12345678" ${isIssued?'disabled':''}>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" id="inv-cust-address" value="${inv?.customer_address||''}" ${isIssued?'disabled':''}>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Ciudad</label>
+              <input type="text" id="inv-cust-city" value="${inv?.customer_city||''}" ${isIssued?'disabled':''}>
+            </div>
+            <div class="form-group">
+              <label>Código postal</label>
+              <input type="text" id="inv-cust-postal" value="${inv?.customer_postal_code||''}" ${isIssued?'disabled':''}>
+            </div>
+          </div>
+        </details>
+
+        <div style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
+        <div class="table-wrap" style="margin-bottom:8px">
+          <table class="data-table" id="inv-lines-table">
+            <thead><tr><th>Descripción</th><th style="width:80px">Cantidad</th><th style="width:100px">Precio unit.</th><th style="text-align:right;width:110px">Importe</th><th style="width:30px"></th></tr></thead>
+            <tbody id="inv-lines-body">${linesHtml()}</tbody>
+          </table>
+        </div>
+        ${isIssued ? '' : `<button type="button" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>`}
+
+        <div style="margin-top:20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:140px">
+            <label>IVA</label>
+            <select id="inv-iva" onchange="VFX._updateInvoiceTotals()" ${isIssued?'disabled':''}>
+              <option value="21" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==21?'selected':''}>21%</option>
+              <option value="10" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==10?'selected':''}>10%</option>
+              <option value="4" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==4?'selected':''}>4%</option>
+              <option value="0" ${this._invoiceFormIvaExempt==1||this._invoiceFormIvaRate==0?'selected':''}>0% (exento)</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;min-width:140px">
+            <label>Retención IRPF</label>
+            <select id="inv-irpf" onchange="VFX._updateInvoiceTotals()" ${isIssued?'disabled':''}>
+              <option value="15" ${this._invoiceFormIrpfRate==15?'selected':''}>15%</option>
+              <option value="7" ${this._invoiceFormIrpfRate==7?'selected':''}>7%</option>
+              <option value="0" ${this._invoiceFormIrpfRate==0?'selected':''}>Sin retención</option>
+            </select>
+          </div>
+          <div style="flex:2;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px" id="inv-totals-preview">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:12px">
+          <label>Notas (opcional)</label>
+          <textarea id="inv-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical" ${isIssued?'disabled':''}>${inv?.notes||''}</textarea>
+        </div>
+
+        ${isIssued ? `
+          <div style="margin-top:16px;padding:10px 14px;background:rgba(82,232,117,0.06);border:1px solid rgba(82,232,117,0.2);border-radius:8px;font-size:12px;color:var(--green)">
+            Factura emitida el ${this.fmt.date(inv.issued_at?.split(' ')[0])} — no editable
+          </div>
+        ` : ''}
+
+        <div id="inv-form-error" class="form-error" style="display:none;margin-top:12px"></div>
+      </div>
+    `;
+
+    const title = isIssued ? `Factura ${inv.full_number}` : (invoiceId ? `Borrador — Factura ${inv.number || '#'}` : 'Nueva factura');
+    this.openModal(content, title);
+
+    this._updateInvoiceTotals();
+    if (prefillCompanyId) this._fillInvoiceCustomer(prefillCompanyId);
+
+    if (!isIssued) {
+      this._currentInvoiceId = invoiceId || null;
+      const footer = document.getElementById('modal').querySelector('.modal-footer');
+      if (footer) footer.remove();
+      const modalEl = document.getElementById('modal');
+      const footerEl = document.createElement('div');
+      footerEl.className = 'modal-footer';
+      footerEl.innerHTML = `
+        <button class="btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn-secondary" onclick="VFX.saveInvoiceDraft()" style="margin-left:auto">Guardar borrador</button>
+        <button class="btn-primary" onclick="VFX.issueInvoice()">Emitir factura</button>
+      `;
+      modalEl.appendChild(footerEl);
+    }
+  },
+
+  _fillInvoiceCustomer(forceId) {
+    const sel = document.getElementById('inv-company');
+    if (!sel) return;
+    const id = forceId || sel.value;
+    if (!id) return;
+    const opt = sel.querySelector(`option[value="${id}"]`);
+    if (!opt) return;
+    if (!forceId) sel.value = id;
+    const company = this.state.companies.find(c => c.id == id);
+    if (!company) return;
+    const set = (elId, val) => { const e = document.getElementById(elId); if (e && !e.disabled) e.value = val || ''; };
+    set('inv-cust-name', company.name);
+    set('inv-cust-nif', company.cif);
+    set('inv-cust-address', company.address);
+    set('inv-cust-city', company.city);
+    set('inv-cust-postal', company.postal_code);
+  },
+
+  _recalcLine(i) {
+    if (!this._invoiceFormLines[i]) return;
+    const rows = document.querySelectorAll('#inv-lines-body tr[data-line]');
+    const row = rows[i];
+    if (!row) return;
+    const qty = parseFloat(row.querySelector('.line-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.line-price')?.value) || 0;
+    const total = qty * price;
+    this._invoiceFormLines[i] = {
+      ...this._invoiceFormLines[i],
+      description: row.querySelector('.line-desc')?.value || '',
+      quantity: qty, unit_price: price, line_total: total
+    };
+    const cell = row.querySelector('.line-total-cell');
+    if (cell) cell.textContent = this.fmt.currency(total);
+    this._updateInvoiceTotals();
+  },
+
+  _addLine() {
+    this._invoiceFormLines.push({ description: '', quantity: 1, unit_price: 0, line_total: 0 });
+    this._rerenderLines();
+  },
+
+  _removeLine(i) {
+    if (this._invoiceFormLines.length <= 1) return;
+    this._invoiceFormLines.splice(i, 1);
+    this._rerenderLines();
+  },
+
+  _rerenderLines() {
+    const body = document.getElementById('inv-lines-body');
+    if (!body) return;
+    const lines = this._invoiceFormLines;
+    body.innerHTML = lines.map((l, i) => `
+      <tr data-line="${i}">
+        <td><input type="text" class="line-desc" value="${(l.description||'').replace(/"/g,'&quot;')}" placeholder="Descripción del servicio"></td>
+        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:70px" oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:90px" oninput="VFX._recalcLine(${i})"></td>
+        <td class="line-total-cell" style="text-align:right;font-weight:600">${this.fmt.currency(l.line_total||0)}</td>
+        <td><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+      </tr>
+    `).join('');
+    this._updateInvoiceTotals();
+  },
+
+  _syncLinesFromDom() {
+    const rows = document.querySelectorAll('#inv-lines-body tr[data-line]');
+    rows.forEach((row, i) => {
+      if (!this._invoiceFormLines[i]) return;
+      this._invoiceFormLines[i].description = row.querySelector('.line-desc')?.value || '';
+      this._invoiceFormLines[i].quantity = parseFloat(row.querySelector('.line-qty')?.value) || 0;
+      this._invoiceFormLines[i].unit_price = parseFloat(row.querySelector('.line-price')?.value) || 0;
+      this._invoiceFormLines[i].line_total = this._invoiceFormLines[i].quantity * this._invoiceFormLines[i].unit_price;
+    });
+  },
+
+  _updateInvoiceTotals() {
+    this._syncLinesFromDom();
+    const subtotal = this._invoiceFormLines.reduce((s, l) => s + (l.line_total || 0), 0);
+    const ivaVal = parseFloat(document.getElementById('inv-iva')?.value ?? 21);
+    const irpfVal = parseFloat(document.getElementById('inv-irpf')?.value ?? 15);
+    const ivaExempt = ivaVal === 0;
+    const ivaAmount = ivaExempt ? 0 : subtotal * ivaVal / 100;
+    const irpfAmount = subtotal * irpfVal / 100;
+    const total = subtotal + ivaAmount - irpfAmount;
+    this._invoiceFormIvaRate = ivaVal;
+    this._invoiceFormIvaExempt = ivaExempt ? 1 : 0;
+    this._invoiceFormIrpfRate = irpfVal;
+    this._invoiceFormTotals = { subtotal, ivaAmount, irpfAmount, total };
+
+    const preview = document.getElementById('inv-totals-preview');
+    if (!preview) return;
+    preview.innerHTML = `
+      <div style="font-size:11px;color:var(--text2);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">Resumen</div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Base imponible</span><span>${this.fmt.currency(subtotal)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">IVA (${ivaExempt ? 'exento' : ivaVal + '%'})</span><span>+ ${this.fmt.currency(ivaAmount)}</span></div>
+      ${irpfVal > 0 ? `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--text2)">Retención IRPF (${irpfVal}%)</span><span style="color:var(--red)">− ${this.fmt.currency(irpfAmount)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><span>Total a cobrar</span><span style="color:var(--gold)">${this.fmt.currency(total)}</span></div>
+    `;
+  },
+
+  _getInvoiceFormData() {
+    this._syncLinesFromDom();
+    const t = this._invoiceFormTotals || { subtotal: 0, ivaAmount: 0, irpfAmount: 0, total: 0 };
+    const ivaVal = parseFloat(document.getElementById('inv-iva')?.value ?? 21);
+    const u = this.state.user;
+    return {
+      number: parseInt(document.getElementById('inv-number')?.value) || null,
+      full_number: String(document.getElementById('inv-number')?.value || ''),
+      company_id: parseInt(document.getElementById('inv-company')?.value) || null,
+      issue_date: document.getElementById('inv-date')?.value || new Date().toISOString().split('T')[0],
+      issuer_name: u.name || '',
+      issuer_nif: u.nif || '',
+      issuer_address: u.address || '',
+      issuer_city: u.city || '',
+      issuer_postal_code: u.postal_code || '',
+      customer_name: document.getElementById('inv-cust-name')?.value || '',
+      customer_nif: document.getElementById('inv-cust-nif')?.value || '',
+      customer_address: document.getElementById('inv-cust-address')?.value || '',
+      customer_city: document.getElementById('inv-cust-city')?.value || '',
+      customer_postal_code: document.getElementById('inv-cust-postal')?.value || '',
+      customer_country: 'España',
+      subtotal: t.subtotal,
+      iva_rate: ivaVal,
+      iva_exempt: this._invoiceFormIvaExempt,
+      iva_amount: t.ivaAmount,
+      irpf_rate: this._invoiceFormIrpfRate,
+      irpf_amount: t.irpfAmount,
+      total: t.total,
+      notes: document.getElementById('inv-notes')?.value || '',
+      lines: this._invoiceFormLines
+    };
+  },
+
+  async saveInvoiceDraft() {
+    const data = this._getInvoiceFormData();
+    try {
+      if (this._currentInvoiceId) {
+        await this.api.put(`/api/invoices/${this._currentInvoiceId}`, data);
+      } else {
+        const r = await this.api.post('/api/invoices', data);
+        this._currentInvoiceId = r.id;
+      }
+      this.closeModal();
+      this.renderFacturas();
+    } catch (e) {
+      const err = document.getElementById('inv-form-error');
+      if (err) { err.textContent = e.message; err.style.display = 'block'; }
+    }
+  },
+
+  async issueInvoice() {
+    const data = this._getInvoiceFormData();
+    const errEl = document.getElementById('inv-form-error');
+    if (errEl) errEl.style.display = 'none';
+    try {
+      // Save first
+      let id = this._currentInvoiceId;
+      if (id) {
+        await this.api.put(`/api/invoices/${id}`, data);
+      } else {
+        const r = await this.api.post('/api/invoices', data);
+        id = r.id;
+      }
+      // Then issue
+      const r = await fetch(`/api/invoices/${id}/issue`, { method: 'POST' });
+      const result = await r.json();
+      if (!r.ok) throw new Error(result.error);
+      this.closeModal();
+      this.renderFacturas();
+    } catch (e) {
+      if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+    }
+  },
+
+  async deleteInvoice(id) {
+    if (!confirm('¿Eliminar este borrador?')) return;
+    await this.api.del(`/api/invoices/${id}`);
+    this.renderFacturas();
+  },
+
+  downloadInvoicePdf(id) {
+    window.open(`/api/invoices/${id}/pdf`, '_blank');
+  },
+
 };
 
 // Boot

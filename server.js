@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const path = require('path');
 const db = require('./database/db');
 const { Resend } = require('resend');
+const { generateInvoicePdf } = require('./lib/invoice-pdf');
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
@@ -159,6 +160,56 @@ app.get('/api/stats/summary', (req, res) => {
 });
 app.get('/api/stats/project/:id', (req, res) => res.json(db.getProjectStatsDetail(+req.params.id)));
 app.get('/api/stats/treasury', (req, res) => res.json(db.getTreasuryData(getUserId(req))));
+
+// ── INVOICES ──────────────────────────────────────────────────
+app.get('/api/invoices', (req, res) => res.json(db.getInvoices(getUserId(req))));
+app.get('/api/invoices/next-number', (req, res) => res.json({ number: db.getNextInvoiceNumber(getUserId(req)) }));
+
+app.get('/api/invoices/:id', (req, res) => {
+  const invoice = db.getInvoice(+req.params.id);
+  if (!invoice) return res.status(404).json({ error: 'No encontrada' });
+  const lines = db.getInvoiceLines(invoice.id);
+  res.json({ ...invoice, lines });
+});
+
+app.post('/api/invoices', (req, res) => {
+  const { lines = [], ...data } = req.body;
+  const id = db.createInvoice({ user_id: getUserId(req), ...data });
+  if (lines.length) db.setInvoiceLines(id, lines);
+  res.json({ id });
+});
+
+app.put('/api/invoices/:id', (req, res) => {
+  try {
+    const { lines = [], ...data } = req.body;
+    db.updateInvoice(+req.params.id, data);
+    db.setInvoiceLines(+req.params.id, lines);
+    res.json({ success: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.post('/api/invoices/:id/issue', (req, res) => {
+  try {
+    const invoice = db.issueInvoice(+req.params.id, getUserId(req));
+    res.json(invoice);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.delete('/api/invoices/:id', (req, res) => {
+  try {
+    db.deleteInvoiceDraft(+req.params.id);
+    res.json({ success: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.get('/api/invoices/:id/pdf', (req, res) => {
+  try {
+    const invoice = db.getInvoice(+req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'No encontrada' });
+    const lines = db.getInvoiceLines(invoice.id);
+    generateInvoicePdf(invoice, lines, res);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── EXPORT ────────────────────────────────────────────────────
 app.get('/api/projects/:id/export', (req, res) => {
