@@ -1915,7 +1915,8 @@ const VFX = {
     addEntry() {
       const today = new Date().toISOString().split('T')[0];
       const proj = VFX.state.projects.find(p => p.id === VFX.state.currentProjectId);
-      const defaultDaily = proj ? Math.round(proj.hourly_rate * 8) : 0;
+      const defaultHourly = proj ? proj.hourly_rate : 0;
+      const defaultDailyLabel = defaultHourly ? Math.round(defaultHourly * 8) : 0;
       VFX.openModal(`
         <div class="form-grid full">
           <div class="form-group">
@@ -1931,8 +1932,8 @@ const VFX = {
             <input type="text" id="entry-desc" placeholder="Ej: Compositing shot 045A">
           </div>
           <div class="form-group">
-            <label>Tarifa (€/día)${defaultDaily ? ` — por defecto del proyecto: ${defaultDaily} €/día` : ' — opcional'}</label>
-            ${dailyRateSelect('entry-rate', defaultDaily)}
+            <label>Tarifa (€/día)${defaultDailyLabel ? ` — por defecto del proyecto: ${defaultDailyLabel} €/día` : ' — opcional'}</label>
+            ${dailyRateSelect('entry-rate', defaultHourly)}
           </div>
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
@@ -2028,7 +2029,8 @@ const VFX = {
     timerStop(hours, idx, projectId) {
       const today   = new Date().toISOString().split('T')[0];
       const project = VFX.state.projects.find(p => p.id === projectId);
-      const defaultDaily = project ? Math.round(project.hourly_rate * 8) : 0;
+      const defaultHourly = project ? project.hourly_rate : 0;
+      const defaultDaily = defaultHourly ? Math.round(defaultHourly * 8) : 0;
       VFX.openModal(`
         <p style="color:var(--text2);margin-bottom:4px">Sesión finalizada · <strong style="color:var(--text)">${project?.name || ''}</strong></p>
         <p style="color:var(--text2);margin-bottom:20px">Se han registrado <strong style="color:var(--gold)">${hours} horas</strong>.</p>
@@ -2047,7 +2049,7 @@ const VFX = {
           </div>
           <div class="form-group">
             <label>Tarifa (€/día)${defaultDaily ? ` — por defecto: ${defaultDaily} €/día` : ' — opcional'}</label>
-            ${dailyRateSelect('timer-rate', defaultDaily)}
+            ${dailyRateSelect('timer-rate', defaultHourly)}
           </div>
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
