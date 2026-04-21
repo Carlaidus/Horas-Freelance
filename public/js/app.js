@@ -280,9 +280,9 @@ const VFX = {
   async init() {
     // Comprobar auth (redirige a login si hace falta)
     const authRes = await fetch('/api/auth/me');
-    if (authRes.status === 401) { window.location.href = '/login.html'; return; }
     const authData = await authRes.json();
     this.state.requireAuth = authData.requireAuth;
+    if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
     this.privacy.load();
     await this.privacy.checkLocation();

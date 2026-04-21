@@ -40,8 +40,7 @@ app.use((req, res, next) => {
 
 // ── AUTH ROUTES ────────────────────────────────────────────────
 app.get('/api/auth/me', (req, res) => {
-  if (REQUIRE_AUTH && !req.session.userId) return res.status(401).json({ error: 'No autenticado' });
-  res.json({ userId: getUserId(req), requireAuth: REQUIRE_AUTH });
+  res.json({ userId: req.session.userId || null, requireAuth: REQUIRE_AUTH, authenticated: !!req.session.userId });
 });
 
 app.get('/api/auth/has-users', (req, res) => {
