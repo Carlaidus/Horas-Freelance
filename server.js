@@ -158,14 +158,19 @@ app.put('/api/companies/:id', (req, res) => { db.updateCompany(+req.params.id, r
 app.delete('/api/companies/:id', (req, res) => { db.deleteCompany(+req.params.id); res.json({ success: true }); });
 
 // ── PROJECTS ──────────────────────────────────────────────────
+const ownProject = (req, res) => {
+  const p = db.getProject(+req.params.id);
+  if (!p || p.user_id !== getUserId(req)) { res.status(404).json({ error: 'No encontrado' }); return null; }
+  return p;
+};
 app.get('/api/projects', (req, res) => res.json(db.getProjects(getUserId(req))));
-app.get('/api/projects/:id', (req, res) => res.json(db.getProject(+req.params.id)));
+app.get('/api/projects/:id', (req, res) => { const p = ownProject(req, res); if (p) res.json(p); });
 app.post('/api/projects', (req, res) => res.json({ id: db.createProject({ user_id: getUserId(req), ...req.body }) }));
-app.put('/api/projects/:id', (req, res) => { db.updateProject(+req.params.id, req.body); res.json({ success: true }); });
-app.delete('/api/projects/:id', (req, res) => { db.deleteProject(+req.params.id); res.json({ success: true }); });
+app.put('/api/projects/:id', (req, res) => { if (!ownProject(req, res)) return; db.updateProject(+req.params.id, req.body); res.json({ success: true }); });
+app.delete('/api/projects/:id', (req, res) => { if (!ownProject(req, res)) return; db.deleteProject(+req.params.id); res.json({ success: true }); });
 
 // ── ENTRIES ───────────────────────────────────────────────────
-app.get('/api/projects/:id/entries', (req, res) => res.json(db.getEntries(+req.params.id)));
+app.get('/api/projects/:id/entries', (req, res) => { if (!ownProject(req, res)) return; res.json(db.getEntries(+req.params.id)); });
 app.post('/api/entries', (req, res) => res.json({ id: db.createEntry({ user_id: getUserId(req), ...req.body }) }));
 app.put('/api/entries/:id', (req, res) => { db.updateEntry(+req.params.id, req.body); res.json({ success: true }); });
 app.delete('/api/entries/:id', (req, res) => { db.deleteEntry(+req.params.id); res.json({ success: true }); });

@@ -290,6 +290,14 @@ const VFX = {
     this.state.daysRemaining = authData.daysRemaining ?? null;
     if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
+    // Si el usuario ha cambiado (otro login en el mismo navegador), limpiar localStorage
+    const storedUserId = localStorage.getItem('vfx_user_id');
+    const currentUserId = String(authData.userId || 1);
+    if (storedUserId && storedUserId !== currentUserId) {
+      ['vfx_slots', 'vfx_timer', 'vfx_current_project', 'vfx_privacy_on'].forEach(k => localStorage.removeItem(k));
+    }
+    localStorage.setItem('vfx_user_id', currentUserId);
+
     this.privacy.load();
     await this.privacy.checkLocation();
     this.applyPrivacy();
