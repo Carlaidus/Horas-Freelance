@@ -710,13 +710,14 @@ const VFX = {
       </div>
     `;
 
+    const noProjects = this.state.projects.length === 0;
     const entriesHtml = slot.projectId && slot.entries
       ? this.renderEntriesTable(slot.entries, slot.projectId, idx)
-      : '';
+      : (!slot.projectId && noProjects ? this.renderNoProjectHint() : '');
 
     return `
       <div style="border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;background:var(--card)">
-        <div class="project-bar">
+        ${noProjects ? '' : `<div class="project-bar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="color:var(--text3);flex-shrink:0"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
           <select onchange="VFX.selectSlotProject(${idx}, this.value)">
             <option value="">— Selecciona un proyecto —</option>
@@ -732,8 +733,8 @@ const VFX = {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           ` : ''}
-        </div>
-        ${timerHtml}
+        </div>`}
+        ${noProjects ? '' : timerHtml}
         ${entriesHtml}
       </div>
     `;
