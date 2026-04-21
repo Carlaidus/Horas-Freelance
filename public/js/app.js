@@ -2380,94 +2380,148 @@ const VFX = {
     const data = await this.api.get(`/api/projects/${id}/export`);
     const { project, entries, user } = data;
     const hourlyRate = project.hourly_rate || 0;
-    const subtotal = entries.reduce((s, e) => s + e.hours * (e.hourly_rate_override || hourlyRate), 0);
+    const fmt = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
+    const today = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Agrupar entradas por tarifa diaria efectiva
+    const groups = {};
+    entries.forEach(e => {
+      const effHourly = e.hourly_rate_override || hourlyRate;
+      const effDaily = Math.round(effHourly * 8 * 100) / 100;
+      const key = effDaily.toFixed(2);
+      if (!groups[key]) groups[key] = { daily: effDaily, hours: 0, total: 0 };
+      groups[key].hours += e.hours;
+      groups[key].total += e.hours * effHourly;
+    });
+
+    const rows = Object.values(groups).map(g => {
+      const days = g.hours / 8;
+      return `
+        <tr>
+          <td>${project.name}</td>
+          <td style="text-align:right">${days % 1 === 0 ? days : days.toFixed(2)} día${days !== 1 ? 's' : ''}</td>
+          <td style="text-align:right">${fmt(g.daily)}/día</td>
+          <td style="text-align:right"><strong>${fmt(g.total)}</strong></td>
+        </tr>`;
+    }).join('');
+
+    const subtotal = Object.values(groups).reduce((s, g) => s + g.total, 0);
+    const totalHours = entries.reduce((s, e) => s + e.hours, 0);
+    const totalDays = totalHours / 8;
     const ivaRate = user.iva_rate || 21;
     const irpfRate = user.irpf_rate || 15;
     const ivaAmount = subtotal * (ivaRate / 100);
     const irpfAmount = subtotal * (irpfRate / 100);
     const total = subtotal + ivaAmount - irpfAmount;
-    const fmt = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
-    const today = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    const totalDays = entries.reduce((s, e) => s + e.hours, 0) / 8;
-    const rows = entries.map(e => {
-      const effHourly = e.hourly_rate_override || hourlyRate;
-      const effDaily = effHourly * 8;
-      const days = e.hours / 8;
-      return `
-      <tr>
-        <td>${new Date(e.date+'T00:00:00').toLocaleDateString('es-ES')}</td>
-        <td>${e.description || 'Trabajo realizado'}</td>
-        <td style="text-align:right">${parseFloat(e.hours).toFixed(2)} h (${days.toFixed(2)} días)</td>
-        <td style="text-align:right">${fmt(effDaily)}/día</td>
-        <td style="text-align:right">${fmt(e.hours * effHourly)}</td>
-      </tr>`;
-    }).join('');
-
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Factura — ${project.name}</title>
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+    <title>Factura — ${project.name}</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:'Arial',sans-serif;font-size:13px;color:#111;background:#fff;padding:40px}
-      .header{display:flex;justify-content:space-between;margin-bottom:40px}
-      .company-from h2{font-size:20px;font-weight:700;margin-bottom:4px}
-      .company-from p{color:#555;line-height:1.6}
-      .invoice-meta{text-align:right}
-      .invoice-meta h1{font-size:28px;font-weight:300;letter-spacing:2px;color:#333;margin-bottom:8px}
-      .invoice-meta p{color:#555;line-height:1.6}
-      .to-section{background:#f8f8f8;border-radius:8px;padding:20px;margin-bottom:30px}
-      .to-section h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#999;margin-bottom:8px}
-      .to-section p{line-height:1.6;color:#333}
-      table{width:100%;border-collapse:collapse;margin-bottom:24px}
-      thead th{background:#111;color:#fff;padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0.5px}
-      tbody td{padding:10px 12px;border-bottom:1px solid #eee}
+      body{font-family:'Inter',Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:48px;max-width:800px;margin:0 auto}
+      /* CABECERA */
+      .top-bar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:32px;border-bottom:2px solid #1a1a2e}
+      .invoice-label{font-size:32px;font-weight:700;letter-spacing:3px;color:#1a1a2e}
+      .invoice-number{font-size:13px;color:#777;margin-top:4px;letter-spacing:0.5px}
+      .invoice-date{text-align:right;font-size:13px;color:#555}
+      .invoice-date strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:3px}
+      /* BLOQUES EMISOR / DESTINATARIO */
+      .parties{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:36px}
+      .party-block{padding:20px;background:#f7f7fa;border-radius:8px}
+      .party-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#aaa;margin-bottom:10px}
+      .party-name{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+      .party-detail{font-size:12px;color:#555;line-height:1.7}
+      /* TABLA */
+      table{width:100%;border-collapse:collapse;margin-bottom:8px}
+      thead th{background:#1a1a2e;color:#fff;padding:10px 14px;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+      tbody td{padding:12px 14px;border-bottom:1px solid #eef0f5;font-size:13px;color:#333}
       tbody tr:last-child td{border-bottom:none}
-      .totals{margin-left:auto;width:300px}
-      .totals-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
-      .totals-row.total{font-size:16px;font-weight:700;border-bottom:none;padding-top:12px}
-      .footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}
+      tbody tr:hover td{background:#f9f9fc}
+      .table-note{font-size:11px;color:#aaa;margin-bottom:28px;padding:0 2px}
+      /* TOTALES */
+      .bottom{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;margin-top:8px}
+      .bottom-note{font-size:12px;color:#aaa;line-height:1.7;flex:1;padding-top:6px}
+      .totals{width:280px;flex-shrink:0}
+      .totals-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid #eef0f5}
+      .totals-row:last-child{border-bottom:none}
+      .totals-row.highlight{font-size:16px;font-weight:700;color:#1a1a2e;padding-top:14px;margin-top:6px;border-top:2px solid #1a1a2e}
+      .totals-row .label{color:#777}
+      .totals-row.highlight .label{color:#1a1a2e}
+      /* PIE */
+      .footer{margin-top:48px;padding-top:20px;border-top:1px solid #eef0f5;display:flex;justify-content:space-between;font-size:11px;color:#bbb}
+      @media print{body{padding:24px}@page{margin:1.5cm}}
     </style></head><body>
-    <div class="header">
-      <div class="company-from">
-        <h2>${user.name || 'Tu nombre'}</h2>
-        <p>${user.profession || 'VFX Compositor'}<br>
-        ${user.nif ? 'NIF: ' + user.nif + '<br>' : ''}
-        ${user.address ? user.address + '<br>' : ''}
-        ${user.city || ''}${user.postal_code ? ' — ' + user.postal_code : ''}<br>
-        ${user.email || ''}${user.phone ? ' · ' + user.phone : ''}</p>
+
+    <div class="top-bar">
+      <div>
+        <div class="invoice-label">FACTURA</div>
+        ${project.invoice_number ? `<div class="invoice-number">Nº ${project.invoice_number}</div>` : ''}
       </div>
-      <div class="invoice-meta">
-        <h1>FACTURA</h1>
-        <p>Fecha: ${today}<br>
-        ${project.invoice_number ? 'Nº: ' + project.invoice_number + '<br>' : ''}
-        Proyecto: ${project.name}</p>
+      <div class="invoice-date">
+        <strong>Fecha de emisión</strong>${today}
       </div>
     </div>
-    <div class="to-section">
-      <h3>Facturar a</h3>
-      <p><strong>${project.company_name}</strong><br>
-      ${project.company_cif ? 'CIF: ' + project.company_cif + '<br>' : ''}
-      ${project.company_address ? project.company_address + '<br>' : ''}
-      ${project.company_city || ''}${project.company_postal_code ? ', ' + project.company_postal_code : ''}<br>
-      ${project.company_email || ''}</p>
+
+    <div class="parties">
+      <div class="party-block">
+        <div class="party-label">Emisor</div>
+        <div class="party-name">${user.name || '—'}</div>
+        <div class="party-detail">
+          ${user.profession || ''}${user.nif ? '<br>NIF: ' + user.nif : ''}
+          ${user.address ? '<br>' + user.address : ''}
+          ${(user.city || user.postal_code) ? '<br>' + [user.postal_code, user.city].filter(Boolean).join(' ') : ''}
+          ${user.email ? '<br>' + user.email : ''}
+          ${user.phone ? '<br>' + user.phone : ''}
+        </div>
+      </div>
+      <div class="party-block">
+        <div class="party-label">Destinatario</div>
+        <div class="party-name">${project.company_name || '—'}</div>
+        <div class="party-detail">
+          ${project.company_cif ? 'CIF: ' + project.company_cif : ''}
+          ${project.company_address ? '<br>' + project.company_address : ''}
+          ${project.company_city ? '<br>' + project.company_city : ''}
+          ${project.company_email ? '<br>' + project.company_email : ''}
+        </div>
+      </div>
     </div>
+
     <table>
-      <thead><tr><th>Fecha</th><th>Descripción</th><th style="text-align:right">Horas / Días</th><th style="text-align:right">€/día</th><th style="text-align:right">Total</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th style="text-align:right;width:100px">Días</th>
+          <th style="text-align:right;width:110px">Tarifa/día</th>
+          <th style="text-align:right;width:120px">Importe</th>
+        </tr>
+      </thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="totals">
-      <div class="totals-row"><span>Total días trabajados</span><span>${totalDays.toFixed(2)} días</span></div>
-      <div class="totals-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
-      <div class="totals-row"><span>IVA (${ivaRate}%)</span><span>+ ${fmt(ivaAmount)}</span></div>
-      <div class="totals-row"><span>IRPF (${irpfRate}%)</span><span>− ${fmt(irpfAmount)}</span></div>
-      <div class="totals-row total"><span>TOTAL A COBRAR</span><span>${fmt(total)}</span></div>
+    <div class="table-note">Total: ${totalDays % 1 === 0 ? totalDays : totalDays.toFixed(2)} días · ${parseFloat(totalHours).toFixed(1)} horas registradas</div>
+
+    <div class="bottom">
+      <div class="bottom-note">
+        ${user.nif ? `Sujeto a retención de IRPF del ${irpfRate}%.` : ''}
+      </div>
+      <div class="totals">
+        <div class="totals-row"><span class="label">Base imponible</span><span>${fmt(subtotal)}</span></div>
+        <div class="totals-row"><span class="label">IVA (${ivaRate}%)</span><span>+ ${fmt(ivaAmount)}</span></div>
+        <div class="totals-row"><span class="label">Retención IRPF (${irpfRate}%)</span><span>− ${fmt(irpfAmount)}</span></div>
+        <div class="totals-row highlight"><span class="label">Total</span><span>${fmt(total)}</span></div>
+      </div>
     </div>
-    <div class="footer">Generado con VFX Hours Tracker · ${today}</div>
+
+    <div class="footer">
+      <span>${user.name || ''}${user.nif ? ' · NIF ' + user.nif : ''}</span>
+      <span>Generado con VFX Hours Tracker</span>
+    </div>
     </body></html>`;
 
     const w = window.open('', '_blank');
     w.document.write(html);
     w.document.close();
-    setTimeout(() => w.print(), 500);
+    setTimeout(() => w.print(), 600);
   },
 
   // ── FACTURAS ────────────────────────────────────────────────
