@@ -48,7 +48,10 @@ const VFX = {
     invoices: [],
     user: {},
     stats: { periodic: [], heatmap: [], clients: [], summary: {} },
-    treasury: []
+    treasury: [],
+    plan: 'free',
+    role: 'user',
+    daysRemaining: null
   },
 
   charts: {},
@@ -282,6 +285,9 @@ const VFX = {
     const authRes = await fetch('/api/auth/me');
     const authData = await authRes.json();
     this.state.requireAuth = authData.requireAuth;
+    this.state.plan = authData.plan || 'free';
+    this.state.role = authData.role || 'user';
+    this.state.daysRemaining = authData.daysRemaining ?? null;
     if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
     this.privacy.load();
@@ -387,9 +393,35 @@ const VFX = {
     document.getElementById('sidebar-name').textContent = name;
     document.getElementById('sidebar-profession').textContent = u.profession || 'VFX Compositor';
     document.getElementById('sidebar-avatar').textContent = name[0]?.toUpperCase() || '?';
-    // Mostrar logout solo si auth está activa
     const logoutBtn = document.getElementById('sidebar-logout');
     if (logoutBtn) logoutBtn.style.display = this.state.requireAuth ? 'flex' : 'none';
+    // Badge de plan
+    const planEl = document.getElementById('sidebar-plan');
+    if (planEl) {
+      const plan = this.state.plan;
+      const days = this.state.daysRemaining;
+      const isAdmin = this.state.role === 'admin';
+      if (isAdmin) {
+        planEl.textContent = 'Admin';
+        planEl.style.cssText = 'display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(150,120,255,0.15);color:#a897ff;border:1px solid rgba(150,120,255,0.3);margin-top:4px';
+      } else if (plan === 'pro') {
+        const label = days !== null ? `PRO · ${days}d` : 'PRO';
+        const color = days !== null && days <= 7 ? '#ff9f43' : '#f5c842';
+        planEl.textContent = label;
+        planEl.style.cssText = `display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(245,200,66,0.12);color:${color};border:1px solid rgba(245,200,66,0.3);margin-top:4px`;
+      } else if (plan === 'basic') {
+        const label = days !== null ? `BÁSICO · ${days}d` : 'BÁSICO';
+        const color = days !== null && days <= 7 ? '#ff9f43' : '#4ecdc4';
+        planEl.textContent = label;
+        planEl.style.cssText = `display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(78,205,196,0.12);color:${color};border:1px solid rgba(78,205,196,0.3);margin-top:4px`;
+      } else {
+        planEl.textContent = 'FREE';
+        planEl.style.cssText = 'display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(85,85,128,0.15);color:var(--text3);border:1px solid var(--border2);margin-top:4px';
+      }
+    }
+    // Enlace admin
+    const adminLink = document.getElementById('sidebar-admin-link');
+    if (adminLink) adminLink.style.display = this.state.role === 'admin' ? 'flex' : 'none';
   },
 
   async logout() {

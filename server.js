@@ -32,6 +32,25 @@ app.use(session({
 // ── AUTH MIDDLEWARE ────────────────────────────────────────────
 const getUserId = (req) => req.session.userId || 1;
 
+const getEffectivePlan = (user) => {
+  if (!user) return 'free';
+  if (user.role === 'admin') return user.plan || 'pro';
+  if (!user.plan || user.plan === 'free') return 'free';
+  if (!user.plan_expires_at) return user.plan;
+  return new Date(user.plan_expires_at) >= new Date() ? user.plan : 'free';
+};
+
+const getDaysRemaining = (user) => {
+  if (!user || user.role === 'admin' || !user.plan_expires_at || user.plan === 'free') return null;
+  return Math.ceil((new Date(user.plan_expires_at) - new Date()) / 86400000);
+};
+
+const requireAdmin = (req, res, next) => {
+  const user = db.getUser(getUserId(req));
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Acceso denegado' });
+  next();
+};
+
 app.use((req, res, next) => {
   const isPublic = req.path === '/login.html' || req.path === '/reset-password.html' || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/') || req.path.startsWith('/js/');
   if (!REQUIRE_AUTH || isPublic || req.session.userId) return next();
@@ -41,7 +60,17 @@ app.use((req, res, next) => {
 
 // ── AUTH ROUTES ────────────────────────────────────────────────
 app.get('/api/auth/me', (req, res) => {
-  res.json({ userId: req.session.userId || null, requireAuth: REQUIRE_AUTH, authenticated: !!req.session.userId });
+  const user = req.session.userId ? db.getUser(req.session.userId) : null;
+  const effectivePlan = getEffectivePlan(user);
+  const daysRemaining = getDaysRemaining(user);
+  res.json({
+    userId: req.session.userId || null,
+    requireAuth: REQUIRE_AUTH,
+    authenticated: !!req.session.userId,
+    role: user?.role || 'user',
+    plan: effectivePlan,
+    daysRemaining
+  });
 });
 
 app.get('/api/auth/has-users', (req, res) => {
@@ -228,6 +257,29 @@ app.get('/api/projects/:id/export', (req, res) => {
   const entries = db.getEntries(+req.params.id);
   const user = db.getUser(getUserId(req));
   res.json({ project, entries, user });
+});
+
+// ── ADMIN ─────────────────────────────────────────────────────
+app.get('/admin', (req, res) => {
+  const user = req.session.userId ? db.getUser(req.session.userId) : null;
+  if (!user || user.role !== 'admin') return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin/api/users', requireAdmin, (req, res) => {
+  const users = db.getAllUsers().map(u => ({
+    ...u,
+    effective_plan: getEffectivePlan(u),
+    days_remaining: getDaysRemaining(u)
+  }));
+  res.json(users);
+});
+
+app.put('/admin/api/users/:id/plan', requireAdmin, (req, res) => {
+  const { plan, expires_at } = req.body;
+  if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
+  db.setUserPlan(+req.params.id, plan, expires_at || null);
+  res.json({ success: true });
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

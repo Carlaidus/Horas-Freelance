@@ -64,8 +64,13 @@
         <div class="user-info-small">
           <span class="user-name-small" id="sidebar-name">Sin configurar</span>
           <span class="user-profession" id="sidebar-profession">VFX Compositor</span>
+          <span id="sidebar-plan"></span>
         </div>
       </div>
+      <a href="/admin" id="sidebar-admin-link" style="display:none;align-items:center;gap:8px;width:100%;padding:9px 14px;background:rgba(150,120,255,0.08);border:1px solid rgba(150,120,255,0.25);border-radius:8px;color:#a897ff;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit;text-decoration:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Panel Admin
+      </a>
       <button id="sidebar-logout" onclick="VFX.logout()" style="display:none;align-items:center;gap:8px;width:100%;padding:9px 14px;background:transparent;border:1px solid rgba(255,85,118,0.2);border-radius:8px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit" onmouseover="this.style.background='rgba(255,85,118,0.08)'" onmouseout="this.style.background='transparent'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Cerrar sesión

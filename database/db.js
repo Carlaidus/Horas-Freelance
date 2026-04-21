@@ -139,13 +139,21 @@ try { db.exec('ALTER TABLE projects ADD COLUMN invoiced_at DATE DEFAULT NULL'); 
 try { db.exec('ALTER TABLE projects ADD COLUMN expected_payment_date DATE DEFAULT NULL'); } catch(_) {}
 try { db.exec('ALTER TABLE projects ADD COLUMN completed_at DATE DEFAULT NULL'); } catch(_) {}
 try { db.exec("ALTER TABLE projects ADD COLUMN purchase_order TEXT DEFAULT ''"); } catch(_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'"); } catch(_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'"); } catch(_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN plan_expires_at DATE DEFAULT NULL"); } catch(_) {}
+// El usuario 1 (propietario original) siempre es admin con plan pro
+try { db.exec("UPDATE users SET role='admin', plan='pro' WHERE id=1 AND (role IS NULL OR role='user')"); } catch(_) {}
 
 // USER
 const getUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 const saveUser = (data) => db.prepare(`
-  INSERT OR REPLACE INTO users (id, name, email, nif, address, city, postal_code, phone, profession, iva_rate, irpf_rate, iban)
-  VALUES (@id, @name, @email, @nif, @address, @city, @postal_code, @phone, @profession, @iva_rate, @irpf_rate, @iban)
-`).run({ id: 1, name: '', email: '', nif: '', address: '', city: '', postal_code: '', phone: '', profession: 'VFX Compositor', iva_rate: 21.0, irpf_rate: 15.0, iban: '', ...data });
+  UPDATE users SET name=@name, email=@email, nif=@nif, address=@address,
+  city=@city, postal_code=@postal_code, phone=@phone, profession=@profession,
+  iva_rate=@iva_rate, irpf_rate=@irpf_rate, iban=@iban
+  WHERE id=@id
+`).run({ id: 1, name: '', email: '', nif: '', address: '', city: '', postal_code: '',
+         phone: '', profession: 'VFX Compositor', iva_rate: 21.0, irpf_rate: 15.0, iban: '', ...data });
 
 // COMPANIES
 const getCompanies = (userId) => db.prepare('SELECT * FROM companies WHERE user_id = ? ORDER BY name').all(userId);
@@ -483,10 +491,26 @@ const updateInvoiceNumber = (id, userId, number) => {
 // AUTH
 const findUserByEmail = (email) => db.prepare('SELECT * FROM users WHERE email = ?').get(email);
 const createAuthUser = (data) => db.prepare(`
-  INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate)
-  VALUES (@name, @email, @password_hash, 21.0, 15.0)
+  INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate, role, plan)
+  VALUES (@name, @email, @password_hash, 21.0, 15.0, 'user', 'free')
 `).run(data).lastInsertRowid;
 const countUsers = () => db.prepare('SELECT COUNT(*) as n FROM users WHERE password_hash IS NOT NULL').get().n;
+
+// ADMIN
+const getAllUsers = () => db.prepare(`
+  SELECT id, name, email, role, plan, plan_expires_at, created_at,
+    CASE
+      WHEN role = 'admin' THEN NULL
+      WHEN plan = 'free' THEN NULL
+      WHEN plan_expires_at IS NULL THEN NULL
+      ELSE CAST(julianday(plan_expires_at) - julianday('now') AS INTEGER)
+    END as days_remaining
+  FROM users
+  ORDER BY created_at DESC
+`).all();
+const setUserPlan = (userId, plan, expiresAt) => db.prepare(
+  'UPDATE users SET plan=@plan, plan_expires_at=@plan_expires_at WHERE id=@id'
+).run({ plan, plan_expires_at: expiresAt || null, id: userId });
 
 // RESET TOKENS
 const createResetToken = (userId, token, expiresAt) => db.prepare(
@@ -500,7 +524,7 @@ const deleteExpiredTokens = () => db.prepare("DELETE FROM reset_tokens WHERE exp
 const updatePassword = (userId, hash) => db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
 
 module.exports = {
-  getUser, saveUser, findUserByEmail, createAuthUser,
+  getUser, saveUser, findUserByEmail, createAuthUser, getAllUsers, setUserPlan,
   getCompanies, createCompany, updateCompany, deleteCompany,
   getProjects, getProject, createProject, updateProject, deleteProject,
   getEntries, createEntry, updateEntry, deleteEntry,
