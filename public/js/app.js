@@ -114,30 +114,31 @@ const VFX = {
       if (saved) {
         this.state.slots = JSON.parse(saved).map(s => ({
           projectId: s.projectId || null,
+          timerProjectId: s.timerProjectId || s.projectId || null,
           entries: [],
           timer: { active: s.timer?.active||false, paused: s.timer?.paused||false,
                    startTime: s.timer?.startTime||null, accumulated: s.timer?.accumulated||0, interval: null }
         }));
         return;
       }
-      // Migrar timer legacy
       const old = localStorage.getItem('vfx_timer');
       const pid = localStorage.getItem('vfx_current_project');
       if (old && pid) {
         const t = JSON.parse(old);
-        this.state.slots = [{ projectId: parseInt(pid), entries: [],
+        this.state.slots = [{ projectId: parseInt(pid), timerProjectId: parseInt(pid), entries: [],
           timer: { active: t.active||false, paused: t.paused||false,
                    startTime: t.startTime||null, accumulated: t.accumulated||0, interval: null } }];
         return;
       }
     } catch(_) {}
-    this.state.slots = [{ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } }];
+    this.state.slots = [{ projectId: null, timerProjectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } }];
   },
 
   _slotsSave() {
     localStorage.setItem('vfx_slots', JSON.stringify(
       this.state.slots.map(s => ({
         projectId: s.projectId,
+        timerProjectId: s.timerProjectId,
         timer: { active: s.timer.active, paused: s.timer.paused, startTime: s.timer.startTime, accumulated: s.timer.accumulated }
       }))
     ));
@@ -616,9 +617,11 @@ const VFX = {
   _renderSlot(idx) {
     const slot    = this.state.slots[idx];
     const project = slot.projectId ? this.state.projects.find(p => p.id === slot.projectId) : null;
+    const timerProject = slot.timerProjectId ? this.state.projects.find(p => p.id === slot.timerProjectId) : project;
     const t       = slot.timer;
     const isRunning = t.active && !t.paused;
     const canRemove = this.state.slots.length > 1;
+    const timerIsForOtherProject = t.active && slot.timerProjectId && slot.timerProjectId !== slot.projectId;
 
     const projectOptions = this.state.projects.map(p =>
       `<option value="${p.id}" ${p.id === slot.projectId ? 'selected' : ''}>${p.name} — ${p.company_name}</option>`
@@ -627,11 +630,15 @@ const VFX = {
     const timerHtml = `
       <div class="timer-card ${isRunning ? 'active' : ''}" id="timer-card-${idx}" style="margin-top:14px">
         <div>
-          <div class="timer-label">SESIÓN DE TRABAJO${t.active ? (t.paused ? ' — PAUSADA' : ' — EN CURSO') : ''}</div>
+          <div class="timer-label">
+            SESIÓN DE TRABAJO${t.active ? (t.paused ? ' — PAUSADA' : ' — EN CURSO') : ''}
+            ${timerIsForOtherProject ? `<span style="color:var(--gold);margin-left:6px">· ${timerProject?.name || ''}</span>` : ''}
+          </div>
           <div class="timer-display ${isRunning ? 'running' : ''}" id="timer-display-${idx}">
             ${t.active ? this._slotFmt(idx) : '00:00:00'}
           </div>
           ${!slot.projectId && !t.active ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Selecciona un proyecto para iniciar</div>` : ''}
+          ${timerIsForOtherProject ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Viendo entradas de: ${project?.name || '—'}</div>` : ''}
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           ${!t.active ? `
@@ -2297,6 +2304,7 @@ const VFX = {
   startTimer(idx) {
     const slot = this.state.slots[idx];
     if (!slot?.projectId) return;
+    slot.timerProjectId = slot.projectId; // fija el proyecto del timer
     slot.timer = { active: true, paused: false, startTime: new Date().toISOString(), accumulated: 0, interval: null };
     this._slotsSave();
     this._startSlotInterval(idx);
@@ -2328,11 +2336,13 @@ const VFX = {
     const slot  = this.state.slots[idx];
     const elapsed = this._slotElapsed(idx);
     const hours = elapsed > 0 ? Math.max(Math.round(elapsed / 3600 * 4) / 4, 0.25) : 0;
+    const timerProjectId = slot.timerProjectId || slot.projectId; // usa el proyecto del timer, no el de la vista
     if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
     slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
+    slot.timerProjectId = null;
     this._slotsSave();
     this.renderProyecto();
-    if (elapsed > 0) this.modals.timerStop(hours, idx, slot.projectId);
+    if (elapsed > 0) this.modals.timerStop(hours, idx, timerProjectId);
   },
 
   async saveTimerEntry(idx, projectId) {
