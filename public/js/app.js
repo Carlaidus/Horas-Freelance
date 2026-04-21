@@ -437,13 +437,10 @@ const VFX = {
     if (expiryEl) {
       const days = this.state.daysRemaining;
       const isAdmin = this.state.role === 'admin';
-      if (!isAdmin && days !== null && days <= 15) {
-        const urgent = days <= 7;
-        const color  = urgent ? '#ff5576' : '#ff9f43';
-        const bg     = urgent ? 'rgba(255,85,118,0.08)' : 'rgba(255,159,67,0.08)';
-        const border = urgent ? 'rgba(255,85,118,0.25)' : 'rgba(255,159,67,0.25)';
-        const msg    = days <= 0 ? 'Suscripción expirada' : `Suscripción termina en ${days} día${days === 1 ? '' : 's'}`;
-        expiryEl.style.cssText = `display:block;margin-top:8px;padding:9px 12px;background:${bg};border:1px solid ${border};border-radius:8px;font-size:11px;font-weight:600;color:${color};text-align:center`;
+      if (!isAdmin && days !== null) {
+        const color = days <= 7 ? '#ff5576' : days <= 15 ? '#ff9f43' : 'var(--text3)';
+        const msg   = days <= 0 ? 'Suscripción expirada' : `Suscripción termina en ${days} día${days === 1 ? '' : 's'}`;
+        expiryEl.style.cssText = `display:block;margin-top:6px;font-size:11px;color:${color};text-align:center`;
         expiryEl.textContent = msg;
       } else {
         expiryEl.style.display = 'none';
