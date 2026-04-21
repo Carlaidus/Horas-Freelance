@@ -432,6 +432,23 @@ const VFX = {
         planEl.style.cssText = 'display:inline-block;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;background:rgba(85,85,128,0.15);color:var(--text3);border:1px solid var(--border2);margin-top:4px';
       }
     }
+    // Aviso de expiración próxima
+    const expiryEl = document.getElementById('sidebar-expiry');
+    if (expiryEl) {
+      const days = this.state.daysRemaining;
+      const isAdmin = this.state.role === 'admin';
+      if (!isAdmin && days !== null && days <= 15) {
+        const urgent = days <= 7;
+        const color  = urgent ? '#ff5576' : '#ff9f43';
+        const bg     = urgent ? 'rgba(255,85,118,0.08)' : 'rgba(255,159,67,0.08)';
+        const border = urgent ? 'rgba(255,85,118,0.25)' : 'rgba(255,159,67,0.25)';
+        const msg    = days <= 0 ? 'Suscripción expirada' : `Suscripción termina en ${days} día${days === 1 ? '' : 's'}`;
+        expiryEl.style.cssText = `display:block;margin-top:8px;padding:9px 12px;background:${bg};border:1px solid ${border};border-radius:8px;font-size:11px;font-weight:600;color:${color};text-align:center`;
+        expiryEl.textContent = msg;
+      } else {
+        expiryEl.style.display = 'none';
+      }
+    }
     // Enlace admin
     const adminLink = document.getElementById('sidebar-admin-link');
     if (adminLink) adminLink.style.display = this.state.role === 'admin' ? 'flex' : 'none';
