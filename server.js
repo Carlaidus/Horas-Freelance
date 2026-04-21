@@ -76,7 +76,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Falta el email' });
   const user = db.findUserByEmail(email);
   // Always return success to avoid user enumeration
-  if (!user || !user.password_hash) return res.json({ success: true });
+  if (!user) return res.json({ success: true });
   if (!resend) return res.status(503).json({ error: 'Servicio de email no configurado' });
 
   db.deleteExpiredTokens();
