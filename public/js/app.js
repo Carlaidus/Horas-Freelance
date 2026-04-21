@@ -51,21 +51,24 @@ const VFX = {
     treasury: [],
     plan: 'free',
     role: 'user',
-    daysRemaining: null
+    daysRemaining: null,
+    userId: null
   },
 
   charts: {},
   _modalDragFromInside: false,
 
+  _lsKey(key) { return this.state.userId ? `${key}_u${this.state.userId}` : key; },
+
   // ── PRIVACY ────────────────────────────────────────────────
   privacy: {
     on: false,
     load() {
-      const def = localStorage.getItem('vfx_privacy_default') === 'true';
-      const saved = localStorage.getItem('vfx_privacy_on');
+      const def = localStorage.getItem(VFX._lsKey('vfx_privacy_default')) === 'true';
+      const saved = localStorage.getItem(VFX._lsKey('vfx_privacy_on'));
       this.on = saved !== null ? saved === 'true' : def;
     },
-    save() { localStorage.setItem('vfx_privacy_on', this.on); },
+    save() { localStorage.setItem(VFX._lsKey('vfx_privacy_on'), this.on); },
     async checkLocation() {
       if (localStorage.getItem('vfx_privacy_location') !== 'true') return;
       const homeLat = parseFloat(localStorage.getItem('vfx_home_lat'));
@@ -113,7 +116,7 @@ const VFX = {
 
   _slotsLoad() {
     try {
-      const saved = localStorage.getItem('vfx_slots');
+      const saved = localStorage.getItem(this._lsKey('vfx_slots'));
       if (saved) {
         this.state.slots = JSON.parse(saved).map(s => ({
           projectId: s.projectId || null,
@@ -138,7 +141,7 @@ const VFX = {
   },
 
   _slotsSave() {
-    localStorage.setItem('vfx_slots', JSON.stringify(
+    localStorage.setItem(this._lsKey('vfx_slots'), JSON.stringify(
       this.state.slots.map(s => ({
         projectId: s.projectId,
         timerProjectId: s.timerProjectId,
@@ -256,7 +259,7 @@ const VFX = {
   },
 
   savePrivacyDefault(val) {
-    localStorage.setItem('vfx_privacy_default', val);
+    localStorage.setItem(this._lsKey('vfx_privacy_default'), val);
   },
 
   toggleLocationPrivacy(enabled) {
@@ -288,15 +291,8 @@ const VFX = {
     this.state.plan = authData.plan || 'free';
     this.state.role = authData.role || 'user';
     this.state.daysRemaining = authData.daysRemaining ?? null;
+    this.state.userId = authData.userId || 1;
     if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
-
-    // Si el usuario ha cambiado (otro login en el mismo navegador), limpiar localStorage
-    const storedUserId = localStorage.getItem('vfx_user_id');
-    const currentUserId = String(authData.userId || 1);
-    if (storedUserId && storedUserId !== currentUserId) {
-      ['vfx_slots', 'vfx_timer', 'vfx_current_project', 'vfx_privacy_on'].forEach(k => localStorage.removeItem(k));
-    }
-    localStorage.setItem('vfx_user_id', currentUserId);
 
     this.privacy.load();
     await this.privacy.checkLocation();
@@ -305,7 +301,7 @@ const VFX = {
     await this.loadAll();
 
     // Restaurar proyecto activo desde localStorage
-    const savedId = localStorage.getItem('vfx_current_project');
+    const savedId = localStorage.getItem(this._lsKey('vfx_current_project'));
     if (savedId) {
       const exists = this.state.projects.find(p => p.id === parseInt(savedId));
       if (exists) {
@@ -610,7 +606,7 @@ const VFX = {
 
   async goToProject(id) {
     this.state.currentProjectId = id;
-    localStorage.setItem('vfx_current_project', id);
+    localStorage.setItem(this._lsKey('vfx_current_project'), id);
     const entries = await this.api.get(`/api/projects/${id}/entries`);
     this.state.entries = entries;
     this.navigate('proyecto');
@@ -926,11 +922,11 @@ const VFX = {
   async selectProject(id) {
     this.state.currentProjectId = id ? parseInt(id) : null;
     if (this.state.currentProjectId) {
-      localStorage.setItem('vfx_current_project', this.state.currentProjectId);
+      localStorage.setItem(this._lsKey('vfx_current_project'), this.state.currentProjectId);
       const entries = await this.api.get(`/api/projects/${this.state.currentProjectId}/entries`);
       this.state.entries = entries;
     } else {
-      localStorage.removeItem('vfx_current_project');
+      localStorage.removeItem(this._lsKey('vfx_current_project'));
       this.state.entries = [];
     }
     this.renderProyecto();
@@ -1783,7 +1779,7 @@ const VFX = {
       this._slotsSave();
     }
     this.state.currentProjectId = id;
-    localStorage.setItem('vfx_current_project', id);
+    localStorage.setItem(this._lsKey('vfx_current_project'), id);
     this.navigate('proyecto');
   },
 
@@ -1911,7 +1907,7 @@ const VFX = {
                   <div class="toggle-row-sub">Las cifras aparecerán borrosas al abrir la aplicación</div>
                 </div>
                 <label class="toggle-switch">
-                  <input type="checkbox" id="privacy-default-toggle" ${localStorage.getItem('vfx_privacy_default') === 'true' ? 'checked' : ''} onchange="VFX.savePrivacyDefault(this.checked)">
+                  <input type="checkbox" id="privacy-default-toggle" ${localStorage.getItem(VFX._lsKey('vfx_privacy_default')) === 'true' ? 'checked' : ''} onchange="VFX.savePrivacyDefault(this.checked)">
                   <div class="toggle-switch-track"></div>
                 </label>
               </div>
@@ -2437,7 +2433,7 @@ const VFX = {
     await this.loadAll();
     this.state.currentProjectId = id;
     this.state.entries = [];
-    localStorage.setItem('vfx_current_project', id);
+    localStorage.setItem(this._lsKey('vfx_current_project'), id);
     this.closeModal();
     this.navigate('proyecto');
   },
