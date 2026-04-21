@@ -493,12 +493,6 @@ const VFX = {
           <div class="page-title">Dashboard</div>
           <div class="page-subtitle">${today.toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
         </div>
-        <div class="page-actions">
-          <button class="btn btn-primary" onclick="VFX.modals.newProject()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Nuevo proyecto
-          </button>
-        </div>
       </div>
 
       <div class="metrics-grid">
