@@ -601,7 +601,7 @@ const VFX = {
 
       <button class="btn btn-ghost" onclick="VFX.addSlot()" style="margin-top:6px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
-        Añadir otro proyecto
+        Visualizar otro proyecto
       </button>
     `;
 
