@@ -36,6 +36,8 @@ const VFX = {
     view: 'dashboard',
     statsView: 'general',
     statsPeriod: '1y',
+    statsCustomFrom: '',
+    statsCustomTo: '',
     statsProjectId: null,
     dashboardFilter: 'all',
     currentProjectId: null,
@@ -336,6 +338,13 @@ const VFX = {
     const ago = (days) => { const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString().split('T')[0]; };
     const yearStart = `${new Date().getFullYear()}-01-01`;
     const twoYearsAgo = `${new Date().getFullYear() - 2}-01-01`;
+    if (period === 'custom') {
+      const from = this.state.statsCustomFrom || yearStart;
+      const to   = this.state.statsCustomTo   || today;
+      const days = (new Date(to) - new Date(from)) / 86400000;
+      const group = days <= 60 ? 'day' : days <= 180 ? 'week' : 'month';
+      return { from, to, group };
+    }
     switch (period) {
       case '7d':  return { from: ago(7),   to: today, group: 'day' };
       case '1m':  return { from: ago(30),  to: today, group: 'day' };
@@ -738,6 +747,7 @@ const VFX = {
       const days = e.hours / 8;
       return `
         <tr>
+          <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" onchange="VFX._onEntryCbChange()"></td>
           <td class="dim">${this.fmt.date(e.date)}</td>
           <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
           <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
@@ -759,15 +769,24 @@ const VFX = {
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
-          <button class="btn btn-ghost btn-sm" onclick="VFX.state.currentProjectId=${projectId};${slotIdx!==null?`VFX._pendingSlotIdx=${slotIdx};`:``}VFX.modals.addEntry()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Añadir entrada
-          </button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span id="bulk-rate-btn" style="display:none">
+              <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Cambiar tarifa seleccionadas
+              </button>
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick="VFX.state.currentProjectId=${projectId};${slotIdx!==null?`VFX._pendingSlotIdx=${slotIdx};`:``}VFX.modals.addEntry()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Añadir entrada
+            </button>
+          </div>
         </div>
         ${entries.length > 0 ? `
           <table>
             <thead>
               <tr>
+                <th style="width:28px;padding-right:0"><input type="checkbox" id="entry-cb-all" onchange="VFX._toggleAllEntries(this.checked)"></th>
                 <th>Fecha</th>
                 <th>Descripción</th>
                 <th>Horas / Días</th>
@@ -786,6 +805,64 @@ const VFX = {
         `}
       </div>
     `;
+  },
+
+  _toggleAllEntries(checked) {
+    document.querySelectorAll('.entry-cb').forEach(cb => { cb.checked = checked; });
+    this._onEntryCbChange();
+  },
+
+  _onEntryCbChange() {
+    const any = document.querySelectorAll('.entry-cb:checked').length > 0;
+    const btn = document.getElementById('bulk-rate-btn');
+    if (btn) btn.style.display = any ? 'inline' : 'none';
+    const cbAll = document.getElementById('entry-cb-all');
+    if (cbAll) {
+      const total = document.querySelectorAll('.entry-cb').length;
+      const checked = document.querySelectorAll('.entry-cb:checked').length;
+      cbAll.indeterminate = checked > 0 && checked < total;
+      cbAll.checked = checked === total;
+    }
+  },
+
+  openBulkRateModal(projectId) {
+    const proj = this.state.projects.find(p => p.id === projectId);
+    const defaultDaily = proj ? Math.round(proj.hourly_rate * 8) : 0;
+    const ids = [...document.querySelectorAll('.entry-cb:checked')].map(cb => parseInt(cb.dataset.id));
+    if (!ids.length) return;
+    this.openModal(`
+      <p style="color:var(--text2);margin-bottom:16px">Cambiando tarifa de <strong style="color:var(--text)">${ids.length} entrada${ids.length !== 1 ? 's' : ''}</strong>.</p>
+      <div class="form-group">
+        <label>Nueva tarifa (€/día)</label>
+        ${dailyRateSelect('bulk-rate', defaultDaily)}
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">Selecciona "— Selecciona tarifa —" para eliminar la tarifa personalizada y usar la del proyecto.</p>
+      <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="VFX.applyBulkRate(${JSON.stringify(ids)}, ${projectId})">Aplicar</button>
+      </div>
+    `, 'Cambiar tarifa en masa');
+  },
+
+  async applyBulkRate(ids, projectId) {
+    const dailyVal = getDailyRateValue('bulk-rate');
+    const rateOverride = dailyVal > 0 ? dailyVal / 8 : null;
+    await Promise.all(ids.map(id => {
+      const entry = this.state.entries.find(e => e.id === id);
+      if (!entry) return;
+      return this.api.put(`/api/entries/${id}`, {
+        date: entry.date, hours: entry.hours,
+        description: entry.description || '',
+        hourly_rate_override: rateOverride
+      });
+    }));
+    const fresh = await this.api.get(`/api/projects/${projectId}/entries`);
+    this.state.entries = fresh;
+    const slot = this.state.slots.find(s => s.projectId === projectId);
+    if (slot) slot.entries = fresh;
+    await this.loadAll();
+    this.closeModal();
+    this.renderProyecto();
   },
 
   async selectProject(id) {
@@ -1021,6 +1098,10 @@ const VFX = {
       `<button class="btn btn-sm ${period === k ? 'btn-primary' : 'btn-ghost'}" onclick="VFX.changeStatsPeriod('${k}')">${label}</button>`
     ).join('');
 
+    const today = new Date().toISOString().split('T')[0];
+    const customFrom = this.state.statsCustomFrom || `${new Date().getFullYear()}-01-01`;
+    const customTo   = this.state.statsCustomTo   || today;
+
     const tabBtnCls = (v) => `btn btn-sm ${statsView === v ? 'btn-primary' : 'btn-ghost'}`;
     const projectOptions = this.state.projects.map(p =>
       `<option value="${p.id}" ${p.id === this.state.statsProjectId ? 'selected' : ''}>${p.name} — ${p.company_name}</option>`
@@ -1034,11 +1115,20 @@ const VFX = {
         </div>
       </div>
 
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
         ${periodBtns}
+        <button class="btn btn-sm ${period === 'custom' ? 'btn-primary' : 'btn-ghost'}" onclick="VFX.changeStatsPeriod('custom')">Rango</button>
         <div style="flex:1"></div>
         <button class="${tabBtnCls('general')}" onclick="VFX.changeStatsView('general')">General</button>
         <button class="${tabBtnCls('project')}" onclick="VFX.changeStatsView('project')">Por proyecto</button>
+      </div>
+
+      <div id="stats-custom-range" style="display:${period==='custom'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Desde</label>
+        <input type="date" id="stats-from" value="${customFrom}" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;font-family:inherit">
+        <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Hasta</label>
+        <input type="date" id="stats-to" value="${customTo}" style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;font-family:inherit">
+        <button class="btn btn-primary btn-sm" onclick="VFX.applyCustomRange()">Aplicar</button>
       </div>
 
       ${statsView === 'project' ? `
@@ -1218,6 +1308,21 @@ const VFX = {
 
   async changeStatsPeriod(period) {
     this.state.statsPeriod = period;
+    if (period === 'custom') {
+      const rangeEl = document.getElementById('stats-custom-range');
+      if (rangeEl) rangeEl.style.display = 'flex';
+      return;
+    }
+    this.renderStats();
+  },
+
+  async applyCustomRange() {
+    const from = document.getElementById('stats-from')?.value;
+    const to   = document.getElementById('stats-to')?.value;
+    if (!from || !to || from > to) return alert('Selecciona un rango de fechas válido');
+    this.state.statsCustomFrom = from;
+    this.state.statsCustomTo   = to;
+    this.state.statsPeriod = 'custom';
     this.renderStats();
   },
 
@@ -1795,6 +1900,8 @@ const VFX = {
 
     addEntry() {
       const today = new Date().toISOString().split('T')[0];
+      const proj = VFX.state.projects.find(p => p.id === VFX.state.currentProjectId);
+      const defaultDaily = proj ? Math.round(proj.hourly_rate * 8) : 0;
       VFX.openModal(`
         <div class="form-grid full">
           <div class="form-group">
@@ -1810,8 +1917,8 @@ const VFX = {
             <input type="text" id="entry-desc" placeholder="Ej: Compositing shot 045A">
           </div>
           <div class="form-group">
-            <label>Tarifa personalizada (€/día) — opcional</label>
-            ${dailyRateSelect('entry-rate', 0)}
+            <label>Tarifa (€/día)${defaultDaily ? ` — por defecto del proyecto: ${defaultDaily} €/día` : ' — opcional'}</label>
+            ${dailyRateSelect('entry-rate', defaultDaily)}
           </div>
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
@@ -1907,6 +2014,7 @@ const VFX = {
     timerStop(hours, idx, projectId) {
       const today   = new Date().toISOString().split('T')[0];
       const project = VFX.state.projects.find(p => p.id === projectId);
+      const defaultDaily = project ? Math.round(project.hourly_rate * 8) : 0;
       VFX.openModal(`
         <p style="color:var(--text2);margin-bottom:4px">Sesión finalizada · <strong style="color:var(--text)">${project?.name || ''}</strong></p>
         <p style="color:var(--text2);margin-bottom:20px">Se han registrado <strong style="color:var(--gold)">${hours} horas</strong>.</p>
@@ -1922,6 +2030,10 @@ const VFX = {
           <div class="form-group">
             <label>Horas (ajustable)</label>
             <input type="number" id="timer-hours" value="${hours}" step="0.25" min="0.25">
+          </div>
+          <div class="form-group">
+            <label>Tarifa (€/día)${defaultDaily ? ` — por defecto: ${defaultDaily} €/día` : ' — opcional'}</label>
+            ${dailyRateSelect('timer-rate', defaultDaily)}
           </div>
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
@@ -2221,7 +2333,9 @@ const VFX = {
     const hours = parseFloat(document.getElementById('timer-hours').value);
     const desc  = document.getElementById('timer-desc').value.trim();
     if (!hours) return;
-    await this.api.post('/api/entries', { project_id: projectId, date, hours, description: desc });
+    const dailyOverride = getDailyRateValue('timer-rate');
+    const rateOverride = dailyOverride > 0 ? dailyOverride / 8 : null;
+    await this.api.post('/api/entries', { project_id: projectId, date, hours, description: desc, hourly_rate_override: rateOverride });
     const slot = this.state.slots[idx];
     if (slot) slot.entries = await this.api.get(`/api/projects/${projectId}/entries`);
     if (this.state.currentProjectId === projectId)
