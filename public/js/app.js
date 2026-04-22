@@ -2141,6 +2141,8 @@ const VFX = {
   renderPlanes() {
     const el = document.getElementById('view-planes');
     const isPro = this.isPro();
+    // Si el plan ya está activo, limpiar cualquier solicitud pendiente
+    if (isPro) localStorage.removeItem(this._lsKey('vfx_upgrade_requested'));
     const daysLeft = this.state.daysRemaining;
     const currentPeriod = this.state.planPeriod; // quarterly | semi | annual | lifetime | null
     const userName = this.state.user?.name || '';
@@ -2198,13 +2200,7 @@ const VFX = {
       const periodLabel = p.days ? `${p.days} días` : 'Acceso vitalicio';
       const extraNote = ud ? `, upgrade desde ${ud.curLabel}, diferencia calculada: ${ud.diff}€` : '';
       const onclickAttr = `VFX.requestUpgrade('Pro ${p.label}', '${priceLabel}', '${periodLabel}${extraNote}', this)`;
-      return `
-        ${ud ? `<div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.5">
-          Te quedan <strong style="color:var(--text)">${ud.daysLeft} días</strong> en tu plan ${ud.curLabel}.<br>
-          Cambio al ${p.label}: <strong style="color:var(--gold)">${ud.diff}€</strong> adicionales.
-        </div>` : ''}
-        <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="${onclickAttr}">${mailIco}&nbsp;${btnLabel}</button>
-      `;
+      return `<button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="${onclickAttr}">${mailIco}&nbsp;${btnLabel}</button>`;
     };
 
     // badge de "plan actual" con color por tipo
@@ -2294,7 +2290,7 @@ const VFX = {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
 
           <!-- TRIMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Trimestral') ? sentCardStyle : ''}">
+          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isQuartCurrent ? 'box-shadow:0 0 0 2px rgba(108,143,255,0.5),0 0 20px rgba(108,143,255,0.2)' : isSentCard('Trimestral') ? sentCardStyle : ''}">
             ${isQuartCurrent ? currentBadge('#6c8fff') : ''}
             ${!isQuartCurrent ? `<div style="position:absolute;top:10px;right:10px;background:rgba(108,143,255,0.15);border:1px solid rgba(108,143,255,0.4);color:#6c8fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.05em;white-space:nowrap">Más popular</div>` : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
@@ -2309,7 +2305,7 @@ const VFX = {
           </div>
 
           <!-- SEMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isSemiCurrent ? 'rgba(168,151,255,0.6)' : 'rgba(168,151,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Semestral') ? sentCardStyle : ''}">
+          <div style="background:var(--card);border:1px solid ${isSemiCurrent ? 'rgba(168,151,255,0.6)' : 'rgba(168,151,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSemiCurrent ? 'box-shadow:0 0 0 2px rgba(168,151,255,0.5),0 0 20px rgba(168,151,255,0.2)' : isSentCard('Semestral') ? sentCardStyle : ''}">
             ${isSemiCurrent ? currentBadge('#a897ff') : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isSemiCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#a897ff;letter-spacing:0.1em">SEMESTRAL</span>
@@ -2323,7 +2319,7 @@ const VFX = {
           </div>
 
           <!-- ANUAL -->
-          <div style="background:var(--card);border:1px solid ${isAnnCurrent ? 'rgba(245,200,66,0.6)' : 'rgba(245,200,66,0.28)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Anual') ? sentCardStyle : ''}">
+          <div style="background:var(--card);border:1px solid ${isAnnCurrent ? 'rgba(245,200,66,0.6)' : 'rgba(245,200,66,0.28)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isAnnCurrent ? 'box-shadow:0 0 0 2px rgba(245,200,66,0.55),0 0 20px rgba(245,200,66,0.2)' : isSentCard('Anual') ? sentCardStyle : ''}">
             ${isAnnCurrent ? currentBadge('var(--gold)') : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isAnnCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em">ANUAL</span>
@@ -2338,7 +2334,7 @@ const VFX = {
         </div>
 
         <!-- FILA 3: VITALICIO (prominente) -->
-        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid ${isLifeCurrent ? 'rgba(245,200,66,0.8)' : 'rgba(245,200,66,0.45)'};border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden;${isSentCard('Vitalicio') ? sentCardStyle : ''}" class="planes-lifetime">
+        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid ${isLifeCurrent ? 'rgba(245,200,66,0.8)' : 'rgba(245,200,66,0.45)'};border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden;${isLifeCurrent ? 'box-shadow:0 0 0 2px rgba(245,200,66,0.7),0 0 28px rgba(245,200,66,0.25)' : isSentCard('Vitalicio') ? sentCardStyle : ''}" class="planes-lifetime">
           <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at 70% 30%,rgba(245,200,66,0.08) 0%,transparent 70%);pointer-events:none"></div>
           <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${isLifeCurrent ? 'var(--gold)' : 'linear-gradient(90deg,var(--gold),#ffb830)'};color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">${isLifeCurrent ? 'TU PLAN ACTUAL' : 'MEJOR VALOR · PAGO ÚNICO'}</div>
 
