@@ -617,9 +617,17 @@ const VFX = {
         expiryEl.style.display = 'none';
       }
     }
-    // Badge "Activación en marcha" si hay solicitud pendiente
+    // Badge "Activación en marcha" si hay solicitud pendiente y el plan aún no coincide
     let upgradeEl = document.getElementById('sidebar-upgrade-pending');
-    const upgradeData = !this.isPro() ? localStorage.getItem(this._lsKey('vfx_upgrade_requested')) : null;
+    const upgradeRawSidebar = localStorage.getItem(this._lsKey('vfx_upgrade_requested'));
+    const sentPlanSidebar = upgradeRawSidebar ? (JSON.parse(upgradeRawSidebar)?.plan || null) : null;
+    const SENT_TO_PERIOD_SB = {
+      'pro mensual': null, 'pro trimestral': 'quarterly',
+      'pro semestral': 'semi', 'pro anual': 'annual', 'pro vitalicio': 'lifetime',
+    };
+    const planAlreadyActive = sentPlanSidebar && this.isPro() &&
+      SENT_TO_PERIOD_SB[sentPlanSidebar.toLowerCase()] === (this.state.planPeriod ?? null);
+    const upgradeData = sentPlanSidebar && !planAlreadyActive ? upgradeRawSidebar : null;
     if (upgradeData) {
       if (!upgradeEl) {
         upgradeEl = document.createElement('span');
@@ -2141,8 +2149,6 @@ const VFX = {
   renderPlanes() {
     const el = document.getElementById('view-planes');
     const isPro = this.isPro();
-    // Si el plan ya está activo, limpiar cualquier solicitud pendiente
-    if (isPro) localStorage.removeItem(this._lsKey('vfx_upgrade_requested'));
     const daysLeft = this.state.daysRemaining;
     const currentPeriod = this.state.planPeriod; // quarterly | semi | annual | lifetime | null
     const userName = this.state.user?.name || '';
@@ -2161,7 +2167,19 @@ const VFX = {
     // solicitud pendiente (persiste en localStorage)
     const upgradeRaw = localStorage.getItem(this._lsKey('vfx_upgrade_requested'));
     const upgradeReq = upgradeRaw ? JSON.parse(upgradeRaw) : null;
-    const sentPlan = upgradeReq?.plan || null; // ej: "Pro Trimestral"
+    let sentPlan = upgradeReq?.plan || null; // ej: "Pro Trimestral"
+
+    // Limpiar solicitud solo si el plan activo ya coincide con lo que se solicitó
+    if (sentPlan && isPro) {
+      const SENT_TO_PERIOD = {
+        'pro mensual': null, 'pro trimestral': 'quarterly',
+        'pro semestral': 'semi', 'pro anual': 'annual', 'pro vitalicio': 'lifetime',
+      };
+      if (SENT_TO_PERIOD[sentPlan.toLowerCase()] === currentPeriod) {
+        localStorage.removeItem(this._lsKey('vfx_upgrade_requested'));
+        sentPlan = null;
+      }
+    }
 
     // helper: ¿esta tarjeta fue la solicitada?
     const isSentCard = (periodLabel) => sentPlan && sentPlan.toLowerCase().includes(periodLabel.toLowerCase());
