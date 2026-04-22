@@ -2215,7 +2215,10 @@ const VFX = {
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Gestión de facturas</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Exportar PDF</div>
             </div>
-            ${!isPro ? `<div style="font-size:12px;color:var(--text3);text-align:center;padding-top:16px;border-top:1px solid var(--border);margin-top:16px">Selecciona tu periodo de pago abajo</div>` : ''}
+            ${!isPro ? `<div style="padding-top:16px;border-top:1px solid var(--border);margin-top:16px">
+              <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px">O activa directamente el plan mensual</div>
+              <a href="${mk('Activar Pro Mensual — VFX Hours', mkBody('Pro Mensual', '9€/mes', '1 mes (renovación mensual)'))}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIco}&nbsp;Activar Pro Mensual</a>
+            </div>` : ''}
           </div>
         </div>
 
@@ -2223,9 +2226,9 @@ const VFX = {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
 
           <!-- TRIMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden">
+          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
             ${isQuartCurrent ? currentBadge('#6c8fff') : ''}
-            ${!isQuartCurrent ? `<div style="position:absolute;top:9px;right:-22px;background:linear-gradient(90deg,#6c8fff,#a897ff);color:#fff;font-size:9px;font-weight:700;padding:3px 28px;transform:rotate(35deg);letter-spacing:0.06em;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3)">Más popular</div>` : ''}
+            ${!isQuartCurrent ? `<div style="position:absolute;top:10px;right:10px;background:rgba(108,143,255,0.15);border:1px solid rgba(108,143,255,0.4);color:#6c8fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.05em;white-space:nowrap">Más popular</div>` : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
               <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−11%</span>
@@ -2234,7 +2237,7 @@ const VFX = {
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">24€</span>
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">8€/mes · 3 meses</div>
-            ${periodBtn('quarterly', 'Activar trimestral',
+            ${periodBtn('quarterly', 'Activar Pro Trimestral',
               'Activar Plan Pro Trimestral — VFX Hours',
               (extra) => mkBody('Pro Trimestral', '24€ (8€/mes)', '3 meses', extra))}
           </div>
@@ -2250,7 +2253,7 @@ const VFX = {
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">45€</span>
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,50€/mes · 6 meses</div>
-            ${periodBtn('semi', 'Activar semestral',
+            ${periodBtn('semi', 'Activar Pro Semestral',
               'Activar Plan Pro Semestral — VFX Hours',
               (extra) => mkBody('Pro Semestral', '45€ (7,50€/mes)', '6 meses', extra))}
           </div>
@@ -2266,7 +2269,7 @@ const VFX = {
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">85€</span>
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,08€/mes · 12 meses</div>
-            ${periodBtn('annual', 'Activar anual',
+            ${periodBtn('annual', 'Activar Pro Anual',
               'Activar Plan Pro Anual — VFX Hours',
               (extra) => mkBody('Pro Anual', '85€ (7,08€/mes)', '12 meses', extra))}
           </div>
@@ -2281,9 +2284,9 @@ const VFX = {
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
               <span style="font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.12em">VITALICIO</span>
               <span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span>
-              ${!isLifeCurrent ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,85,118,0.12);border:1px solid rgba(255,85,118,0.3);color:var(--red);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;animation:pulse-red 2s infinite">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Oferta · solo 3 meses
+              ${!isLifeCurrent ? `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,85,118,0.12);border:1px solid rgba(255,85,118,0.35);color:var(--red);font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.03em;animation:pulse-red 2s infinite">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Oferta hasta finales de junio
               </span>` : ''}
             </div>
             <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
