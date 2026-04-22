@@ -3018,15 +3018,17 @@ const VFX = {
     const totalBorradores = invoices.filter(i => i.status === 'draft').length;
 
     el.innerHTML = `
-      <div class="view-header">
+      <div class="page-header">
         <div>
-          <h1 class="view-title">Facturas</h1>
-          <p class="view-subtitle">${invoices.length} facturas · ${totalBorradores} borrador${totalBorradores !== 1 ? 'es' : ''}</p>
+          <div class="page-title">Facturas</div>
+          <div class="page-subtitle">${invoices.length} factura${invoices.length !== 1 ? 's' : ''} · ${totalBorradores} borrador${totalBorradores !== 1 ? 'es' : ''}</div>
         </div>
-        <button class="btn btn-primary" onclick="VFX.openInvoiceForm()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva factura
-        </button>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="VFX.openInvoiceForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Nueva factura
+          </button>
+        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px">
