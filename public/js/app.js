@@ -2089,18 +2089,26 @@ const VFX = {
   renderPlanes() {
     const el = document.getElementById('view-planes');
     const isPro = this.isPro();
-    const plan = this.state.plan;
     const daysLeft = this.state.daysRemaining;
+    const userName = this.state.user?.name || '';
 
-    const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>`;
-    const crossIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const chk = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const x   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    const mailIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+    const starIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
 
-    const proStatusHtml = isPro
-      ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,200,66,0.12);color:var(--gold);border:1px solid rgba(245,200,66,0.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin-bottom:16px">
-          ${checkIcon} Plan activo
-          ${daysLeft !== null ? `· ${daysLeft} días restantes` : ''}
-        </div>`
-      : '';
+    const mailto = (subject, body) => {
+      const s = encodeURIComponent(subject);
+      const b = encodeURIComponent(body);
+      return `mailto:carlosvfx@yahoo.es?subject=${s}&body=${b}`;
+    };
+
+    const activarBtn = (label, subject, body) => isPro
+      ? `<button class="btn" style="width:100%;justify-content:center;font-size:12px;opacity:0.45;cursor:default" disabled>Plan activo</button>`
+      : `<a href="${mailto(subject, body)}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIcon}&nbsp;${label}</a>`;
+
+    const body = (plan, price, periodo) =>
+      `Hola,\n\nMe gustaría activar el plan Pro de VFX Hours.\n\nNombre: ${userName}\nPlan elegido: ${plan}\nPrecio: ${price}\nPeriodo: ${periodo}\n\nQuedo a la espera de las instrucciones de pago.\n\nGracias.`;
 
     el.innerHTML = `
       <div class="page-header">
@@ -2110,109 +2118,160 @@ const VFX = {
         </div>
       </div>
 
-      <div style="max-width:860px;margin:0 auto;padding:0 4px">
+      <div style="max-width:900px;margin:0 auto;padding:0 4px">
 
         ${isPro ? `<div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           <span>Tienes el plan <strong style="color:var(--gold)">Pro</strong> activo${daysLeft !== null ? ` — caduca en <strong style="color:var(--gold)">${daysLeft} días</strong>` : ''}. Gracias por tu apoyo.</span>
         </div>` : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="planes-grid">
+        <!-- FILA 1: FREE + PRO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" class="planes-grid">
 
           <!-- FREE -->
-          <div style="background:var(--card);border:1px solid ${!isPro ? 'rgba(150,180,255,0.3)' : 'var(--border)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:0;position:relative">
-            ${!isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;font-size:11px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.05em">TU PLAN ACTUAL</div>` : ''}
-            <div style="margin-bottom:20px">
-              <div style="font-size:13px;font-weight:600;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px">FREE</div>
+          <div style="background:var(--card);border:1px solid ${!isPro ? 'rgba(78,205,196,0.35)' : 'var(--border)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
+            ${!isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>` : ''}
+            <div style="margin-bottom:18px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.1em;margin-bottom:8px">FREE</div>
               <div style="display:flex;align-items:baseline;gap:4px">
-                <span style="font-size:36px;font-weight:800;color:var(--text)">0€</span>
+                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">0€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
               </div>
-              <div style="font-size:12px;color:var(--text3);margin-top:4px">Para empezar sin compromiso</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:5px">Para empezar sin compromiso</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:10px;flex:1;margin-bottom:24px">
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>1 proyecto activo</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>1 empresa</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>Timer ilimitado</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>Dashboard</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Estadísticas</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Facturas</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Exportar PDF</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Proyectos ilimitados</div>
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:22px">
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>1 proyecto activo</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>1 empresa</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>Timer ilimitado</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>Dashboard</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Estadísticas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Facturas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Exportar PDF</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Proyectos ilimitados</div>
             </div>
-            <button class="btn" style="width:100%;justify-content:center;opacity:0.5;cursor:default" disabled>
-              ${!isPro ? 'Plan actual' : 'Plan básico'}
-            </button>
+            <button class="btn" style="width:100%;justify-content:center;opacity:0.45;cursor:default" disabled>${!isPro ? 'Plan actual' : 'Plan básico'}</button>
           </div>
 
-          <!-- PRO -->
-          <div style="background:linear-gradient(135deg,rgba(245,200,66,0.06) 0%,var(--card) 60%);border:1px solid ${isPro ? 'rgba(245,200,66,0.5)' : 'rgba(245,200,66,0.25)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:0;position:relative">
-            ${isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:11px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.05em">TU PLAN ACTUAL</div>` : ''}
-            <div style="margin-bottom:20px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                <div style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:0.08em">PRO</div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <!-- PRO resumen -->
+          <div style="background:linear-gradient(145deg,rgba(245,200,66,0.07) 0%,var(--card) 55%);border:1px solid ${isPro ? 'rgba(245,200,66,0.55)' : 'rgba(245,200,66,0.28)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
+            ${isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>` : ''}
+            <div style="margin-bottom:18px">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+                <span style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.1em">PRO</span>
+                <span style="color:var(--gold)">${starIcon}</span>
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:4px">
-                <div style="display:flex;align-items:baseline;gap:6px">
-                  <span style="font-size:36px;font-weight:800;color:var(--text)">9€</span>
-                  <span style="font-size:13px;color:var(--text3)">/mes</span>
-                </div>
+              <div style="display:flex;align-items:baseline;gap:4px">
+                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">9€</span>
+                <span style="font-size:13px;color:var(--text3)">/mes</span>
               </div>
-              <div style="font-size:12px;color:var(--text3)">O elige el periodo que prefieras ↓</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:5px">Elige el periodo que prefieras ↓</div>
             </div>
-
-            <div style="display:flex;flex-direction:column;gap:10px;flex:1;margin-bottom:20px">
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Proyectos ilimitados</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Empresas ilimitadas</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Timer ilimitado</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Dashboard completo</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Estadísticas detalladas</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Gestión de facturas</div>
-              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Exportar PDF</div>
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:22px">
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Proyectos ilimitados</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Empresas ilimitadas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Timer ilimitado</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Dashboard completo</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Estadísticas detalladas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Gestión de facturas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Exportar PDF</div>
             </div>
-
-            <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px">
-              <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;margin-bottom:10px">TARIFAS DISPONIBLES</div>
-              <div style="display:flex;flex-direction:column;gap:6px">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                  <span style="color:var(--text2)">Mensual</span>
-                  <span style="color:var(--text);font-weight:600">9€/mes</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                  <span style="color:var(--text2)">Trimestral <span style="font-size:11px;color:var(--green);background:rgba(78,205,196,0.1);padding:1px 5px;border-radius:4px">−11%</span></span>
-                  <span style="color:var(--text);font-weight:600">24€ <span style="color:var(--text3);font-size:11px">(8€/mes)</span></span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                  <span style="color:var(--text2)">Semestral <span style="font-size:11px;color:var(--green);background:rgba(78,205,196,0.1);padding:1px 5px;border-radius:4px">−17%</span></span>
-                  <span style="color:var(--text);font-weight:600">45€ <span style="color:var(--text3);font-size:11px">(7,50€/mes)</span></span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                  <span style="color:var(--text2)">Anual <span style="font-size:11px;color:var(--gold);background:rgba(245,200,66,0.1);padding:1px 5px;border-radius:4px">−22%</span></span>
-                  <span style="color:var(--text);font-weight:600">85€ <span style="color:var(--text3);font-size:11px">(7,08€/mes)</span></span>
-                </div>
-                <div style="height:1px;background:var(--border);margin:2px 0"></div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-                  <span style="color:var(--text2)">Vitalicio <span style="font-size:11px;color:var(--gold);background:rgba(245,200,66,0.1);padding:1px 5px;border-radius:4px">Pago único</span></span>
-                  <span style="color:var(--gold);font-weight:700">200€</span>
-                </div>
-              </div>
-            </div>
-
-            ${isPro
-              ? `<button class="btn" style="width:100%;justify-content:center;opacity:0.5;cursor:default" disabled>Plan activo</button>`
-              : `<a href="mailto:carlosvfx@yahoo.es?subject=Activar%20Plan%20Pro%20VFX%20Hours&body=Hola%2C%20me%20gustar%C3%ADa%20activar%20el%20plan%20Pro.%0A%0APlan%20elegido%3A%20" class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  Activar Pro — escribir al admin
-                </a>`
-            }
+            <div style="font-size:12px;color:var(--text3);text-align:center;padding:8px 0;border-top:1px solid var(--border)">Selecciona tu periodo de pago abajo</div>
           </div>
-
         </div>
 
-        <div style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;font-size:13px;color:var(--text2);line-height:1.6">
-          <strong style="color:var(--text)">¿Cómo funciona la activación?</strong><br>
-          Envíanos un email indicando el plan elegido. Tras recibir el pago, activamos tu cuenta Pro manualmente y te confirmamos la fecha de expiración. El proceso suele tardar menos de 24 horas.
+        <!-- FILA 2: 4 tarjetas pequeñas de periodo -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
+
+          <!-- MENSUAL -->
+          <div style="background:var(--card);border:1px solid rgba(78,205,196,0.25);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
+            <div style="font-size:10px;font-weight:700;color:#4ecdc4;letter-spacing:0.1em;margin-bottom:10px">MENSUAL</div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:4px">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">9€</span>
+              <span style="font-size:11px;color:var(--text3)">/mes</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">Sin compromiso</div>
+            ${activarBtn('Activar mensual',
+              'Activar Plan Pro Mensual — VFX Hours',
+              body('Pro Mensual', '9€/mes', '1 mes (renovación mensual)'))}
+          </div>
+
+          <!-- TRIMESTRAL -->
+          <div style="background:var(--card);border:1px solid rgba(108,143,255,0.28);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
+              <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−11%</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">24€</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">8€/mes · 3 meses</div>
+            ${activarBtn('Activar trimestral',
+              'Activar Plan Pro Trimestral — VFX Hours',
+              body('Pro Trimestral', '24€ (8€/mes)', '3 meses'))}
+          </div>
+
+          <!-- SEMESTRAL -->
+          <div style="background:var(--card);border:1px solid rgba(168,151,255,0.28);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <span style="font-size:10px;font-weight:700;color:#a897ff;letter-spacing:0.1em">SEMESTRAL</span>
+              <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−17%</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">45€</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">7,50€/mes · 6 meses</div>
+            ${activarBtn('Activar semestral',
+              'Activar Plan Pro Semestral — VFX Hours',
+              body('Pro Semestral', '45€ (7,50€/mes)', '6 meses'))}
+          </div>
+
+          <!-- ANUAL -->
+          <div style="background:var(--card);border:1px solid rgba(245,200,66,0.3);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+              <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em">ANUAL</span>
+              <span style="font-size:10px;background:rgba(245,200,66,0.12);color:var(--gold);padding:1px 5px;border-radius:4px;font-weight:600">−22%</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">85€</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">7,08€/mes · 12 meses</div>
+            ${activarBtn('Activar anual',
+              'Activar Plan Pro Anual — VFX Hours',
+              body('Pro Anual', '85€ (7,08€/mes)', '12 meses'))}
+          </div>
+        </div>
+
+        <!-- FILA 3: VITALICIO (prominente) -->
+        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid rgba(245,200,66,0.45);border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden" class="planes-lifetime">
+          <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at 70% 30%,rgba(245,200,66,0.08) 0%,transparent 70%);pointer-events:none"></div>
+          <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--gold),#ffb830);color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">MEJOR VALOR · PAGO ÚNICO</div>
+
+          <div style="flex:1;min-width:0;padding-top:8px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span style="font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.12em">VITALICIO</span>
+              <span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+              <span style="font-size:52px;font-weight:900;color:var(--gold);line-height:1">200€</span>
+              <span style="font-size:14px;color:var(--text3)">una sola vez</span>
+            </div>
+            <div style="font-size:13px;color:var(--text2);margin-bottom:18px">Paga una vez, úsalo para siempre. Sin renovaciones, sin sorpresas.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="color:var(--gold)">${chk}</span>Todo Pro incluido</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="color:var(--gold)">${chk}</span>Actualizaciones futuras</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="color:var(--gold)">${chk}</span>Sin fecha de expiración</span>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0;width:200px">
+            ${activarBtn('Activar Vitalicio',
+              'Activar Plan Vitalicio — VFX Hours',
+              body('Pro Vitalicio', '200€ (pago único)', 'Acceso vitalicio'))}
+          </div>
+        </div>
+
+        <div style="margin-top:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:12px;color:var(--text3);line-height:1.6">
+          <strong style="color:var(--text2)">¿Cómo funciona?</strong> — Haz clic en el plan que quieras y se abrirá un email ya redactado con todos los datos. Tras recibir el pago te activamos el plan en menos de 24 horas.
         </div>
 
       </div>
