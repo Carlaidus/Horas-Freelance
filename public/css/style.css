@@ -1308,6 +1308,12 @@ tr[data-project-id].row-active td:first-child {
   padding: 40px 24px;
 }
 
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.pulse-red { animation: pulse-red 2s infinite; }
+
 @media (max-width: 700px) {
   .planes-grid { grid-template-columns: 1fr !important; }
   .planes-small-grid { grid-template-columns: repeat(2, 1fr) !important; }

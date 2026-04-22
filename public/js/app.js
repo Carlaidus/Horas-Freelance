@@ -2223,8 +2223,9 @@ const VFX = {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
 
           <!-- TRIMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;overflow:hidden">
             ${isQuartCurrent ? currentBadge('#6c8fff') : ''}
+            ${!isQuartCurrent ? `<div style="position:absolute;top:9px;right:-22px;background:linear-gradient(90deg,#6c8fff,#a897ff);color:#fff;font-size:9px;font-weight:700;padding:3px 28px;transform:rotate(35deg);letter-spacing:0.06em;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3)">Más popular</div>` : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
               <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−11%</span>
@@ -2277,9 +2278,13 @@ const VFX = {
           <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${isLifeCurrent ? 'var(--gold)' : 'linear-gradient(90deg,var(--gold),#ffb830)'};color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">${isLifeCurrent ? 'TU PLAN ACTUAL' : 'MEJOR VALOR · PAGO ÚNICO'}</div>
 
           <div style="flex:1;min-width:0;padding-top:10px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
               <span style="font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.12em">VITALICIO</span>
               <span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span>
+              ${!isLifeCurrent ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,85,118,0.12);border:1px solid rgba(255,85,118,0.3);color:var(--red);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:0.04em;animation:pulse-red 2s infinite">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Oferta · solo 3 meses
+              </span>` : ''}
             </div>
             <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
               <span style="font-size:52px;font-weight:900;color:var(--gold);line-height:1">200€</span>
