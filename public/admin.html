@@ -113,6 +113,22 @@
     <div class="stat-card"><div class="stat-label">Plan Free</div><div class="stat-value" style="color:var(--text3)" id="s-free">—</div></div>
   </div>
 
+  <div class="section-title" style="margin-top:32px">Uso de la app — últimos 7 días</div>
+  <div class="table-wrap" style="margin-bottom:32px">
+    <table>
+      <thead><tr><th>Evento</th><th>Últimas 24h</th><th>Últimos 7 días</th><th>Total</th><th>Usuarios únicos</th></tr></thead>
+      <tbody id="events-tbody"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Actividad reciente</div>
+  <div class="table-wrap" style="margin-bottom:32px">
+    <table>
+      <thead><tr><th>Fecha</th><th>Usuario</th><th>Evento</th><th>Datos</th></tr></thead>
+      <tbody id="recent-tbody"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+
   <div class="section-title">Usuarios registrados</div>
   <div class="table-wrap">
     <table>
@@ -138,12 +154,40 @@
 <script>
 let users = [];
 
+const EVENT_LABELS = { view:'Vista', timer_start:'Timer iniciado', timer_stop:'Timer parado', invoice_print:'Factura generada', entry_create:'Entrada creada' };
+
 async function load() {
   const res = await fetch('/admin/api/users');
   if (!res.ok) { document.body.innerHTML = '<p style="padding:40px;color:#ff5576">Acceso denegado</p>'; return; }
   users = await res.json();
   renderStats();
   renderTable();
+  loadEvents();
+}
+
+async function loadEvents() {
+  const res = await fetch('/admin/api/events');
+  if (!res.ok) return;
+  const { stats, recent } = await res.json();
+
+  document.getElementById('events-tbody').innerHTML = stats.length ? stats.map(e => `
+    <tr>
+      <td style="font-weight:600">${EVENT_LABELS[e.event] || e.event}</td>
+      <td class="mono" style="color:var(--cyan)">${e.last_24h}</td>
+      <td class="mono" style="color:var(--gold)">${e.last_7d}</td>
+      <td class="mono">${e.total}</td>
+      <td class="mono dim">${e.unique_users}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="5" class="empty">Sin datos aún</td></tr>';
+
+  document.getElementById('recent-tbody').innerHTML = recent.length ? recent.map(e => `
+    <tr>
+      <td class="mono dim" style="white-space:nowrap">${e.created_at}</td>
+      <td>${e.user_name || '—'}</td>
+      <td style="font-weight:600">${EVENT_LABELS[e.event] || e.event}</td>
+      <td class="mono dim" style="font-size:11px">${e.metadata || ''}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="4" class="empty">Sin datos aún</td></tr>';
 }
 
 function renderStats() {

@@ -175,6 +175,17 @@ app.post('/api/entries', (req, res) => res.json({ id: db.createEntry({ user_id: 
 app.put('/api/entries/:id', (req, res) => { db.updateEntry(+req.params.id, req.body); res.json({ success: true }); });
 app.delete('/api/entries/:id', (req, res) => { db.deleteEntry(+req.params.id); res.json({ success: true }); });
 
+// ── ANALYTICS ─────────────────────────────────────────────────
+app.post('/api/track', (req, res) => {
+  const { event, metadata } = req.body;
+  if (event) db.createEvent(getUserId(req), event, metadata);
+  res.json({ ok: true });
+});
+
+app.get('/admin/api/events', requireAdmin, (req, res) => {
+  res.json({ stats: db.getEventStats(), recent: db.getRecentEvents(100) });
+});
+
 // ── TIMERS ────────────────────────────────────────────────────
 app.get('/api/timers', (req, res) => {
   res.json(db.getActiveTimers(getUserId(req)));

@@ -126,6 +126,14 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    event TEXT NOT NULL,
+    metadata TEXT DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS timers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -524,6 +532,27 @@ const setUserPlan = (userId, plan, expiresAt) => db.prepare(
   'UPDATE users SET plan=@plan, plan_expires_at=@plan_expires_at WHERE id=@id'
 ).run({ plan, plan_expires_at: expiresAt || null, id: userId });
 
+// EVENTS / ANALYTICS
+const createEvent = (userId, event, metadata) => db.prepare(
+  'INSERT INTO events (user_id, event, metadata) VALUES (?, ?, ?)'
+).run(userId, event, metadata ? JSON.stringify(metadata) : null);
+
+const getEventStats = () => db.prepare(`
+  SELECT event,
+    COUNT(*) as total,
+    COUNT(DISTINCT user_id) as unique_users,
+    SUM(CASE WHEN created_at >= datetime('now','-7 days') THEN 1 ELSE 0 END) as last_7d,
+    SUM(CASE WHEN created_at >= datetime('now','-1 day') THEN 1 ELSE 0 END) as last_24h
+  FROM events
+  GROUP BY event ORDER BY total DESC
+`).all();
+
+const getRecentEvents = (limit = 50) => db.prepare(`
+  SELECT e.*, u.name as user_name
+  FROM events e LEFT JOIN users u ON e.user_id = u.id
+  ORDER BY e.created_at DESC LIMIT ?
+`).all(limit);
+
 // TIMERS
 const getActiveTimers = (userId) => db.prepare(
   'SELECT * FROM timers WHERE user_id = ? AND is_active = 1'
@@ -562,5 +591,6 @@ module.exports = {
   countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword,
   getInvoices, getInvoice, getInvoiceLines, createInvoice, updateInvoice, issueInvoice,
   deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries,
-  getActiveTimers, upsertTimer, clearTimer
+  getActiveTimers, upsertTimer, clearTimer,
+  createEvent, getEventStats, getRecentEvents
 };

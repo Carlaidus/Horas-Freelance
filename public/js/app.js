@@ -258,6 +258,10 @@ const VFX = {
     this.renderProyecto();
   },
 
+  track(event, metadata) {
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, metadata }) }).catch(() => {});
+  },
+
   // ── API ────────────────────────────────────────────────────
   api: {
     async get(url) {
@@ -593,6 +597,7 @@ const VFX = {
 
   // ── NAVIGATION ─────────────────────────────────────────────
   navigate(view) {
+    this.track('view', { view });
     this.state.view = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2762,6 +2767,7 @@ const VFX = {
     slot.timerProjectId = projectId;
     const startTime = new Date().toISOString();
     slot.timer = { active: true, paused: false, startTime, accumulated: 0, interval: null };
+    this.track('timer_start', { project_id: projectId });
     try { await this.api.post(`/api/timers/${projectId}/start`, { started_at: startTime }); } catch(_) {}
     this._slotsSave();
     this._startSlotInterval(idx);
@@ -2805,6 +2811,7 @@ const VFX = {
     if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
     slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
     slot.timerProjectId = null;
+    this.track('timer_stop', { project_id: timerProjectId, elapsed_seconds: Math.round(elapsed) });
     try { await this.api.del(`/api/timers/${timerProjectId}`); } catch(_) {}
     this._slotsSave();
     this.renderProyecto();
@@ -2818,6 +2825,7 @@ const VFX = {
     if (!hours) return;
     const dailyOverride = getDailyRateValue('timer-rate');
     const rateOverride = dailyOverride > 0 ? dailyOverride / 8 : null;
+    this.track('entry_create', { project_id: projectId, hours });
     await this.api.post('/api/entries', { project_id: projectId, date, hours, description: desc, hourly_rate_override: rateOverride });
     const slot = this.state.slots[idx];
     if (slot) slot.entries = await this.api.get(`/api/projects/${projectId}/entries`);
@@ -2842,6 +2850,7 @@ const VFX = {
   },
 
   async printInvoice(id) {
+    this.track('invoice_print', { project_id: id });
     const data = await this.api.get(`/api/projects/${id}/export`);
     const { project, entries, user } = data;
     const hourlyRate = project.hourly_rate || 0;
