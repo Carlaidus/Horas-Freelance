@@ -106,15 +106,24 @@ const VFX = {
   },
 
   async requestUpgrade(plan, price, period, btnEl) {
+    const PAYPAL_AMOUNTS = {
+      'Pro Mensual':    '6',
+      'Pro Trimestral': '16',
+      'Pro Semestral':  '29',
+      'Pro Anual':      '55',
+      'Pro Vitalicio':  '200',
+    };
     const original = btnEl.innerHTML;
     btnEl.disabled = true;
     btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>&nbsp;Enviando...`;
     try {
       await this.api.post('/api/contact/upgrade', { plan, price, period });
-      // Guardar estado en localStorage para persistir entre páginas
       localStorage.setItem(this._lsKey('vfx_upgrade_requested'), JSON.stringify({ plan, price, period, ts: Date.now() }));
       this.updateSidebarUser();
       this.renderPlanes();
+      // Abrir PayPal con el importe del plan
+      const amount = PAYPAL_AMOUNTS[plan];
+      if (amount) window.open(`https://paypal.me/vfxhours/${amount}EUR`, '_blank');
     } catch (e) {
       btnEl.innerHTML = original;
       btnEl.disabled = false;
