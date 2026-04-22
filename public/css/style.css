@@ -1317,8 +1317,19 @@ tr[data-project-id].row-active td:first-child {
 .pulse-red { animation: pulse-red 2s infinite; }
 
 @media (max-width: 700px) {
-  .planes-grid { grid-template-columns: 1fr !important; }
+  .planes-outer      { padding: 0 2px !important; }
+  .planes-grid       { grid-template-columns: 1fr !important; }
   .planes-small-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .planes-lifetime { flex-direction: column !important; align-items: stretch !important; padding: 28px 20px !important; }
+  .planes-lifetime   { flex-direction: column !important; align-items: stretch !important; padding: 24px 18px !important; }
   .planes-lifetime > div:last-child { width: 100% !important; }
+}
+
+@media (max-width: 480px) {
+  .planes-small-grid { grid-template-columns: 1fr !important; }
+  .planes-lifetime   { padding: 20px 16px !important; }
+  .planes-grid > div,
+  .planes-small-grid > div,
+  .planes-lifetime { box-sizing: border-box; width: 100% !important; }
+  .planes-price-main     { font-size: 30px !important; }
+  .planes-price-lifetime { font-size: 38px !important; }
 }

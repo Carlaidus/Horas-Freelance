@@ -2240,7 +2240,7 @@ const VFX = {
         </div>
       </div>
 
-      <div style="max-width:900px;margin:0 auto;padding:0 4px">
+      <div class="planes-outer" style="max-width:900px;margin:0 auto;padding:0 4px">
 
         ${isPro ? `<div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -2256,7 +2256,7 @@ const VFX = {
             <div style="margin-bottom:18px${isFreeCurrent ? ';padding-top:12px' : ''}">
               <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.1em;margin-bottom:8px">FREE</div>
               <div style="display:flex;align-items:baseline;gap:4px">
-                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">0€</span>
+                <span class="planes-price-main" style="font-size:38px;font-weight:800;color:var(--text);line-height:1">0€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:5px">Para empezar sin compromiso</div>
@@ -2282,7 +2282,7 @@ const VFX = {
                 <span style="color:var(--gold)">${starIcon}</span>
               </div>
               <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">6€</span>
+                <span class="planes-price-main" style="font-size:38px;font-weight:800;color:var(--text);line-height:1">6€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
                 ${struck(9, 22)}
               </div>
@@ -2366,7 +2366,7 @@ const VFX = {
               </span>` : ''}
             </div>
             <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
-              <span style="font-size:52px;font-weight:900;color:var(--gold);line-height:1">200€</span>
+              <span class="planes-price-lifetime" style="font-size:52px;font-weight:900;color:var(--gold);line-height:1">200€</span>
               <span style="font-size:14px;color:var(--text3)">una sola vez</span>
             </div>
             <div style="font-size:13px;color:var(--text2);margin-bottom:18px">Paga una vez, úsalo para siempre. Sin renovaciones, sin sorpresas.</div>
