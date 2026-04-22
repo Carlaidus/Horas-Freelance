@@ -2141,6 +2141,11 @@ const VFX = {
     const mailIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
     const starIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     const chkIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>`;
+    // precio tachado con raya diagonal
+    const struck = (price, size = 16) => `<span style="position:relative;display:inline-block;line-height:1">
+      <span style="font-size:${size}px;font-weight:600;color:var(--text3);opacity:0.55">${price}€</span>
+      <span style="position:absolute;left:-6%;top:48%;width:112%;height:1.5px;background:rgba(255,85,118,0.75);transform:rotate(-18deg);pointer-events:none;border-radius:2px"></span>
+    </span>`;
 
     // solicitud pendiente (persiste en localStorage)
     const upgradeRaw = localStorage.getItem(this._lsKey('vfx_upgrade_requested'));
@@ -2256,7 +2261,7 @@ const VFX = {
               <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
                 <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">6€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
-                <span style="font-size:20px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">9€</span>
+                ${struck(9, 22)}
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:5px">${isPro ? `Plan activo${currentPeriod ? ' · ' + PERIODS[currentPeriod]?.label : ''}` : 'Elige el periodo que prefieras ↓'}</div>
             </div>
@@ -2286,9 +2291,9 @@ const VFX = {
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;flex-wrap:wrap">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">16€</span>
-              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">24€</span>
+              ${struck(24, 17)}
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">5,33€/mes · 3 meses</div>
             ${periodBtn('quarterly', 'Activar Pro Trimestral')}
@@ -2300,9 +2305,9 @@ const VFX = {
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isSemiCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#a897ff;letter-spacing:0.1em">SEMESTRAL</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;flex-wrap:wrap">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">29€</span>
-              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">45€</span>
+              ${struck(45, 17)}
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">4,83€/mes · 6 meses</div>
             ${periodBtn('semi', 'Activar Pro Semestral')}
@@ -2314,9 +2319,9 @@ const VFX = {
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isAnnCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em">ANUAL</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;flex-wrap:wrap">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">55€</span>
-              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">85€</span>
+              ${struck(85, 17)}
             </div>
             <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">4,58€/mes · 12 meses</div>
             ${periodBtn('annual', 'Activar Pro Anual')}
