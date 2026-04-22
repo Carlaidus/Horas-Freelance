@@ -421,6 +421,13 @@ function renderUsersTab() {
             <option value="basic" ${u.plan==='basic'?'selected':''}>Básico</option>
             <option value="pro"   ${u.plan==='pro'?'selected':''}>Pro</option>
           </select>
+          <select id="period-${u.id}" style="font-size:11px">
+            <option value="" ${!u.plan_period?'selected':''}>— periodo —</option>
+            <option value="quarterly" ${u.plan_period==='quarterly'?'selected':''}>Trimestral</option>
+            <option value="semi"      ${u.plan_period==='semi'?'selected':''}>Semestral</option>
+            <option value="annual"    ${u.plan_period==='annual'?'selected':''}>Anual</option>
+            <option value="lifetime"  ${u.plan_period==='lifetime'?'selected':''}>Vitalicio</option>
+          </select>
           <input type="date" id="expires-${u.id}" value="${u.plan_expires_at||''}">
           <button class="btn btn-primary btn-sm" onclick="savePlan(${u.id})">Guardar</button>
         </div>`}
@@ -520,7 +527,8 @@ function addDaysToExpiry(userId, months) {
 async function savePlan(userId) {
   const plan = document.getElementById(`plan-${userId}`).value;
   const expires_at = document.getElementById(`expires-${userId}`).value || null;
-  const res = await fetch(`/admin/api/users/${userId}/plan`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({plan,expires_at}) });
+  const period = document.getElementById(`period-${userId}`)?.value || null;
+  const res = await fetch(`/admin/api/users/${userId}/plan`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({plan, expires_at, period: period || null}) });
   if (res.ok) { showToast(); await load(); }
 }
 function showToast() {

@@ -52,6 +52,7 @@ const VFX = {
     plan: 'free',
     role: 'user',
     daysRemaining: null,
+    planPeriod: null,
     userId: null
   },
 
@@ -72,24 +73,18 @@ const VFX = {
     };
     const name = labels[feature] || feature;
     this.openModal(`
-      <div class="modal-header">
-        <span class="modal-title">Función exclusiva de Pro</span>
-        <button class="modal-close" onclick="VFX.closeModal()">✕</button>
-      </div>
-      <div class="modal-body" style="text-align:center;padding:32px 24px">
-        <div class="upgrade-card-icon" style="margin:0 auto 20px">
+      <div class="modal-body" style="text-align:center;padding:36px 28px 28px">
+        <button class="modal-close" onclick="VFX.closeModal()" style="position:absolute;top:14px;right:14px">✕</button>
+        <div class="upgrade-card-icon" style="margin:0 auto 18px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
         </div>
-        <h3 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">${name}</h3>
+        <h3 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">Función exclusiva de Pro</h3>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px">
-          Esta función está disponible en el plan <strong style="color:var(--gold)">Pro</strong>.<br>
-          Actualiza tu cuenta para acceder a proyectos ilimitados, empresas, facturas, estadísticas y exportación PDF.
+          <strong style="color:var(--gold)">${name}</strong> está disponible en el plan Pro.<br>
+          Actualiza tu cuenta para acceder a todas las funciones.
         </p>
-        <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:24px;font-size:13px;color:var(--text2)">
-          Escríbenos a <strong style="color:var(--gold)">carlosvfx@yahoo.es</strong> para activar tu cuenta Pro.
-        </div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="VFX.closeModal();VFX.navigate('planes')">Ver planes</button>
       </div>
     `);
@@ -413,6 +408,7 @@ const VFX = {
     this.state.plan = authData.plan || 'free';
     this.state.role = authData.role || 'user';
     this.state.daysRemaining = authData.daysRemaining ?? null;
+    this.state.planPeriod = authData.planPeriod || null;
     this.state.userId = authData.userId || 1;
     if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
@@ -2090,25 +2086,70 @@ const VFX = {
     const el = document.getElementById('view-planes');
     const isPro = this.isPro();
     const daysLeft = this.state.daysRemaining;
+    const currentPeriod = this.state.planPeriod; // quarterly | semi | annual | lifetime | null
     const userName = this.state.user?.name || '';
 
     const chk = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`;
     const x   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    const mailIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+    const mailIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
     const starIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
 
-    const mailto = (subject, body) => {
-      const s = encodeURIComponent(subject);
-      const b = encodeURIComponent(body);
-      return `mailto:carlosvfx@yahoo.es?subject=${s}&body=${b}`;
+    // precios y rangos de cada periodo
+    const PERIODS = {
+      quarterly: { label: 'Trimestral', price: 24,  days: 90,  rank: 1 },
+      semi:      { label: 'Semestral',  price: 45,  days: 180, rank: 2 },
+      annual:    { label: 'Anual',      price: 85,  days: 365, rank: 3 },
+      lifetime:  { label: 'Vitalicio',  price: 200, days: null, rank: 4 },
     };
 
-    const activarBtn = (label, subject, body) => isPro
-      ? `<button class="btn" style="width:100%;justify-content:center;font-size:12px;opacity:0.45;cursor:default" disabled>Plan activo</button>`
-      : `<a href="${mailto(subject, body)}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIcon}&nbsp;${label}</a>`;
+    const mk = (subject, bodyText) => {
+      return `mailto:carlosvfx@yahoo.es?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    };
+    const mkBody = (planLabel, price, periodo, extra) =>
+      `Hola,\n\nMe gustaría activar el plan Pro de VFX Hours.\n\nNombre: ${userName}\nPlan elegido: ${planLabel}\nPrecio: ${price}\nPeriodo: ${periodo}${extra ? '\n' + extra : ''}\n\nQuedo a la espera de las instrucciones de pago.\n\nGracias.`;
 
-    const body = (plan, price, periodo) =>
-      `Hola,\n\nMe gustaría activar el plan Pro de VFX Hours.\n\nNombre: ${userName}\nPlan elegido: ${plan}\nPrecio: ${price}\nPeriodo: ${periodo}\n\nQuedo a la espera de las instrucciones de pago.\n\nGracias.`;
+    // calcula diferencia de upgrade: valor restante del plan actual prorrateado
+    const upgradeDiff = (targetPeriod) => {
+      if (!isPro || !daysLeft || !currentPeriod || !PERIODS[currentPeriod]) return null;
+      const cur = PERIODS[currentPeriod];
+      if (!cur.days) return null; // vitalicio, no aplica
+      const tgt = PERIODS[targetPeriod];
+      if (!tgt || tgt.rank <= cur.rank) return null; // no es upgrade
+      const dailyRate = cur.price / cur.days;
+      const remainingValue = Math.round(dailyRate * daysLeft * 100) / 100;
+      const diff = Math.max(0, Math.round((tgt.price - remainingValue) * 100) / 100);
+      return { diff, remainingValue, curLabel: cur.label, daysLeft };
+    };
+
+    // botón para tarjeta de periodo
+    const periodBtn = (periodKey, btnLabel, subject, bodyFn) => {
+      const isCurrent = isPro && currentPeriod === periodKey;
+      if (isCurrent) return ''; // ya tiene badge arriba, sin botón
+      const ud = upgradeDiff(periodKey);
+      if (ud) {
+        // es upgrade: mostrar diferencia + botón con importe calculado
+        const bodyText = bodyFn(`(upgrade desde ${ud.curLabel}, diferencia calculada: ${ud.diff}€)`);
+        return `
+          <div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.5">
+            Te quedan <strong style="color:var(--text)">${ud.daysLeft} días</strong> en tu plan ${ud.curLabel}.<br>
+            Cambio al ${PERIODS[periodKey].label}: <strong style="color:var(--gold)">${ud.diff}€</strong> adicionales.
+          </div>
+          <a href="${mk(subject, bodyText)}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:11px;text-decoration:none">${mailIco}&nbsp;Cambiar a ${PERIODS[periodKey].label}</a>
+        `;
+      }
+      return `<a href="${mk(subject, bodyFn())}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIco}&nbsp;${btnLabel}</a>`;
+    };
+
+    // badge de "plan actual" con color por tipo
+    const currentBadge = (color) =>
+      `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${color};color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>`;
+
+    const isFreeCurrent  = !isPro;
+    const isProOverview  = isPro; // la tarjeta PRO grande siempre se marca si es Pro
+    const isQuartCurrent = isPro && currentPeriod === 'quarterly';
+    const isSemiCurrent  = isPro && currentPeriod === 'semi';
+    const isAnnCurrent   = isPro && currentPeriod === 'annual';
+    const isLifeCurrent  = isPro && currentPeriod === 'lifetime';
 
     el.innerHTML = `
       <div class="page-header">
@@ -2129,9 +2170,9 @@ const VFX = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" class="planes-grid">
 
           <!-- FREE -->
-          <div style="background:var(--card);border:1px solid ${!isPro ? 'rgba(78,205,196,0.35)' : 'var(--border)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
-            ${!isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>` : ''}
-            <div style="margin-bottom:18px">
+          <div style="background:var(--card);border:1px solid ${isFreeCurrent ? 'rgba(78,205,196,0.35)' : 'var(--border)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
+            ${isFreeCurrent ? currentBadge('var(--cyan)') : ''}
+            <div style="margin-bottom:18px${isFreeCurrent ? ';padding-top:12px' : ''}">
               <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.1em;margin-bottom:8px">FREE</div>
               <div style="display:flex;align-items:baseline;gap:4px">
                 <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">0€</span>
@@ -2139,7 +2180,7 @@ const VFX = {
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:5px">Para empezar sin compromiso</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:22px">
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1">
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>1 proyecto activo</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>1 empresa</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>Timer ilimitado</div>
@@ -2149,13 +2190,12 @@ const VFX = {
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Exportar PDF</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text3)"><span style="flex-shrink:0">${x}</span>Proyectos ilimitados</div>
             </div>
-            <button class="btn" style="width:100%;justify-content:center;opacity:0.45;cursor:default" disabled>${!isPro ? 'Plan actual' : 'Plan básico'}</button>
           </div>
 
           <!-- PRO resumen -->
-          <div style="background:linear-gradient(145deg,rgba(245,200,66,0.07) 0%,var(--card) 55%);border:1px solid ${isPro ? 'rgba(245,200,66,0.55)' : 'rgba(245,200,66,0.28)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
-            ${isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>` : ''}
-            <div style="margin-bottom:18px">
+          <div style="background:linear-gradient(145deg,rgba(245,200,66,0.07) 0%,var(--card) 55%);border:1px solid ${isProOverview ? 'rgba(245,200,66,0.55)' : 'rgba(245,200,66,0.28)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;position:relative">
+            ${isProOverview ? currentBadge('var(--gold)') : ''}
+            <div style="margin-bottom:18px${isProOverview ? ';padding-top:12px' : ''}">
               <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
                 <span style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.1em">PRO</span>
                 <span style="color:var(--gold)">${starIcon}</span>
@@ -2164,9 +2204,9 @@ const VFX = {
                 <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">9€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
               </div>
-              <div style="font-size:12px;color:var(--text3);margin-top:5px">Elige el periodo que prefieras ↓</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:5px">${isPro ? `Plan activo${currentPeriod ? ' · ' + PERIODS[currentPeriod]?.label : ''}` : 'Elige el periodo que prefieras ↓'}</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:22px">
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1">
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Proyectos ilimitados</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Empresas ilimitadas</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Timer ilimitado</div>
@@ -2175,78 +2215,68 @@ const VFX = {
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Gestión de facturas</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Exportar PDF</div>
             </div>
-            <div style="font-size:12px;color:var(--text3);text-align:center;padding:8px 0;border-top:1px solid var(--border)">Selecciona tu periodo de pago abajo</div>
+            ${!isPro ? `<div style="font-size:12px;color:var(--text3);text-align:center;padding-top:16px;border-top:1px solid var(--border);margin-top:16px">Selecciona tu periodo de pago abajo</div>` : ''}
           </div>
         </div>
 
-        <!-- FILA 2: 4 tarjetas pequeñas de periodo -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
-
-          <!-- MENSUAL -->
-          <div style="background:var(--card);border:1px solid rgba(78,205,196,0.25);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
-            <div style="font-size:10px;font-weight:700;color:#4ecdc4;letter-spacing:0.1em;margin-bottom:10px">MENSUAL</div>
-            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:4px">
-              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">9€</span>
-              <span style="font-size:11px;color:var(--text3)">/mes</span>
-            </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">Sin compromiso</div>
-            ${activarBtn('Activar mensual',
-              'Activar Plan Pro Mensual — VFX Hours',
-              body('Pro Mensual', '9€/mes', '1 mes (renovación mensual)'))}
-          </div>
+        <!-- FILA 2: 3 tarjetas de periodo (Trimestral, Semestral, Anual) -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
 
           <!-- TRIMESTRAL -->
-          <div style="background:var(--card);border:1px solid rgba(108,143,255,0.28);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+            ${isQuartCurrent ? currentBadge('#6c8fff') : ''}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
               <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−11%</span>
             </div>
             <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">24€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">8€/mes · 3 meses</div>
-            ${activarBtn('Activar trimestral',
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">8€/mes · 3 meses</div>
+            ${periodBtn('quarterly', 'Activar trimestral',
               'Activar Plan Pro Trimestral — VFX Hours',
-              body('Pro Trimestral', '24€ (8€/mes)', '3 meses'))}
+              (extra) => mkBody('Pro Trimestral', '24€ (8€/mes)', '3 meses', extra))}
           </div>
 
           <!-- SEMESTRAL -->
-          <div style="background:var(--card);border:1px solid rgba(168,151,255,0.28);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <div style="background:var(--card);border:1px solid ${isSemiCurrent ? 'rgba(168,151,255,0.6)' : 'rgba(168,151,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+            ${isSemiCurrent ? currentBadge('#a897ff') : ''}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isSemiCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#a897ff;letter-spacing:0.1em">SEMESTRAL</span>
               <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−17%</span>
             </div>
             <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">45€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">7,50€/mes · 6 meses</div>
-            ${activarBtn('Activar semestral',
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,50€/mes · 6 meses</div>
+            ${periodBtn('semi', 'Activar semestral',
               'Activar Plan Pro Semestral — VFX Hours',
-              body('Pro Semestral', '45€ (7,50€/mes)', '6 meses'))}
+              (extra) => mkBody('Pro Semestral', '45€ (7,50€/mes)', '6 meses', extra))}
           </div>
 
           <!-- ANUAL -->
-          <div style="background:var(--card);border:1px solid rgba(245,200,66,0.3);border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <div style="background:var(--card);border:1px solid ${isAnnCurrent ? 'rgba(245,200,66,0.6)' : 'rgba(245,200,66,0.28)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+            ${isAnnCurrent ? currentBadge('var(--gold)') : ''}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isAnnCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em">ANUAL</span>
               <span style="font-size:10px;background:rgba(245,200,66,0.12);color:var(--gold);padding:1px 5px;border-radius:4px;font-weight:600">−22%</span>
             </div>
             <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
               <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">85€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:14px;flex:1">7,08€/mes · 12 meses</div>
-            ${activarBtn('Activar anual',
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,08€/mes · 12 meses</div>
+            ${periodBtn('annual', 'Activar anual',
               'Activar Plan Pro Anual — VFX Hours',
-              body('Pro Anual', '85€ (7,08€/mes)', '12 meses'))}
+              (extra) => mkBody('Pro Anual', '85€ (7,08€/mes)', '12 meses', extra))}
           </div>
         </div>
 
         <!-- FILA 3: VITALICIO (prominente) -->
-        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid rgba(245,200,66,0.45);border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden" class="planes-lifetime">
+        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid ${isLifeCurrent ? 'rgba(245,200,66,0.8)' : 'rgba(245,200,66,0.45)'};border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden" class="planes-lifetime">
           <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at 70% 30%,rgba(245,200,66,0.08) 0%,transparent 70%);pointer-events:none"></div>
-          <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--gold),#ffb830);color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">MEJOR VALOR · PAGO ÚNICO</div>
+          <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${isLifeCurrent ? 'var(--gold)' : 'linear-gradient(90deg,var(--gold),#ffb830)'};color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">${isLifeCurrent ? 'TU PLAN ACTUAL' : 'MEJOR VALOR · PAGO ÚNICO'}</div>
 
-          <div style="flex:1;min-width:0;padding-top:8px">
+          <div style="flex:1;min-width:0;padding-top:10px">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
               <span style="font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.12em">VITALICIO</span>
               <span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span>
@@ -2263,15 +2293,15 @@ const VFX = {
             </div>
           </div>
 
-          <div style="flex-shrink:0;width:200px">
-            ${activarBtn('Activar Vitalicio',
+          <div style="flex-shrink:0;width:210px">
+            ${isLifeCurrent ? '' : periodBtn('lifetime', 'Activar Vitalicio',
               'Activar Plan Vitalicio — VFX Hours',
-              body('Pro Vitalicio', '200€ (pago único)', 'Acceso vitalicio'))}
+              (extra) => mkBody('Pro Vitalicio', '200€ (pago único)', 'Acceso vitalicio', extra))}
           </div>
         </div>
 
         <div style="margin-top:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:12px;color:var(--text3);line-height:1.6">
-          <strong style="color:var(--text2)">¿Cómo funciona?</strong> — Haz clic en el plan que quieras y se abrirá un email ya redactado con todos los datos. Tras recibir el pago te activamos el plan en menos de 24 horas.
+          <strong style="color:var(--text2)">¿Cómo funciona?</strong> — Haz clic en el plan que quieras y se abrirá un email ya redactado con todos tus datos. Tras recibir el pago te activamos el plan en menos de 24 horas.
         </div>
 
       </div>

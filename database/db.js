@@ -27,6 +27,7 @@ const init = async () => {
       email_verified INTEGER DEFAULT 0,
       role TEXT DEFAULT 'user',
       plan TEXT DEFAULT 'free',
+      plan_period TEXT DEFAULT NULL,
       plan_expires_at DATE DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     )
@@ -179,6 +180,8 @@ const init = async () => {
       UNIQUE(user_id, project_id)
     )
   `);
+  // columnas añadidas después del despliegue inicial
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_period TEXT DEFAULT NULL`);
 };
 
 // ── USER ──────────────────────────────────────────────────────
@@ -711,10 +714,10 @@ const getAllUsers = async () => {
   return r.rows;
 };
 
-const setUserPlan = async (userId, plan, expiresAt) => {
+const setUserPlan = async (userId, plan, expiresAt, period) => {
   await q(
-    'UPDATE users SET plan=$1, plan_expires_at=$2 WHERE id=$3',
-    [plan, expiresAt || null, userId]
+    'UPDATE users SET plan=$1, plan_expires_at=$2, plan_period=$3 WHERE id=$4',
+    [plan, expiresAt || null, period || null, userId]
   );
 };
 

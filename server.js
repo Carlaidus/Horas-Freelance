@@ -75,6 +75,7 @@ app.get('/api/auth/me', async (req, res) => {
       authenticated: !!req.session.userId,
       role: user?.role || 'user',
       plan: getEffectivePlan(user),
+      planPeriod: getEffectivePlan(user) === 'free' ? null : (user?.plan_period || null),
       daysRemaining: getDaysRemaining(user)
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -502,9 +503,9 @@ app.get('/admin/api/users', requireAdmin, async (req, res) => {
 
 app.put('/admin/api/users/:id/plan', requireAdmin, async (req, res) => {
   try {
-    const { plan, expires_at } = req.body;
+    const { plan, expires_at, period } = req.body;
     if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
-    await db.setUserPlan(+req.params.id, plan, expires_at || null);
+    await db.setUserPlan(+req.params.id, plan, expires_at || null, period || null);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
