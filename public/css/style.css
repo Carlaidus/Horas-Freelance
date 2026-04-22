@@ -1135,6 +1135,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 .invoice-form input:focus, .invoice-form select:focus, .invoice-form textarea:focus { border-color: var(--gold2); }
 .invoice-form input:disabled, .invoice-form select:disabled, .invoice-form textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+.line-desc { resize: vertical; min-height: 52px; line-height: 1.5; }
 .invoice-form details summary { user-select: none; }
 .invoice-form details summary::-webkit-details-marker { display: none; }
 

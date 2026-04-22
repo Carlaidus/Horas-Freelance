@@ -3029,18 +3029,21 @@ const VFX = {
         </button>
       </div>
 
-      <div class="stats-row" style="margin-bottom:24px">
-        <div class="stat-card">
-          <div class="stat-label">Total facturado</div>
-          <div class="stat-value">${this.fmt.currency(totalEmitidas)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px">
+        <div class="metric-card">
+          <div class="metric-label">Total facturado</div>
+          <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(totalEmitidas)}</div>
+          <div class="metric-sub">facturas emitidas</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Facturas emitidas</div>
-          <div class="stat-value">${invoices.filter(i => i.status === 'issued').length}</div>
+        <div class="metric-card">
+          <div class="metric-label">Facturas emitidas</div>
+          <div class="metric-value" style="color:var(--cyan)">${invoices.filter(i => i.status === 'issued').length}</div>
+          <div class="metric-sub">total histórico</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Borradores</div>
-          <div class="stat-value">${totalBorradores}</div>
+        <div class="metric-card">
+          <div class="metric-label">Borradores</div>
+          <div class="metric-value">${totalBorradores}</div>
+          <div class="metric-sub">pendientes de emitir</div>
         </div>
       </div>
 
@@ -3139,11 +3142,16 @@ const VFX = {
 
     const linesHtml = () => lines.map((l, i) => `
       <tr data-line="${i}">
-        <td><input type="text" class="line-desc" value="${(l.description||'').replace(/"/g,'&quot;')}" placeholder="Descripción del servicio" ${isIssued?'disabled':''}></td>
-        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:70px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
-        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:90px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
-        <td class="line-total-cell" style="text-align:right;font-weight:600">${this.fmt.currency(l.line_total||0)}</td>
-        ${isIssued ? '<td></td>' : `<td><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
+        <td colspan="4" style="padding-bottom:4px">
+          <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px" ${isIssued?'disabled':''}>${(l.description||'').replace(/</g,'&lt;')}</textarea>
+        </td>
+        <td style="padding-bottom:4px"></td>
+      </tr>
+      <tr data-line="${i}" data-sub="1">
+        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
+        ${isIssued ? '<td></td>' : `<td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
       </tr>
     `).join('');
 
@@ -3204,7 +3212,7 @@ const VFX = {
         <div style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
         <div class="table-wrap" style="margin-bottom:8px">
           <table class="data-table" id="inv-lines-table">
-            <thead><tr><th>Descripción</th><th style="width:80px">Cantidad</th><th style="width:100px">Precio unit.</th><th style="text-align:right;width:110px">Importe</th><th style="width:30px"></th></tr></thead>
+            <thead><tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr></thead>
             <tbody id="inv-lines-body">${linesHtml()}</tbody>
           </table>
         </div>
@@ -3261,9 +3269,15 @@ const VFX = {
       const footerEl = document.createElement('div');
       footerEl.className = 'modal-footer';
       footerEl.innerHTML = `
-        <button class="btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
-        <button class="btn-secondary" onclick="VFX.saveInvoiceDraft()" style="margin-left:auto">Guardar borrador</button>
-        <button class="btn-primary" onclick="VFX.issueInvoice()">Emitir factura</button>
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-ghost" onclick="VFX.saveInvoiceDraft()" style="margin-left:auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar borrador
+        </button>
+        <button class="btn btn-primary" onclick="VFX.issueInvoice()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Emitir factura
+        </button>
       `;
       modalEl.appendChild(footerEl);
     }
@@ -3289,15 +3303,15 @@ const VFX = {
 
   _recalcLine(i) {
     if (!this._invoiceFormLines[i]) return;
-    const rows = document.querySelectorAll('#inv-lines-body tr[data-line]');
-    const row = rows[i];
-    if (!row) return;
-    const qty = parseFloat(row.querySelector('.line-qty')?.value) || 0;
-    const price = parseFloat(row.querySelector('.line-price')?.value) || 0;
+    const descEls  = document.querySelectorAll('#inv-lines-body .line-desc');
+    const qtyEls   = document.querySelectorAll('#inv-lines-body .line-qty');
+    const priceEls = document.querySelectorAll('#inv-lines-body .line-price');
+    const qty   = parseFloat(qtyEls[i]?.value) || 0;
+    const price = parseFloat(priceEls[i]?.value) || 0;
     const total = qty * price;
     this._invoiceFormLines[i] = {
       ...this._invoiceFormLines[i],
-      description: row.querySelector('.line-desc')?.value || '',
+      description: descEls[i]?.value || '',
       quantity: qty, unit_price: price, line_total: total
     };
     const cell = row.querySelector('.line-total-cell');
@@ -3322,24 +3336,31 @@ const VFX = {
     const lines = this._invoiceFormLines;
     body.innerHTML = lines.map((l, i) => `
       <tr data-line="${i}">
-        <td><input type="text" class="line-desc" value="${(l.description||'').replace(/"/g,'&quot;')}" placeholder="Descripción del servicio"></td>
-        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:70px" oninput="VFX._recalcLine(${i})"></td>
-        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:90px" oninput="VFX._recalcLine(${i})"></td>
-        <td class="line-total-cell" style="text-align:right;font-weight:600">${this.fmt.currency(l.line_total||0)}</td>
-        <td><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+        <td colspan="4" style="padding-bottom:4px">
+          <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px">${(l.description||'').replace(/</g,'&lt;')}</textarea>
+        </td>
+        <td style="padding-bottom:4px"></td>
+      </tr>
+      <tr data-line="${i}" data-sub="1">
+        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" oninput="VFX._recalcLine(${i})"></td>
+        <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
+        <td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
       </tr>
     `).join('');
     this._updateInvoiceTotals();
   },
 
   _syncLinesFromDom() {
-    const rows = document.querySelectorAll('#inv-lines-body tr[data-line]');
-    rows.forEach((row, i) => {
+    const descEls = document.querySelectorAll('#inv-lines-body .line-desc');
+    const qtyEls  = document.querySelectorAll('#inv-lines-body .line-qty');
+    const priceEls= document.querySelectorAll('#inv-lines-body .line-price');
+    descEls.forEach((el, i) => {
       if (!this._invoiceFormLines[i]) return;
-      this._invoiceFormLines[i].description = row.querySelector('.line-desc')?.value || '';
-      this._invoiceFormLines[i].quantity = parseFloat(row.querySelector('.line-qty')?.value) || 0;
-      this._invoiceFormLines[i].unit_price = parseFloat(row.querySelector('.line-price')?.value) || 0;
-      this._invoiceFormLines[i].line_total = this._invoiceFormLines[i].quantity * this._invoiceFormLines[i].unit_price;
+      this._invoiceFormLines[i].description = el.value || '';
+      this._invoiceFormLines[i].quantity    = parseFloat(qtyEls[i]?.value) || 0;
+      this._invoiceFormLines[i].unit_price  = parseFloat(priceEls[i]?.value) || 0;
+      this._invoiceFormLines[i].line_total  = this._invoiceFormLines[i].quantity * this._invoiceFormLines[i].unit_price;
     });
   },
 
