@@ -1307,3 +1307,7 @@ tr[data-project-id].row-active td:first-child {
   min-height: 340px;
   padding: 40px 24px;
 }
+
+@media (max-width: 600px) {
+  .planes-grid { grid-template-columns: 1fr !important; }
+}

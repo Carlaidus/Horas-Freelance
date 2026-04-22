@@ -90,7 +90,7 @@ const VFX = {
         <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:24px;font-size:13px;color:var(--text2)">
           Escríbenos a <strong style="color:var(--gold)">carlosvfx@yahoo.es</strong> para activar tu cuenta Pro.
         </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="VFX.closeModal()">Entendido</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="VFX.closeModal();VFX.navigate('planes')">Ver planes</button>
       </div>
     `);
   },
@@ -675,6 +675,7 @@ const VFX = {
     if (view === 'stats') this.renderStats();
     if (view === 'facturas') this.renderFacturas();
     if (view === 'companies') this.renderCompanies();
+    if (view === 'planes') this.renderPlanes();
     if (view === 'settings') this.renderSettings();
   },
 
@@ -745,11 +746,17 @@ const VFX = {
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">PROYECTOS</span>
-          <div class="filter-tabs">
-            <button class="${btnCls('all')}" onclick="VFX.filterDashboard('all')">Todos</button>
-            <button class="${btnCls('pending')}" onclick="VFX.filterDashboard('pending')">En curso</button>
-            <button class="${btnCls('sent')}" onclick="VFX.filterDashboard('sent')">En espera</button>
-            <button class="${btnCls('paid')}" onclick="VFX.filterDashboard('paid')">Cobradas</button>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="filter-tabs">
+              <button class="${btnCls('all')}" onclick="VFX.filterDashboard('all')">Todos</button>
+              <button class="${btnCls('pending')}" onclick="VFX.filterDashboard('pending')">En curso</button>
+              <button class="${btnCls('sent')}" onclick="VFX.filterDashboard('sent')">En espera</button>
+              <button class="${btnCls('paid')}" onclick="VFX.filterDashboard('paid')">Cobradas</button>
+            </div>
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="VFX.modals.newProject()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+              Añadir proyecto
+            </button>
           </div>
         </div>
         ${filtered.length > 0 ? `
@@ -2078,6 +2085,140 @@ const VFX = {
     `;
   },
 
+  // ── PLANES ─────────────────────────────────────────────────
+  renderPlanes() {
+    const el = document.getElementById('view-planes');
+    const isPro = this.isPro();
+    const plan = this.state.plan;
+    const daysLeft = this.state.daysRemaining;
+
+    const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const crossIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+    const proStatusHtml = isPro
+      ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(245,200,66,0.12);color:var(--gold);border:1px solid rgba(245,200,66,0.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin-bottom:16px">
+          ${checkIcon} Plan activo
+          ${daysLeft !== null ? `· ${daysLeft} días restantes` : ''}
+        </div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Planes</div>
+          <div class="page-subtitle">Elige el plan que mejor se adapta a tu trabajo</div>
+        </div>
+      </div>
+
+      <div style="max-width:860px;margin:0 auto;padding:0 4px">
+
+        ${isPro ? `<div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span>Tienes el plan <strong style="color:var(--gold)">Pro</strong> activo${daysLeft !== null ? ` — caduca en <strong style="color:var(--gold)">${daysLeft} días</strong>` : ''}. Gracias por tu apoyo.</span>
+        </div>` : ''}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="planes-grid">
+
+          <!-- FREE -->
+          <div style="background:var(--card);border:1px solid ${!isPro ? 'rgba(150,180,255,0.3)' : 'var(--border)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:0;position:relative">
+            ${!isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;font-size:11px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.05em">TU PLAN ACTUAL</div>` : ''}
+            <div style="margin-bottom:20px">
+              <div style="font-size:13px;font-weight:600;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px">FREE</div>
+              <div style="display:flex;align-items:baseline;gap:4px">
+                <span style="font-size:36px;font-weight:800;color:var(--text)">0€</span>
+                <span style="font-size:13px;color:var(--text3)">/mes</span>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-top:4px">Para empezar sin compromiso</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;flex:1;margin-bottom:24px">
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>1 proyecto activo</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>1 empresa</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>Timer ilimitado</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan)">${checkIcon}</span>Dashboard</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Estadísticas</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Facturas</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Exportar PDF</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text3)"><span style="color:var(--text3)">${crossIcon}</span>Proyectos ilimitados</div>
+            </div>
+            <button class="btn" style="width:100%;justify-content:center;opacity:0.5;cursor:default" disabled>
+              ${!isPro ? 'Plan actual' : 'Plan básico'}
+            </button>
+          </div>
+
+          <!-- PRO -->
+          <div style="background:linear-gradient(135deg,rgba(245,200,66,0.06) 0%,var(--card) 60%);border:1px solid ${isPro ? 'rgba(245,200,66,0.5)' : 'rgba(245,200,66,0.25)'};border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:0;position:relative">
+            ${isPro ? `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:#000;font-size:11px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.05em">TU PLAN ACTUAL</div>` : ''}
+            <div style="margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <div style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:0.08em">PRO</div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:4px">
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span style="font-size:36px;font-weight:800;color:var(--text)">9€</span>
+                  <span style="font-size:13px;color:var(--text3)">/mes</span>
+                </div>
+              </div>
+              <div style="font-size:12px;color:var(--text3)">O elige el periodo que prefieras ↓</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;flex:1;margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Proyectos ilimitados</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Empresas ilimitadas</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Timer ilimitado</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Dashboard completo</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Estadísticas detalladas</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Gestión de facturas</div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)"><span style="color:var(--gold)">${checkIcon}</span>Exportar PDF</div>
+            </div>
+
+            <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.06em;margin-bottom:10px">TARIFAS DISPONIBLES</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                  <span style="color:var(--text2)">Mensual</span>
+                  <span style="color:var(--text);font-weight:600">9€/mes</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                  <span style="color:var(--text2)">Trimestral <span style="font-size:11px;color:var(--green);background:rgba(78,205,196,0.1);padding:1px 5px;border-radius:4px">−11%</span></span>
+                  <span style="color:var(--text);font-weight:600">24€ <span style="color:var(--text3);font-size:11px">(8€/mes)</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                  <span style="color:var(--text2)">Semestral <span style="font-size:11px;color:var(--green);background:rgba(78,205,196,0.1);padding:1px 5px;border-radius:4px">−17%</span></span>
+                  <span style="color:var(--text);font-weight:600">45€ <span style="color:var(--text3);font-size:11px">(7,50€/mes)</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                  <span style="color:var(--text2)">Anual <span style="font-size:11px;color:var(--gold);background:rgba(245,200,66,0.1);padding:1px 5px;border-radius:4px">−22%</span></span>
+                  <span style="color:var(--text);font-weight:600">85€ <span style="color:var(--text3);font-size:11px">(7,08€/mes)</span></span>
+                </div>
+                <div style="height:1px;background:var(--border);margin:2px 0"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                  <span style="color:var(--text2)">Vitalicio <span style="font-size:11px;color:var(--gold);background:rgba(245,200,66,0.1);padding:1px 5px;border-radius:4px">Pago único</span></span>
+                  <span style="color:var(--gold);font-weight:700">200€</span>
+                </div>
+              </div>
+            </div>
+
+            ${isPro
+              ? `<button class="btn" style="width:100%;justify-content:center;opacity:0.5;cursor:default" disabled>Plan activo</button>`
+              : `<a href="mailto:carlosvfx@yahoo.es?subject=Activar%20Plan%20Pro%20VFX%20Hours&body=Hola%2C%20me%20gustar%C3%ADa%20activar%20el%20plan%20Pro.%0A%0APlan%20elegido%3A%20" class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Activar Pro — escribir al admin
+                </a>`
+            }
+          </div>
+
+        </div>
+
+        <div style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;font-size:13px;color:var(--text2);line-height:1.6">
+          <strong style="color:var(--text)">¿Cómo funciona la activación?</strong><br>
+          Envíanos un email indicando el plan elegido. Tras recibir el pago, activamos tu cuenta Pro manualmente y te confirmamos la fecha de expiración. El proceso suele tardar menos de 24 horas.
+        </div>
+
+      </div>
+    `;
+  },
+
   // ── SETTINGS ───────────────────────────────────────────────
   renderSettings() {
     const u = this.state.user;
@@ -2240,6 +2381,10 @@ const VFX = {
     },
 
     newProject() {
+      if (!VFX.isPro() && VFX.state.projects.length >= 1) {
+        VFX.showUpgradeModal('projects');
+        return;
+      }
       const companies = VFX.state.companies;
       const companyOptions = companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
