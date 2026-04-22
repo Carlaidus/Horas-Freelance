@@ -194,8 +194,8 @@
     <div class="section-title">Usuarios registrados</div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Usuario</th><th>Plan</th><th>Días restantes</th><th>Expira el</th><th>Cambiar plan</th><th>Añadir tiempo</th></tr></thead>
-        <tbody id="users-tbody"><tr><td colspan="6" class="empty">Cargando...</td></tr></tbody>
+        <thead><tr><th>Usuario</th><th>Plan</th><th>Días restantes</th><th>Expira el</th><th>Cambiar plan</th></tr></thead>
+        <tbody id="users-tbody"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -405,9 +405,24 @@ function renderTopUsers() {
   `).join('') : '<tr><td colspan="5" class="empty">Sin datos aún</td></tr>';
 }
 
+function getPlanKey(u) {
+  if (!u.plan || u.plan === 'free') return 'free';
+  if (u.plan === 'pro') {
+    switch (u.plan_period) {
+      case 'quarterly': return 'pro_trimestral';
+      case 'semi':      return 'pro_semestral';
+      case 'annual':    return 'pro_anual';
+      case 'lifetime':  return 'pro_vitalicio';
+      default:          return 'pro_mensual';
+    }
+  }
+  return 'free';
+}
+
 function renderUsersTab() {
   const tbody = document.getElementById('users-tbody');
-  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay usuarios</td></tr>'; return; }
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay usuarios</td></tr>'; return; }
+  const today = new Date().toISOString().split('T')[0];
   tbody.innerHTML = users.map(u => `
     <tr>
       <td><div class="user-name">${u.name || '(sin nombre)'}</div><div class="user-email">${u.email || '—'}</div></td>
@@ -415,33 +430,24 @@ function renderUsersTab() {
       <td>${daysHtml(u)}</td>
       <td class="mono dim">${u.plan_expires_at || '—'}</td>
       <td>${u.role === 'admin' ? '<span style="color:var(--text3);font-size:12px">—</span>' : `
-        <div class="plan-controls">
-          <select id="plan-${u.id}">
-            <option value="free"  ${u.plan==='free'?'selected':''}>Free</option>
-            <option value="basic" ${u.plan==='basic'?'selected':''}>Básico</option>
-            <option value="pro"   ${u.plan==='pro'?'selected':''}>Pro</option>
+        <div class="plan-controls" style="flex-wrap:nowrap;gap:6px">
+          <select id="plankey-${u.id}" onchange="calcEndDate(${u.id})" style="min-width:130px">
+            <option value="free"          ${getPlanKey(u)==='free'?'selected':''}>Free</option>
+            <option value="pro_mensual"   ${getPlanKey(u)==='pro_mensual'?'selected':''}>Pro Mensual</option>
+            <option value="pro_trimestral"${getPlanKey(u)==='pro_trimestral'?'selected':''}>Pro Trimestral</option>
+            <option value="pro_semestral" ${getPlanKey(u)==='pro_semestral'?'selected':''}>Pro Semestral</option>
+            <option value="pro_anual"     ${getPlanKey(u)==='pro_anual'?'selected':''}>Pro Anual</option>
+            <option value="pro_vitalicio" ${getPlanKey(u)==='pro_vitalicio'?'selected':''}>Pro Vitalicio</option>
           </select>
-          <select id="period-${u.id}" style="font-size:11px">
-            <option value="" ${!u.plan_period?'selected':''}>— periodo —</option>
-            <option value="quarterly" ${u.plan_period==='quarterly'?'selected':''}>Trimestral</option>
-            <option value="semi"      ${u.plan_period==='semi'?'selected':''}>Semestral</option>
-            <option value="annual"    ${u.plan_period==='annual'?'selected':''}>Anual</option>
-            <option value="lifetime"  ${u.plan_period==='lifetime'?'selected':''}>Vitalicio</option>
-          </select>
-          <input type="date" id="expires-${u.id}" value="${u.plan_expires_at||''}">
+          <input type="date" id="start-${u.id}" value="${today}" onchange="calcEndDate(${u.id})" style="width:120px">
+          <input type="date" id="end-${u.id}" value="${u.plan_expires_at||''}" readonly style="width:120px;opacity:0.6;cursor:default">
           <button class="btn btn-primary btn-sm" onclick="savePlan(${u.id})">Guardar</button>
-        </div>`}
-      </td>
-      <td>${u.role === 'admin' ? '' : `
-        <div class="quick-btns">
-          <button class="btn btn-ghost btn-sm" onclick="addDaysToExpiry(${u.id},1)">+1m</button>
-          <button class="btn btn-ghost btn-sm" onclick="addDaysToExpiry(${u.id},3)">+3m</button>
-          <button class="btn btn-ghost btn-sm" onclick="addDaysToExpiry(${u.id},6)">+6m</button>
-          <button class="btn btn-ghost btn-sm" onclick="addDaysToExpiry(${u.id},12)">+1a</button>
         </div>`}
       </td>
     </tr>
   `).join('');
+  // Calcular fecha fin para los usuarios que ya tienen plan seleccionado
+  users.filter(u => u.role !== 'admin').forEach(u => calcEndDate(u.id));
 }
 
 function renderActivityTab() {
@@ -517,18 +523,41 @@ function daysHtml(u) {
   if (u.days_remaining<=7) return `<span class="days-warn">${u.days_remaining}d</span>`;
   return `<span class="days-ok">${u.days_remaining}d</span>`;
 }
-function addDaysToExpiry(userId, months) {
-  const u = users.find(u => u.id === userId);
-  if (!u) return;
-  const base = (u.plan_expires_at && new Date(u.plan_expires_at) > new Date()) ? new Date(u.plan_expires_at) : new Date();
-  base.setMonth(base.getMonth() + months);
-  document.getElementById(`expires-${userId}`).value = base.toISOString().split('T')[0];
+const PLAN_MAP = {
+  free:          { plan: 'free', period: null },
+  pro_mensual:   { plan: 'pro',  period: null },
+  pro_trimestral:{ plan: 'pro',  period: 'quarterly' },
+  pro_semestral: { plan: 'pro',  period: 'semi' },
+  pro_anual:     { plan: 'pro',  period: 'annual' },
+  pro_vitalicio: { plan: 'pro',  period: 'lifetime' },
+};
+const PLAN_MONTHS = { pro_mensual: 1, pro_trimestral: 3, pro_semestral: 6, pro_anual: 12 };
+
+function calcEndDate(userId) {
+  const planKey = document.getElementById(`plankey-${userId}`)?.value;
+  const startVal = document.getElementById(`start-${userId}`)?.value;
+  const endEl = document.getElementById(`end-${userId}`);
+  if (!endEl) return;
+  if (!startVal || planKey === 'free' || planKey === 'pro_vitalicio') {
+    endEl.value = '';
+    return;
+  }
+  const months = PLAN_MONTHS[planKey];
+  if (!months) return;
+  const d = new Date(startVal + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  endEl.value = d.toISOString().split('T')[0];
 }
+
 async function savePlan(userId) {
-  const plan = document.getElementById(`plan-${userId}`).value;
-  const expires_at = document.getElementById(`expires-${userId}`).value || null;
-  const period = document.getElementById(`period-${userId}`)?.value || null;
-  const res = await fetch(`/admin/api/users/${userId}/plan`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({plan, expires_at, period: period || null}) });
+  const planKey = document.getElementById(`plankey-${userId}`).value;
+  const expires_at = document.getElementById(`end-${userId}`).value || null;
+  const { plan, period } = PLAN_MAP[planKey] || { plan: 'free', period: null };
+  const res = await fetch(`/admin/api/users/${userId}/plan`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, expires_at, period })
+  });
   if (res.ok) { showToast(); await load(); }
 }
 function showToast() {
