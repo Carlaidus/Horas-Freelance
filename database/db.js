@@ -487,10 +487,8 @@ const issueInvoice = (id, userId) => {
 };
 
 const deleteInvoiceDraft = (id) => {
-  const inv = db.prepare("SELECT status FROM invoices WHERE id = ?").get(id);
-  if (inv?.status === 'issued') throw new Error('No se puede eliminar una factura emitida');
   db.prepare("DELETE FROM invoice_lines WHERE invoice_id = ?").run(id);
-  db.prepare("DELETE FROM invoices WHERE id = ? AND status = 'draft'").run(id);
+  db.prepare("DELETE FROM invoices WHERE id = ?").run(id);
 };
 
 const setInvoiceLines = (invoiceId, lines) => {
