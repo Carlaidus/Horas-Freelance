@@ -380,9 +380,14 @@ const VFX = {
       this.navigate('dashboard');
     }
 
-    // Polling cada 30s para sincronizar timers entre dispositivos
+    // Polling cada 15s para sincronizar timers entre dispositivos
     if (this._syncPollInterval) clearInterval(this._syncPollInterval);
-    this._syncPollInterval = setInterval(() => this._syncTimersFromServer(), 30000);
+    this._syncPollInterval = setInterval(() => this._syncTimersFromServer(), 15000);
+
+    // Sync inmediato al recuperar el foco (cambio de pestaña, desbloqueo de pantalla)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this._syncTimersFromServer();
+    });
 
     document.addEventListener('click', () => {
       document.querySelectorAll('[id^="status-dd-"]').forEach(d => d.style.display = 'none');
