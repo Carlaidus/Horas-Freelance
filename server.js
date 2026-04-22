@@ -26,7 +26,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'vfxhours-local-dev-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 días
+  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
 // ── AUTH MIDDLEWARE ────────────────────────────────────────────
@@ -34,67 +34,79 @@ const getUserId = (req) => req.session.userId || 1;
 
 const getEffectivePlan = (user) => {
   if (!user) return 'free';
-  if (user.role === 'admin') return user.plan || 'pro';
+  if (user.role === 'admin') return 'pro';
   if (!user.plan || user.plan === 'free') return 'free';
-  if (!user.plan_expires_at) return user.plan;
-  return new Date(user.plan_expires_at) >= new Date() ? user.plan : 'free';
+  if (user.plan_expires_at && new Date(user.plan_expires_at) < new Date()) return 'free';
+  return user.plan;
 };
 
 const getDaysRemaining = (user) => {
   if (!user || user.role === 'admin' || !user.plan_expires_at || user.plan === 'free') return null;
-  return Math.ceil((new Date(user.plan_expires_at) - new Date()) / 86400000);
+  const diff = Math.ceil((new Date(user.plan_expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+  return diff;
 };
 
-const requireAdmin = (req, res, next) => {
-  const user = db.getUser(getUserId(req));
-  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Acceso denegado' });
-  next();
+const requireAdmin = async (req, res, next) => {
+  try {
+    const user = await db.getUser(getUserId(req));
+    if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Acceso denegado' });
+    next();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 };
 
 app.use((req, res, next) => {
-  const isPublic = req.path === '/login.html' || req.path === '/reset-password.html' || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/') || req.path.startsWith('/js/');
+  const isPublic = req.path === '/login.html' || req.path === '/reset-password.html'
+    || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/')
+    || req.path.startsWith('/js/');
   if (!REQUIRE_AUTH || isPublic || req.session.userId) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado' });
   res.redirect('/login.html');
 });
 
 // ── AUTH ROUTES ────────────────────────────────────────────────
-app.get('/api/auth/me', (req, res) => {
-  const user = req.session.userId ? db.getUser(req.session.userId) : null;
-  const effectivePlan = getEffectivePlan(user);
-  const daysRemaining = getDaysRemaining(user);
-  res.json({
-    userId: req.session.userId || null,
-    requireAuth: REQUIRE_AUTH,
-    authenticated: !!req.session.userId,
-    role: user?.role || 'user',
-    plan: effectivePlan,
-    daysRemaining
-  });
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const user = req.session.userId ? await db.getUser(req.session.userId) : null;
+    res.json({
+      userId: req.session.userId || null,
+      requireAuth: REQUIRE_AUTH,
+      authenticated: !!req.session.userId,
+      role: user?.role || 'user',
+      plan: getEffectivePlan(user),
+      daysRemaining: getDaysRemaining(user)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/auth/has-users', (req, res) => {
-  res.json({ hasUsers: db.countUsers() > 0 });
+app.get('/api/auth/has-users', async (req, res) => {
+  try { res.json({ hasUsers: await db.countUsers() > 0 }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/auth/register', (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
-  if (db.findUserByEmail(email)) return res.status(400).json({ error: 'Ese email ya está registrado' });
-  const hash = bcrypt.hashSync(password, 10);
-  const userId = db.createAuthUser({ name, email, password_hash: hash });
-  req.session.userId = userId;
-  res.json({ success: true });
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
+    if (await db.findUserByEmail(email)) return res.status(400).json({ error: 'Ese email ya está registrado' });
+    const hash = bcrypt.hashSync(password, 10);
+    const userId = await db.createAuthUser({ name, email, password_hash: hash });
+    req.session.userId = userId;
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  const user = db.findUserByEmail(email);
-  if (!user || !user.password_hash) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-  if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-  req.session.userId = user.id;
-  res.json({ success: true });
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await db.findUserByEmail(email);
+    if (!user || !user.password_hash) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    req.session.userId = user.id;
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -102,271 +114,378 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Falta el email' });
-  const user = db.findUserByEmail(email);
-  // Always return success to avoid user enumeration
-  if (!user) return res.json({ success: true });
-  if (!resend) return res.status(503).json({ error: 'Servicio de email no configurado' });
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Falta el email' });
+    const user = await db.findUserByEmail(email);
+    if (!user) return res.json({ success: true });
+    if (!resend) return res.status(503).json({ error: 'Servicio de email no configurado' });
 
-  db.deleteExpiredTokens();
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
-  db.createResetToken(user.id, token, expiresAt);
+    await db.deleteExpiredTokens();
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    await db.createResetToken(user.id, token, expiresAt);
 
-  const resetUrl = `${APP_URL}/reset-password.html?token=${token}`;
-  await resend.emails.send({
-    from: FROM_EMAIL,
-    to: email,
-    subject: 'Restablecer contraseña — VFX Hours',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#06060f;color:#dde0f5;padding:32px;border-radius:12px">
-        <h2 style="color:#f5c842;margin-bottom:16px">VFX Hours Tracker</h2>
-        <p style="margin-bottom:24px">Hola ${user.name || 'compositor'},<br><br>
-        Recibimos una solicitud para restablecer tu contraseña.</p>
-        <a href="${resetUrl}" style="display:inline-block;background:#f5c842;color:#000;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none">Restablecer contraseña</a>
-        <p style="margin-top:24px;color:#555580;font-size:12px">Este enlace caduca en 1 hora. Si no solicitaste esto, ignora este email.</p>
-      </div>
-    `
-  });
-  res.json({ success: true });
+    const resetUrl = `${APP_URL}/reset-password.html?token=${token}`;
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Restablecer contraseña — VFX Hours',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#06060f;color:#dde0f5;padding:32px;border-radius:12px">
+          <h2 style="color:#f5c842;margin-bottom:16px">VFX Hours Tracker</h2>
+          <p style="margin-bottom:24px">Hola ${user.name || 'compositor'},<br><br>
+          Recibimos una solicitud para restablecer tu contraseña.</p>
+          <a href="${resetUrl}" style="display:inline-block;background:#f5c842;color:#000;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none">Restablecer contraseña</a>
+          <p style="margin-top:24px;color:#555580;font-size:12px">Este enlace caduca en 1 hora. Si no solicitaste esto, ignora este email.</p>
+        </div>
+      `
+    });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/auth/reset-password', (req, res) => {
-  const { token, password } = req.body;
-  if (!token || !password) return res.status(400).json({ error: 'Faltan datos' });
-  if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
-  const record = db.findResetToken(token);
-  if (!record) return res.status(400).json({ error: 'Enlace inválido o caducado' });
-  const hash = bcrypt.hashSync(password, 10);
-  db.updatePassword(record.user_id, hash);
-  db.deleteResetToken(token);
-  res.json({ success: true });
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Faltan datos' });
+    if (!PASSWORD_REGEX.test(password)) return res.status(400).json({ error: PASSWORD_HINT });
+    const record = await db.findResetToken(token);
+    if (!record) return res.status(400).json({ error: 'Enlace inválido o caducado' });
+    const hash = bcrypt.hashSync(password, 10);
+    await db.updatePassword(record.user_id, hash);
+    await db.deleteResetToken(token);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── USER ──────────────────────────────────────────────────────
-app.get('/api/user', (req, res) => res.json(db.getUser(getUserId(req)) || {}));
-app.put('/api/user', (req, res) => {
-  db.saveUser({ id: getUserId(req), ...req.body });
-  res.json({ success: true });
+app.get('/api/user', async (req, res) => {
+  try { res.json(await db.getUser(getUserId(req)) || {}); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/user', async (req, res) => {
+  try { await db.saveUser({ id: getUserId(req), ...req.body }); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── COMPANIES ─────────────────────────────────────────────────
-app.get('/api/companies', (req, res) => res.json(db.getCompanies(getUserId(req))));
-app.post('/api/companies', (req, res) => res.json({ id: db.createCompany({ user_id: getUserId(req), ...req.body }) }));
-app.put('/api/companies/:id', (req, res) => { db.updateCompany(+req.params.id, req.body); res.json({ success: true }); });
-app.delete('/api/companies/:id', (req, res) => { db.deleteCompany(+req.params.id); res.json({ success: true }); });
+app.get('/api/companies', async (req, res) => {
+  try { res.json(await db.getCompanies(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/companies', async (req, res) => {
+  try { res.json({ id: await db.createCompany({ user_id: getUserId(req), ...req.body }) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/companies/:id', async (req, res) => {
+  try { await db.updateCompany(+req.params.id, req.body); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/companies/:id', async (req, res) => {
+  try { await db.deleteCompany(+req.params.id); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── PROJECTS ──────────────────────────────────────────────────
-const ownProject = (req, res) => {
-  const p = db.getProject(+req.params.id);
-  if (!p || p.user_id !== getUserId(req)) { res.status(404).json({ error: 'No encontrado' }); return null; }
+const ownProject = async (req, res) => {
+  const p = await db.getProject(+req.params.id);
+  if (!p || p.user_id !== getUserId(req)) {
+    res.status(404).json({ error: 'No encontrado' });
+    return null;
+  }
   return p;
 };
-app.get('/api/projects', (req, res) => res.json(db.getProjects(getUserId(req))));
-app.get('/api/projects/:id', (req, res) => { const p = ownProject(req, res); if (p) res.json(p); });
-app.post('/api/projects', (req, res) => res.json({ id: db.createProject({ user_id: getUserId(req), ...req.body }) }));
-app.put('/api/projects/:id', (req, res) => { if (!ownProject(req, res)) return; db.updateProject(+req.params.id, req.body); res.json({ success: true }); });
-app.delete('/api/projects/:id', (req, res) => { if (!ownProject(req, res)) return; db.deleteProject(+req.params.id); res.json({ success: true }); });
+
+app.get('/api/projects', async (req, res) => {
+  try { res.json(await db.getProjects(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  try { const p = await ownProject(req, res); if (p) res.json(p); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/projects', async (req, res) => {
+  try { res.json({ id: await db.createProject({ user_id: getUserId(req), ...req.body }) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+  try {
+    if (!await ownProject(req, res)) return;
+    await db.updateProject(+req.params.id, req.body);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    if (!await ownProject(req, res)) return;
+    await db.deleteProject(+req.params.id);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── ENTRIES ───────────────────────────────────────────────────
-app.get('/api/projects/:id/entries', (req, res) => { if (!ownProject(req, res)) return; res.json(db.getEntries(+req.params.id)); });
-app.post('/api/entries', (req, res) => res.json({ id: db.createEntry({ user_id: getUserId(req), ...req.body }) }));
-app.put('/api/entries/:id', (req, res) => { db.updateEntry(+req.params.id, req.body); res.json({ success: true }); });
-app.delete('/api/entries/:id', (req, res) => { db.deleteEntry(+req.params.id); res.json({ success: true }); });
+app.get('/api/projects/:id/entries', async (req, res) => {
+  try {
+    if (!await ownProject(req, res)) return;
+    res.json(await db.getEntries(+req.params.id));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/entries', async (req, res) => {
+  try { res.json({ id: await db.createEntry({ user_id: getUserId(req), ...req.body }) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/entries/:id', async (req, res) => {
+  try { await db.updateEntry(+req.params.id, req.body); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/entries/:id', async (req, res) => {
+  try { await db.deleteEntry(+req.params.id); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── ANALYTICS ─────────────────────────────────────────────────
-app.post('/api/track', (req, res) => {
-  const { event, metadata } = req.body;
-  if (event) db.createEvent(getUserId(req), event, metadata);
-  res.json({ ok: true });
+app.post('/api/track', async (req, res) => {
+  try {
+    const { event, metadata } = req.body;
+    if (event) await db.createEvent(getUserId(req), event, metadata);
+    res.json({ ok: true });
+  } catch (_) { res.json({ ok: true }); }
 });
 
-app.get('/admin/api/events', requireAdmin, (req, res) => {
-  res.json({ stats: db.getEventStats(), recent: db.getRecentEvents(100) });
+app.get('/admin/api/events', requireAdmin, async (req, res) => {
+  try { res.json({ stats: await db.getEventStats(), recent: await db.getRecentEvents(100) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/admin/api/analytics', requireAdmin, (req, res) => {
-  res.json({
-    totals: db.getAppTotals(),
-    eventsPerDay: db.getEventsPerDay(30),
-    dailyActiveUsers: db.getDailyActiveUsers(30),
-    eventsByHour: db.getEventsByHour(),
-    newUsersPerMonth: db.getNewUsersPerMonth(),
-    topUsers: db.getTopUsersByActivity(10),
-    eventStats: db.getEventStats(),
-    recentEvents: db.getRecentEvents(500)
-  });
+app.get('/admin/api/analytics', requireAdmin, async (req, res) => {
+  try {
+    const [totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents] = await Promise.all([
+      db.getAppTotals(),
+      db.getEventsPerDay(30),
+      db.getDailyActiveUsers(30),
+      db.getEventsByHour(),
+      db.getNewUsersPerMonth(),
+      db.getTopUsersByActivity(10),
+      db.getEventStats(),
+      db.getRecentEvents(500)
+    ]);
+    res.json({ totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── TIMERS ────────────────────────────────────────────────────
-app.get('/api/timers', (req, res) => {
-  res.json(db.getActiveTimers(getUserId(req)));
+app.get('/api/timers', async (req, res) => {
+  try { res.json(await db.getActiveTimers(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/timers/:projectId/start', (req, res) => {
-  const userId = getUserId(req);
-  const projectId = +req.params.projectId;
-  const started_at = req.body.started_at || new Date().toISOString();
-  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds: 0 });
-  res.json({ started_at });
+app.post('/api/timers/:projectId/start', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const projectId = +req.params.projectId;
+    const started_at = req.body.started_at || new Date().toISOString();
+    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds: 0 });
+    res.json({ started_at });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/timers/:projectId/pause', (req, res) => {
-  const userId = getUserId(req);
-  const projectId = +req.params.projectId;
-  const { accumulated_seconds = 0 } = req.body;
-  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 1, started_at: null, accumulated_seconds });
-  res.json({ success: true });
+app.post('/api/timers/:projectId/pause', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const projectId = +req.params.projectId;
+    const { accumulated_seconds = 0 } = req.body;
+    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 1, started_at: null, accumulated_seconds });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/timers/:projectId/resume', (req, res) => {
-  const userId = getUserId(req);
-  const projectId = +req.params.projectId;
-  const { accumulated_seconds = 0 } = req.body;
-  const started_at = new Date().toISOString();
-  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds });
-  res.json({ started_at });
+app.post('/api/timers/:projectId/resume', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const projectId = +req.params.projectId;
+    const { accumulated_seconds = 0 } = req.body;
+    const started_at = new Date().toISOString();
+    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds });
+    res.json({ started_at });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/timers/:projectId', (req, res) => {
-  db.clearTimer(getUserId(req), +req.params.projectId);
-  res.json({ success: true });
+app.delete('/api/timers/:projectId', async (req, res) => {
+  try { await db.clearTimer(getUserId(req), +req.params.projectId); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── STATS ─────────────────────────────────────────────────────
-app.get('/api/stats/monthly', (req, res) => {
-  const { from, to, group } = req.query;
-  if (from && to) return res.json(db.getMonthlyStatsRange(getUserId(req), from, to, group || 'month'));
-  res.json(db.getMonthlyStats(getUserId(req)));
+app.get('/api/stats/monthly', async (req, res) => {
+  try {
+    const { from, to, group } = req.query;
+    if (from && to) return res.json(await db.getMonthlyStatsRange(getUserId(req), from, to, group || 'month'));
+    res.json(await db.getMonthlyStats(getUserId(req)));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/stats/heatmap', (req, res) => res.json(db.getHeatmapData(getUserId(req))));
-app.get('/api/stats/clients', (req, res) => {
-  const { from, to } = req.query;
-  if (from && to) return res.json(db.getClientStatsRange(getUserId(req), from, to));
-  res.json(db.getClientStats(getUserId(req)));
+
+app.get('/api/stats/heatmap', async (req, res) => {
+  try { res.json(await db.getHeatmapData(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/stats/summary', (req, res) => {
-  const { from, to } = req.query;
-  if (from && to) return res.json(db.getSummaryRange(getUserId(req), from, to));
-  res.json(db.getYearlySummary(getUserId(req)));
+
+app.get('/api/stats/clients', async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (from && to) return res.json(await db.getClientStatsRange(getUserId(req), from, to));
+    res.json(await db.getClientStats(getUserId(req)));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
-app.get('/api/stats/project/:id', (req, res) => res.json(db.getProjectStatsDetail(+req.params.id)));
-app.get('/api/stats/treasury', (req, res) => res.json(db.getTreasuryData(getUserId(req))));
+
+app.get('/api/stats/summary', async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (from && to) return res.json(await db.getSummaryRange(getUserId(req), from, to));
+    res.json(await db.getYearlySummary(getUserId(req)));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/stats/project/:id', async (req, res) => {
+  try { res.json(await db.getProjectStatsDetail(+req.params.id)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/stats/treasury', async (req, res) => {
+  try { res.json(await db.getTreasuryData(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── INVOICES ──────────────────────────────────────────────────
-app.get('/api/invoices', (req, res) => res.json(db.getInvoices(getUserId(req))));
-app.get('/api/invoices/next-number', (req, res) => res.json({ number: db.getNextInvoiceNumber(getUserId(req)) }));
-
-app.get('/api/invoices/:id', (req, res) => {
-  const invoice = db.getInvoice(+req.params.id);
-  if (!invoice) return res.status(404).json({ error: 'No encontrada' });
-  const lines = db.getInvoiceLines(invoice.id);
-  res.json({ ...invoice, lines });
+app.get('/api/invoices', async (req, res) => {
+  try { res.json(await db.getInvoices(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/invoices', (req, res) => {
-  const { lines = [], ...data } = req.body;
-  const id = db.createInvoice({ user_id: getUserId(req), ...data });
-  if (lines.length) db.setInvoiceLines(id, lines);
-  res.json({ id });
+app.get('/api/invoices/next-number', async (req, res) => {
+  try { res.json({ number: await db.getNextInvoiceNumber(getUserId(req)) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.put('/api/invoices/:id', (req, res) => {
+app.get('/api/invoices/:id', async (req, res) => {
+  try {
+    const invoice = await db.getInvoice(+req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'No encontrada' });
+    const lines = await db.getInvoiceLines(invoice.id);
+    res.json({ ...invoice, lines });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/invoices', async (req, res) => {
   try {
     const { lines = [], ...data } = req.body;
-    db.updateInvoice(+req.params.id, data);
-    db.setInvoiceLines(+req.params.id, lines);
+    const id = await db.createInvoice({ user_id: getUserId(req), ...data });
+    if (lines.length) await db.setInvoiceLines(id, lines);
+    res.json({ id });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/invoices/:id', async (req, res) => {
+  try {
+    const { lines = [], ...data } = req.body;
+    await db.updateInvoice(+req.params.id, data);
+    await db.setInvoiceLines(+req.params.id, lines);
     res.json({ success: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-app.post('/api/invoices/:id/issue', (req, res) => {
+app.post('/api/invoices/:id/issue', async (req, res) => {
   try {
-    const invoice = db.issueInvoice(+req.params.id, getUserId(req));
+    const invoice = await db.issueInvoice(+req.params.id, getUserId(req));
     res.json(invoice);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-app.delete('/api/invoices/:id', (req, res) => {
-  try {
-    db.deleteInvoiceDraft(+req.params.id);
-    res.json({ success: true });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+app.delete('/api/invoices/:id', async (req, res) => {
+  try { await db.deleteInvoiceDraft(+req.params.id); res.json({ success: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-app.get('/api/invoices/:id/pdf', (req, res) => {
+app.get('/api/invoices/:id/pdf', async (req, res) => {
   try {
-    const invoice = db.getInvoice(+req.params.id);
+    const invoice = await db.getInvoice(+req.params.id);
     if (!invoice) return res.status(404).json({ error: 'No encontrada' });
-    const lines = db.getInvoiceLines(invoice.id);
+    const lines = await db.getInvoiceLines(invoice.id);
     generateInvoicePdf(invoice, lines, res);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── PROJECT REPORT PDF ────────────────────────────────────────
-app.get('/api/projects/:id/report', (req, res) => {
+app.get('/api/projects/:id/report', async (req, res) => {
   try {
-    const project = db.getProject(+req.params.id);
+    const project = await db.getProject(+req.params.id);
     if (!project) return res.status(404).json({ error: 'No encontrado' });
-    const entries = db.getEntries(+req.params.id);
-    const user = db.getUser(getUserId(req));
+    const entries = await db.getEntries(+req.params.id);
+    const user = await db.getUser(getUserId(req));
     generateProjectReportPdf(project, entries, user, res);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── EXPORT ────────────────────────────────────────────────────
-app.get('/api/projects/:id/export', (req, res) => {
-  const project = db.getProject(+req.params.id);
-  const entries = db.getEntries(+req.params.id);
-  const user = db.getUser(getUserId(req));
-  res.json({ project, entries, user });
+app.get('/api/projects/:id/export', async (req, res) => {
+  try {
+    const project = await db.getProject(+req.params.id);
+    const entries = await db.getEntries(+req.params.id);
+    const user = await db.getUser(getUserId(req));
+    res.json({ project, entries, user });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── ADMIN ─────────────────────────────────────────────────────
-app.get('/admin', (req, res) => {
-  const user = req.session.userId ? db.getUser(req.session.userId) : null;
-  if (!user || user.role !== 'admin') return res.redirect('/');
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+app.get('/admin', async (req, res) => {
+  try {
+    const user = req.session.userId ? await db.getUser(req.session.userId) : null;
+    if (!user || user.role !== 'admin') return res.redirect('/');
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  } catch (e) { res.redirect('/'); }
 });
 
-app.get('/admin/api/users', requireAdmin, (req, res) => {
-  const users = db.getAllUsers().map(u => ({
-    ...u,
-    effective_plan: getEffectivePlan(u),
-    days_remaining: getDaysRemaining(u)
-  }));
-  res.json(users);
+app.get('/admin/api/users', requireAdmin, async (req, res) => {
+  try {
+    const users = (await db.getAllUsers()).map(u => ({
+      ...u,
+      effective_plan: getEffectivePlan(u),
+      days_remaining: getDaysRemaining(u)
+    }));
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.put('/admin/api/users/:id/plan', requireAdmin, (req, res) => {
-  const { plan, expires_at } = req.body;
-  if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
-  db.setUserPlan(+req.params.id, plan, expires_at || null);
-  res.json({ success: true });
-});
-
-// ── EXPORT TEMPORAL (SQLite → PostgreSQL) ─────────────────────
-// ELIMINAR este endpoint tras completar la migración
-app.get('/admin/export-sqlite', requireAdmin, (req, res) => {
-  const Database = require('better-sqlite3');
-  const dbPath = process.env.DB_PATH || require('path').join(__dirname, 'database', 'tracker.db');
-  const raw = new Database(dbPath, { readonly: true });
-  const tables = ['users','companies','projects','entries','invoice_series','invoices','invoice_lines','reset_tokens','timers','events'];
-  const dump = {};
-  for (const t of tables) {
-    try { dump[t] = raw.prepare(`SELECT * FROM ${t}`).all(); } catch(_) { dump[t] = []; }
-  }
-  raw.close();
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Content-Disposition', 'attachment; filename="sqlite-export.json"');
-  res.json(dump);
+app.put('/admin/api/users/:id/plan', requireAdmin, async (req, res) => {
+  try {
+    const { plan, expires_at } = req.body;
+    if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
+    await db.setUserPlan(+req.params.id, plan, expires_at || null);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.listen(PORT, () => {
-  console.log(`\n🎬  FreelanceVFX Tracker`);
-  console.log(`    http://localhost:${PORT}`);
-  console.log(`    Auth: ${REQUIRE_AUTH ? '🔐 ACTIVA' : '🔓 local (sin login)'}\n`);
+// ── BOOT ──────────────────────────────────────────────────────
+db.init().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n🎬  FreelanceVFX Tracker`);
+    console.log(`    http://localhost:${PORT}`);
+    console.log(`    Auth: ${REQUIRE_AUTH ? '🔐 ACTIVA' : '🔓 local (sin login)'}\n`);
+  });
+}).catch(err => {
+  console.error('Database init failed:', err);
+  process.exit(1);
 });
