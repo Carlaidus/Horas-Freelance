@@ -511,7 +511,7 @@ const VFX = {
       const isAdmin = this.state.role === 'admin';
       if (!isAdmin && days !== null) {
         const color = days <= 7 ? '#ff5576' : days <= 15 ? '#ff9f43' : 'var(--text3)';
-        const msg   = days <= 0 ? 'Suscripción expirada' : `Suscripción termina en ${days} día${days === 1 ? '' : 's'}`;
+        const msg   = days <= 0 ? 'Suscripción expirada' : `Expira en ${days} día${days === 1 ? '' : 's'}`;
         expiryEl.style.cssText = `display:block;margin-top:6px;font-size:10px;color:${color};white-space:normal;line-height:1.3;width:100%`;
         expiryEl.textContent = msg;
       } else {
