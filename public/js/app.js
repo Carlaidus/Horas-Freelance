@@ -110,16 +110,11 @@ const VFX = {
     btnEl.disabled = true;
     btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>&nbsp;Enviando...`;
     try {
-      const res = await this.api.post('/api/contact/upgrade', { plan, price, period });
-      btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;¡Solicitud enviada!`;
-      btnEl.style.background = 'var(--green)';
-      btnEl.style.borderColor = 'var(--green)';
-      setTimeout(() => {
-        btnEl.innerHTML = original;
-        btnEl.disabled = false;
-        btnEl.style.background = '';
-        btnEl.style.borderColor = '';
-      }, 4000);
+      await this.api.post('/api/contact/upgrade', { plan, price, period });
+      // Guardar estado en localStorage para persistir entre páginas
+      localStorage.setItem(this._lsKey('vfx_upgrade_requested'), JSON.stringify({ plan, price, period, ts: Date.now() }));
+      this.updateSidebarUser();
+      this.renderPlanes();
     } catch (e) {
       btnEl.innerHTML = original;
       btnEl.disabled = false;
@@ -612,6 +607,21 @@ const VFX = {
       } else {
         expiryEl.style.display = 'none';
       }
+    }
+    // Badge "Activación en marcha" si hay solicitud pendiente
+    let upgradeEl = document.getElementById('sidebar-upgrade-pending');
+    const upgradeData = !this.isPro() ? localStorage.getItem(this._lsKey('vfx_upgrade_requested')) : null;
+    if (upgradeData) {
+      if (!upgradeEl) {
+        upgradeEl = document.createElement('span');
+        upgradeEl.id = 'sidebar-upgrade-pending';
+        const expiryEl2 = document.getElementById('sidebar-expiry');
+        expiryEl2?.insertAdjacentElement('afterend', upgradeEl);
+      }
+      upgradeEl.style.cssText = 'display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 8px;border-radius:10px;background:rgba(78,205,196,0.12);color:var(--cyan);border:1px solid rgba(78,205,196,0.3);animation:pulse-green 2s infinite';
+      upgradeEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="20 6 9 17 4 12"/></svg>ACTIVACIÓN EN MARCHA`;
+    } else if (upgradeEl) {
+      upgradeEl.remove();
     }
     // Enlace admin
     const adminLink = document.getElementById('sidebar-admin-link');
@@ -2130,13 +2140,24 @@ const VFX = {
     const x   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
     const mailIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
     const starIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    const chkIco = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-    // precios y rangos de cada periodo
+    // solicitud pendiente (persiste en localStorage)
+    const upgradeRaw = localStorage.getItem(this._lsKey('vfx_upgrade_requested'));
+    const upgradeReq = upgradeRaw ? JSON.parse(upgradeRaw) : null;
+    const sentPlan = upgradeReq?.plan || null; // ej: "Pro Trimestral"
+
+    // helper: ¿esta tarjeta fue la solicitada?
+    const isSentCard = (periodLabel) => sentPlan && sentPlan.toLowerCase().includes(periodLabel.toLowerCase());
+    const sentCardStyle = 'box-shadow:0 0 0 2px var(--cyan),0 0 20px rgba(78,205,196,0.25)';
+    const sentBtnHtml = `<button class="btn" style="width:100%;justify-content:center;font-size:12px;background:rgba(78,205,196,0.15);color:var(--cyan);border-color:var(--cyan);cursor:default" disabled>${chkIco}&nbsp;Solicitud enviada</button>`;
+
+    // precios: precio real (oferta) y precio tachado
     const PERIODS = {
-      quarterly: { label: 'Trimestral', price: 24,  days: 90,  rank: 1 },
-      semi:      { label: 'Semestral',  price: 45,  days: 180, rank: 2 },
-      annual:    { label: 'Anual',      price: 85,  days: 365, rank: 3 },
-      lifetime:  { label: 'Vitalicio',  price: 200, days: null, rank: 4 },
+      quarterly: { label: 'Trimestral', price: 16,  oldPrice: 24,  days: 90,  rank: 1, perMonth: '5,33€/mes' },
+      semi:      { label: 'Semestral',  price: 29,  oldPrice: 45,  days: 180, rank: 2, perMonth: '4,83€/mes' },
+      annual:    { label: 'Anual',      price: 55,  oldPrice: 85,  days: 365, rank: 3, perMonth: '4,58€/mes' },
+      lifetime:  { label: 'Vitalicio',  price: 200, oldPrice: null, days: null, rank: 4 },
     };
 
     // calcula diferencia de upgrade: valor restante del plan actual prorrateado
@@ -2157,11 +2178,12 @@ const VFX = {
       const isCurrent = isPro && currentPeriod === periodKey;
       if (isCurrent) return '';
       const p = PERIODS[periodKey];
+      if (isSentCard(p.label)) return sentBtnHtml;
       const ud = upgradeDiff(periodKey);
-      const priceLabel = p.days ? `${p.price}€` : `${p.price}€ (pago único)`;
+      const priceLabel = p.days ? `${p.price}€ (oferta)` : `${p.price}€ (pago único)`;
       const periodLabel = p.days ? `${p.days} días` : 'Acceso vitalicio';
       const extraNote = ud ? `, upgrade desde ${ud.curLabel}, diferencia calculada: ${ud.diff}€` : '';
-      const onclickAttr = `VFX.requestUpgrade('${p.label}', '${priceLabel}', '${periodLabel}${extraNote}', this)`;
+      const onclickAttr = `VFX.requestUpgrade('Pro ${p.label}', '${priceLabel}', '${periodLabel}${extraNote}', this)`;
       return `
         ${ud ? `<div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.5">
           Te quedan <strong style="color:var(--text)">${ud.daysLeft} días</strong> en tu plan ${ud.curLabel}.<br>
@@ -2231,9 +2253,10 @@ const VFX = {
                 <span style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.1em">PRO</span>
                 <span style="color:var(--gold)">${starIcon}</span>
               </div>
-              <div style="display:flex;align-items:baseline;gap:4px">
-                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">9€</span>
+              <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+                <span style="font-size:38px;font-weight:800;color:var(--text);line-height:1">6€</span>
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
+                <span style="font-size:20px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">9€</span>
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:5px">${isPro ? `Plan activo${currentPeriod ? ' · ' + PERIODS[currentPeriod]?.label : ''}` : 'Elige el periodo que prefieras ↓'}</div>
             </div>
@@ -2248,7 +2271,7 @@ const VFX = {
             </div>
             ${!isPro ? `<div style="padding-top:16px;border-top:1px solid var(--border);margin-top:16px">
               <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px">O activa directamente el plan mensual</div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="VFX.requestUpgrade('Pro Mensual','9€/mes','1 mes (renovación mensual)',this)">${mailIco}&nbsp;Activar Pro Mensual</button>
+              ${isSentCard('Mensual') ? sentBtnHtml : `<button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="VFX.requestUpgrade('Pro Mensual','6€/mes (oferta)','1 mes (renovación mensual)',this)">${mailIco}&nbsp;Activar Pro Mensual</button>`}
             </div>` : ''}
           </div>
         </div>
@@ -2257,67 +2280,61 @@ const VFX = {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px" class="planes-small-grid">
 
           <!-- TRIMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+          <div style="background:var(--card);border:1px solid ${isQuartCurrent ? 'rgba(108,143,255,0.6)' : 'rgba(108,143,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Trimestral') ? sentCardStyle : ''}">
             ${isQuartCurrent ? currentBadge('#6c8fff') : ''}
             ${!isQuartCurrent ? `<div style="position:absolute;top:10px;right:10px;background:rgba(108,143,255,0.15);border:1px solid rgba(108,143,255,0.4);color:#6c8fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.05em;white-space:nowrap">Más popular</div>` : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isQuartCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#6c8fff;letter-spacing:0.1em">TRIMESTRAL</span>
-              <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−11%</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
-              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">24€</span>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">16€</span>
+              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">24€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">8€/mes · 3 meses</div>
-            ${periodBtn('quarterly', 'Activar Pro Trimestral',
-              'Activar Plan Pro Trimestral — VFX Hours',
-              (extra) => mkBody('Pro Trimestral', '24€ (8€/mes)', '3 meses', extra))}
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">5,33€/mes · 3 meses</div>
+            ${periodBtn('quarterly', 'Activar Pro Trimestral')}
           </div>
 
           <!-- SEMESTRAL -->
-          <div style="background:var(--card);border:1px solid ${isSemiCurrent ? 'rgba(168,151,255,0.6)' : 'rgba(168,151,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+          <div style="background:var(--card);border:1px solid ${isSemiCurrent ? 'rgba(168,151,255,0.6)' : 'rgba(168,151,255,0.25)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Semestral') ? sentCardStyle : ''}">
             ${isSemiCurrent ? currentBadge('#a897ff') : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isSemiCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:#a897ff;letter-spacing:0.1em">SEMESTRAL</span>
-              <span style="font-size:10px;background:rgba(78,205,196,0.12);color:var(--cyan);padding:1px 5px;border-radius:4px;font-weight:600">−17%</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
-              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">45€</span>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">29€</span>
+              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">45€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,50€/mes · 6 meses</div>
-            ${periodBtn('semi', 'Activar Pro Semestral',
-              'Activar Plan Pro Semestral — VFX Hours',
-              (extra) => mkBody('Pro Semestral', '45€ (7,50€/mes)', '6 meses', extra))}
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">4,83€/mes · 6 meses</div>
+            ${periodBtn('semi', 'Activar Pro Semestral')}
           </div>
 
           <!-- ANUAL -->
-          <div style="background:var(--card);border:1px solid ${isAnnCurrent ? 'rgba(245,200,66,0.6)' : 'rgba(245,200,66,0.28)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative">
+          <div style="background:var(--card);border:1px solid ${isAnnCurrent ? 'rgba(245,200,66,0.6)' : 'rgba(245,200,66,0.28)'};border-radius:13px;padding:18px 14px;display:flex;flex-direction:column;gap:0;position:relative;${isSentCard('Anual') ? sentCardStyle : ''}">
             ${isAnnCurrent ? currentBadge('var(--gold)') : ''}
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px${isAnnCurrent ? ';padding-top:10px' : ''}">
               <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:0.1em">ANUAL</span>
-              <span style="font-size:10px;background:rgba(245,200,66,0.12);color:var(--gold);padding:1px 5px;border-radius:4px;font-weight:600">−22%</span>
             </div>
-            <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
-              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">85€</span>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+              <span style="font-size:26px;font-weight:800;color:var(--text);line-height:1">55€</span>
+              <span style="font-size:14px;font-weight:500;color:var(--text3);text-decoration:line-through;opacity:0.5">85€</span>
             </div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">7,08€/mes · 12 meses</div>
-            ${periodBtn('annual', 'Activar Pro Anual',
-              'Activar Plan Pro Anual — VFX Hours',
-              (extra) => mkBody('Pro Anual', '85€ (7,08€/mes)', '12 meses', extra))}
+            <div style="font-size:11px;color:var(--text3);margin-bottom:12px;flex:1">4,58€/mes · 12 meses</div>
+            ${periodBtn('annual', 'Activar Pro Anual')}
           </div>
         </div>
 
         <!-- FILA 3: VITALICIO (prominente) -->
-        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid ${isLifeCurrent ? 'rgba(245,200,66,0.8)' : 'rgba(245,200,66,0.45)'};border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden" class="planes-lifetime">
+        <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1) 0%,rgba(255,170,60,0.06) 50%,var(--card) 100%);border:2px solid ${isLifeCurrent ? 'rgba(245,200,66,0.8)' : 'rgba(245,200,66,0.45)'};border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden;${isSentCard('Vitalicio') ? sentCardStyle : ''}" class="planes-lifetime">
           <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle at 70% 30%,rgba(245,200,66,0.08) 0%,transparent 70%);pointer-events:none"></div>
           <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${isLifeCurrent ? 'var(--gold)' : 'linear-gradient(90deg,var(--gold),#ffb830)'};color:#000;font-size:11px;font-weight:700;padding:4px 20px;border-radius:0 0 10px 10px;letter-spacing:0.08em;white-space:nowrap">${isLifeCurrent ? 'TU PLAN ACTUAL' : 'MEJOR VALOR · PAGO ÚNICO'}</div>
 
           <div style="flex:1;min-width:0;padding-top:10px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
               <span style="font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.12em">VITALICIO</span>
               <span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span><span style="color:var(--gold)">${starIcon}</span>
               ${!isLifeCurrent ? `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,85,118,0.12);border:1px solid rgba(255,85,118,0.35);color:var(--red);font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.03em;animation:pulse-red 2s infinite">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Oferta hasta finales de junio
+                Solo para los 10 primeros · hasta junio
               </span>` : ''}
             </div>
             <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
