@@ -71,21 +71,36 @@ const VFX = {
       projects: 'Proyectos ilimitados',
       companies: 'Empresas ilimitadas',
     };
-    const name = labels[feature] || feature;
+    const name = (feature && labels[feature]) ? labels[feature] : null;
+    const proFeatures = [
+      { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`, text: 'Estadísticas detalladas' },
+      { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`, text: 'Gestión de facturas y PDF' },
+      { icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`, text: 'Proyectos y empresas ilimitados' },
+    ];
     this.openModal(`
-      <div class="modal-body" style="text-align:center;padding:36px 28px 28px">
+      <div style="text-align:center;padding:40px 28px 28px;position:relative">
         <button class="modal-close" onclick="VFX.closeModal()" style="position:absolute;top:14px;right:14px">✕</button>
-        <div class="upgrade-card-icon" style="margin:0 auto 18px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
+
+        <div style="width:56px;height:56px;background:linear-gradient(135deg,rgba(245,200,66,0.2),rgba(245,200,66,0.05));border:1px solid rgba(245,200,66,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="26" height="26"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
-        <h3 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">Función exclusiva de Pro</h3>
-        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px">
-          <strong style="color:var(--gold)">${name}</strong> está disponible en el plan Pro.<br>
-          Actualiza tu cuenta para acceder a todas las funciones.
-        </p>
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="VFX.closeModal();VFX.navigate('planes')">Ver planes</button>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.12em;margin-bottom:6px">PLAN PRO</div>
+        <h3 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px">Desbloquea todo</h3>
+        ${name ? `<p style="font-size:13px;color:var(--text3);margin-bottom:20px"><strong style="color:var(--text2)">${name}</strong> requiere el plan Pro</p>` : `<p style="font-size:13px;color:var(--text3);margin-bottom:20px">Accede a todas las funciones sin límites</p>`}
+
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:22px;display:flex;flex-direction:column;gap:10px;text-align:left">
+          ${proFeatures.map(f => `
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)">
+              <span style="color:var(--gold);flex-shrink:0">${f.icon}</span>${f.text}
+            </div>`).join('')}
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="VFX.closeModal();VFX.navigate('planes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Ver planes y precios
+        </button>
+        <button class="btn" style="width:100%;justify-content:center;margin-top:8px;font-size:13px;color:var(--text3)" onclick="VFX.closeModal()">Ahora no</button>
       </div>
     `);
   },
