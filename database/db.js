@@ -553,6 +553,51 @@ const getRecentEvents = (limit = 50) => db.prepare(`
   ORDER BY e.created_at DESC LIMIT ?
 `).all(limit);
 
+const getEventsPerDay = (days = 30) => db.prepare(`
+  SELECT date(created_at) as day, event, COUNT(*) as count
+  FROM events
+  WHERE created_at >= datetime('now', '-' || ? || ' days')
+  GROUP BY day, event ORDER BY day
+`).all(days);
+
+const getDailyActiveUsers = (days = 30) => db.prepare(`
+  SELECT date(created_at) as day, COUNT(DISTINCT user_id) as users
+  FROM events
+  WHERE created_at >= datetime('now', '-' || ? || ' days')
+  GROUP BY day ORDER BY day
+`).all(days);
+
+const getEventsByHour = () => db.prepare(`
+  SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, COUNT(*) as count
+  FROM events GROUP BY hour ORDER BY hour
+`).all();
+
+const getNewUsersPerMonth = () => db.prepare(`
+  SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
+  FROM users
+  WHERE created_at IS NOT NULL
+  GROUP BY month ORDER BY month DESC LIMIT 12
+`).all();
+
+const getAppTotals = () => db.prepare(`
+  SELECT
+    (SELECT COUNT(*) FROM users) as total_users,
+    (SELECT COUNT(*) FROM projects) as total_projects,
+    (SELECT COUNT(*) FROM entries) as total_entries,
+    (SELECT COALESCE(SUM(hours),0) FROM entries) as total_hours,
+    (SELECT COUNT(*) FROM invoices) as total_invoices,
+    (SELECT COUNT(*) FROM events WHERE created_at >= datetime('now','-1 day')) as events_24h,
+    (SELECT COUNT(DISTINCT user_id) FROM events WHERE created_at >= datetime('now','-1 day')) as dau,
+    (SELECT COUNT(DISTINCT user_id) FROM events WHERE created_at >= datetime('now','-7 days')) as wau
+`).get();
+
+const getTopUsersByActivity = (limit = 10) => db.prepare(`
+  SELECT u.name, u.email, u.plan, COUNT(e.id) as event_count,
+    SUM(CASE WHEN e.created_at >= datetime('now','-7 days') THEN 1 ELSE 0 END) as last_7d
+  FROM users u LEFT JOIN events e ON u.id = e.user_id
+  GROUP BY u.id ORDER BY event_count DESC LIMIT ?
+`).all(limit);
+
 // TIMERS
 const getActiveTimers = (userId) => db.prepare(
   'SELECT * FROM timers WHERE user_id = ? AND is_active = 1'
@@ -592,5 +637,7 @@ module.exports = {
   getInvoices, getInvoice, getInvoiceLines, createInvoice, updateInvoice, issueInvoice,
   deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries,
   getActiveTimers, upsertTimer, clearTimer,
-  createEvent, getEventStats, getRecentEvents
+  createEvent, getEventStats, getRecentEvents,
+  getEventsPerDay, getDailyActiveUsers, getEventsByHour,
+  getNewUsersPerMonth, getAppTotals, getTopUsersByActivity
 };

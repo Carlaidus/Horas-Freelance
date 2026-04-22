@@ -186,6 +186,19 @@ app.get('/admin/api/events', requireAdmin, (req, res) => {
   res.json({ stats: db.getEventStats(), recent: db.getRecentEvents(100) });
 });
 
+app.get('/admin/api/analytics', requireAdmin, (req, res) => {
+  res.json({
+    totals: db.getAppTotals(),
+    eventsPerDay: db.getEventsPerDay(30),
+    dailyActiveUsers: db.getDailyActiveUsers(30),
+    eventsByHour: db.getEventsByHour(),
+    newUsersPerMonth: db.getNewUsersPerMonth(),
+    topUsers: db.getTopUsersByActivity(10),
+    eventStats: db.getEventStats(),
+    recentEvents: db.getRecentEvents(50)
+  });
+});
+
 // ── TIMERS ────────────────────────────────────────────────────
 app.get('/api/timers', (req, res) => {
   res.json(db.getActiveTimers(getUserId(req)));
