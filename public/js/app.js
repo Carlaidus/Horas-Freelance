@@ -3003,7 +3003,7 @@ const VFX = {
     this.state.entries = [];
     localStorage.setItem(this._lsKey('vfx_current_project'), id);
     this.closeModal();
-    this.navigate('proyecto');
+    this.navigate(this.state.view);
   },
 
   async updateProject(id) {
