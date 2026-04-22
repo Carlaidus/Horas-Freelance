@@ -50,7 +50,12 @@ const resetSeq = async (table) => {
 };
 
 const run = async () => {
-  console.log('\n🔄  Iniciando migración de datos...\n');
+  console.log('\n🏗   Creando tablas si no existen...');
+  const db = require('../database/db');
+  await db.init();
+  console.log('    Tablas listas.\n');
+
+  console.log('🔄  Iniciando migración de datos...\n');
 
   // Orden respetando foreign keys
   await insertRows('users', data.users, [
