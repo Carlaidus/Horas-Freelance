@@ -1835,63 +1835,6 @@ const VFX = {
         ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
       </div>
 
-      <div class="project-summary" style="margin-bottom:24px">
-        <div class="summary-header summary-header-toggle" onclick="VFX.toggleSummaryDetail()">
-          <svg class="summary-chevron" id="summary-chevron-detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="summary-header-label">Resumen del proyecto</span>
-        </div>
-        <div id="summary-body-detail" style="display:none">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px">
-        <div class="table-container" style="padding:20px">
-          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Información del proyecto</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Inicio</span>
-              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.date(p.first_entry_date || p.created_at)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Fin</span>
-              <span style="font-family:'Space Mono',monospace;font-size:12px;color:${endDate ? 'var(--text)' : 'var(--amber)'}">${endDate ? this.fmt.date(endDate) : 'En curso'}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Total horas</span>
-              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.hours(p.total_hours)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Tarifa media</span>
-              <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate)}/h</span>
-            </div>
-            ${p.purchase_order ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Orden de compra</span><span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:12px">${p.purchase_order}</span></div>` : ''}
-            ${p.invoice_number ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Nº Factura</span><span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${p.invoice_number}</span></div>` : ''}
-          </div>
-        </div>
-
-        <div class="table-container" style="padding:20px">
-          <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Resumen financiero</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Base imponible</span>
-              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text)" data-private>${this.fmt.currency(gross)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">IVA (${ivaRate}%)</span>
-              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan)" data-private>+${this.fmt.currency(ivaAmt)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text2);font-size:13px">Retención IRPF (${irpfRate}%)</span>
-              <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--red)" data-private>−${this.fmt.currency(irpfAmt)}</span>
-            </div>
-            <div style="height:1px;background:var(--border);margin:4px 0"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="color:var(--text);font-size:14px;font-weight:700">Total neto</span>
-              <span style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--gold)" data-private>${this.fmt.currency(net)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-        </div><!-- /summary-body-detail -->
-      </div><!-- /project-summary -->
-
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TRABAJO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
@@ -1916,6 +1859,62 @@ const VFX = {
           </table>
         `}
       </div>
+
+      <div class="project-summary" style="margin-top:24px">
+        <div class="summary-header summary-header-toggle" onclick="VFX.toggleSummaryDetail()">
+          <svg class="summary-chevron" id="summary-chevron-detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(180deg)"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="summary-header-label">Resumen del proyecto</span>
+        </div>
+        <div id="summary-body-detail" style="display:block">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px">
+            <div class="table-container" style="padding:20px">
+              <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Información del proyecto</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Inicio</span>
+                  <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.date(p.first_entry_date || p.created_at)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Fin</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:12px;color:${endDate ? 'var(--text)' : 'var(--amber)'}">${endDate ? this.fmt.date(endDate) : 'En curso'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Total horas</span>
+                  <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.hours(p.total_hours)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Tarifa media</span>
+                  <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate)}/h</span>
+                </div>
+                ${p.purchase_order ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Orden de compra</span><span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:12px">${p.purchase_order}</span></div>` : ''}
+                ${p.invoice_number ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Nº Factura</span><span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${p.invoice_number}</span></div>` : ''}
+              </div>
+            </div>
+            <div class="table-container" style="padding:20px">
+              <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Resumen financiero</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Base imponible</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text)" data-private>${this.fmt.currency(gross)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">IVA (${ivaRate}%)</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--cyan)" data-private>+${this.fmt.currency(ivaAmt)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text2);font-size:13px">Retención IRPF (${irpfRate}%)</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--red)" data-private>−${this.fmt.currency(irpfAmt)}</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin:4px 0"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="color:var(--text);font-size:14px;font-weight:700">Total neto</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--gold)" data-private>${this.fmt.currency(net)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /summary-body-detail -->
+      </div><!-- /project-summary -->
     `;
   },
 
