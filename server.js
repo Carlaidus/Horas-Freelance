@@ -175,6 +175,41 @@ app.post('/api/entries', (req, res) => res.json({ id: db.createEntry({ user_id: 
 app.put('/api/entries/:id', (req, res) => { db.updateEntry(+req.params.id, req.body); res.json({ success: true }); });
 app.delete('/api/entries/:id', (req, res) => { db.deleteEntry(+req.params.id); res.json({ success: true }); });
 
+// ── TIMERS ────────────────────────────────────────────────────
+app.get('/api/timers', (req, res) => {
+  res.json(db.getActiveTimers(getUserId(req)));
+});
+
+app.post('/api/timers/:projectId/start', (req, res) => {
+  const userId = getUserId(req);
+  const projectId = +req.params.projectId;
+  const started_at = new Date().toISOString();
+  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds: 0 });
+  res.json({ started_at });
+});
+
+app.post('/api/timers/:projectId/pause', (req, res) => {
+  const userId = getUserId(req);
+  const projectId = +req.params.projectId;
+  const { accumulated_seconds = 0 } = req.body;
+  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 1, started_at: null, accumulated_seconds });
+  res.json({ success: true });
+});
+
+app.post('/api/timers/:projectId/resume', (req, res) => {
+  const userId = getUserId(req);
+  const projectId = +req.params.projectId;
+  const { accumulated_seconds = 0 } = req.body;
+  const started_at = new Date().toISOString();
+  db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds });
+  res.json({ started_at });
+});
+
+app.delete('/api/timers/:projectId', (req, res) => {
+  db.clearTimer(getUserId(req), +req.params.projectId);
+  res.json({ success: true });
+});
+
 // ── STATS ─────────────────────────────────────────────────────
 app.get('/api/stats/monthly', (req, res) => {
   const { from, to, group } = req.query;

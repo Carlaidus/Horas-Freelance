@@ -180,6 +180,48 @@ const VFX = {
     return [Math.floor(s/3600), Math.floor((s%3600)/60), s%60].map(n => String(n).padStart(2,'0')).join(':');
   },
 
+  async _syncTimersFromServer() {
+    try {
+      const serverTimers = await this.api.get('/api/timers');
+      if (!Array.isArray(serverTimers)) return;
+      let dirty = false;
+
+      // Aplicar estado del servidor a los slots locales
+      serverTimers.forEach(st => {
+        let slot = this.state.slots.find(s => s.projectId === st.project_id || s.timerProjectId === st.project_id);
+        if (!slot) {
+          slot = { projectId: st.project_id, timerProjectId: st.project_id, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } };
+          this.state.slots.push(slot);
+        }
+        slot.timerProjectId = st.project_id;
+        slot.timer.active = true;
+        slot.timer.paused = !!st.is_paused;
+        slot.timer.startTime = st.started_at || null;
+        slot.timer.accumulated = st.accumulated_seconds || 0;
+        dirty = true;
+        const idx = this.state.slots.indexOf(slot);
+        if (!st.is_paused && !slot.timer.interval) this._startSlotInterval(idx);
+      });
+
+      // Limpiar timers que ya no existen en el servidor (parados desde otro dispositivo)
+      this.state.slots.forEach((slot, idx) => {
+        if (!slot.timer.active) return;
+        const projectId = slot.timerProjectId || slot.projectId;
+        const stillActive = serverTimers.some(st => st.project_id === projectId);
+        if (!stillActive) {
+          if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
+          slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
+          dirty = true;
+        }
+      });
+
+      if (dirty) {
+        this._slotsSave();
+        if (this.state.view === 'proyecto') this.renderProyecto();
+      }
+    } catch(_) {}
+  },
+
   _startSlotInterval(idx) {
     const slot = this.state.slots[idx];
     if (!slot) return;
@@ -317,6 +359,7 @@ const VFX = {
     this.applyPrivacy();
     this._slotsLoad();
     await this.loadAll();
+    await this._syncTimersFromServer();
 
     // Restaurar proyecto activo desde localStorage
     const savedId = localStorage.getItem(this._lsKey('vfx_current_project'));
@@ -336,6 +379,10 @@ const VFX = {
     } else {
       this.navigate('dashboard');
     }
+
+    // Polling cada 30s para sincronizar timers entre dispositivos
+    if (this._syncPollInterval) clearInterval(this._syncPollInterval);
+    this._syncPollInterval = setInterval(() => this._syncTimersFromServer(), 30000);
 
     document.addEventListener('click', () => {
       document.querySelectorAll('[id^="status-dd-"]').forEach(d => d.style.display = 'none');
@@ -2704,45 +2751,60 @@ const VFX = {
   },
 
   // ── TIMER ──────────────────────────────────────────────────
-  startTimer(idx) {
+  async startTimer(idx) {
     const slot = this.state.slots[idx];
     if (!slot?.projectId) return;
-    slot.timerProjectId = slot.projectId; // fija el proyecto del timer
-    slot.timer = { active: true, paused: false, startTime: new Date().toISOString(), accumulated: 0, interval: null };
+    const projectId = slot.projectId;
+    slot.timerProjectId = projectId;
+    try {
+      const res = await this.api.post(`/api/timers/${projectId}/start`, {});
+      slot.timer = { active: true, paused: false, startTime: res.started_at, accumulated: 0, interval: null };
+    } catch(_) {
+      slot.timer = { active: true, paused: false, startTime: new Date().toISOString(), accumulated: 0, interval: null };
+    }
     this._slotsSave();
     this._startSlotInterval(idx);
     this.renderProyecto();
   },
 
-  pauseTimer(idx) {
+  async pauseTimer(idx) {
     const slot = this.state.slots[idx];
     if (!slot?.timer.active || slot.timer.paused) return;
     if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
     slot.timer.accumulated = this._slotElapsed(idx);
     slot.timer.paused = true;
     slot.timer.startTime = null;
+    const projectId = slot.timerProjectId || slot.projectId;
+    try { await this.api.post(`/api/timers/${projectId}/pause`, { accumulated_seconds: slot.timer.accumulated }); } catch(_) {}
     this._slotsSave();
     this.renderProyecto();
   },
 
-  resumeTimer(idx) {
+  async resumeTimer(idx) {
     const slot = this.state.slots[idx];
     if (!slot?.timer.active || !slot.timer.paused) return;
+    const projectId = slot.timerProjectId || slot.projectId;
+    try {
+      const res = await this.api.post(`/api/timers/${projectId}/resume`, { accumulated_seconds: slot.timer.accumulated });
+      slot.timer.startTime = res.started_at;
+    } catch(_) {
+      slot.timer.startTime = new Date().toISOString();
+    }
     slot.timer.paused = false;
-    slot.timer.startTime = new Date().toISOString();
     this._slotsSave();
     this._startSlotInterval(idx);
     this.renderProyecto();
   },
 
-  stopTimer(idx) {
+  async stopTimer(idx) {
     const slot  = this.state.slots[idx];
     const elapsed = this._slotElapsed(idx);
     const hours = elapsed > 0 ? Math.max(Math.round(elapsed / 3600 * 4) / 4, 0.25) : 0;
-    const timerProjectId = slot.timerProjectId || slot.projectId; // usa el proyecto del timer, no el de la vista
+    const timerProjectId = slot.timerProjectId || slot.projectId;
     if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
     slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
     slot.timerProjectId = null;
+    try { await this.api.del(`/api/timers/${timerProjectId}`); } catch(_) {}
     this._slotsSave();
     this.renderProyecto();
     if (elapsed > 0) this.modals.timerStop(hours, idx, timerProjectId);

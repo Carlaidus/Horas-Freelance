@@ -125,6 +125,18 @@ db.exec(`
     expires_at DATETIME NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS timers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    project_id INTEGER NOT NULL,
+    is_active INTEGER DEFAULT 0,
+    is_paused INTEGER DEFAULT 0,
+    started_at TEXT DEFAULT NULL,
+    accumulated_seconds REAL DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, project_id)
+  );
 `);
 
 // Migraciones seguras (no fallan si la columna ya existe)
@@ -512,6 +524,22 @@ const setUserPlan = (userId, plan, expiresAt) => db.prepare(
   'UPDATE users SET plan=@plan, plan_expires_at=@plan_expires_at WHERE id=@id'
 ).run({ plan, plan_expires_at: expiresAt || null, id: userId });
 
+// TIMERS
+const getActiveTimers = (userId) => db.prepare(
+  'SELECT * FROM timers WHERE user_id = ? AND is_active = 1'
+).all(userId);
+const upsertTimer = (userId, projectId, data) => db.prepare(`
+  INSERT INTO timers (user_id, project_id, is_active, is_paused, started_at, accumulated_seconds, updated_at)
+  VALUES (@user_id, @project_id, @is_active, @is_paused, @started_at, @accumulated_seconds, datetime('now'))
+  ON CONFLICT(user_id, project_id) DO UPDATE SET
+    is_active=excluded.is_active, is_paused=excluded.is_paused,
+    started_at=excluded.started_at, accumulated_seconds=excluded.accumulated_seconds,
+    updated_at=excluded.updated_at
+`).run({ user_id: userId, project_id: projectId, ...data });
+const clearTimer = (userId, projectId) => db.prepare(
+  'DELETE FROM timers WHERE user_id = ? AND project_id = ?'
+).run(userId, projectId);
+
 // RESET TOKENS
 const createResetToken = (userId, token, expiresAt) => db.prepare(
   'INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)'
@@ -533,5 +561,6 @@ module.exports = {
   getProjectStatsDetail, getTreasuryData,
   countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword,
   getInvoices, getInvoice, getInvoiceLines, createInvoice, updateInvoice, issueInvoice,
-  deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries
+  deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries,
+  getActiveTimers, upsertTimer, clearTimer
 };
