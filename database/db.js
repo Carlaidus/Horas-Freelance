@@ -866,6 +866,22 @@ const updatePassword = async (userId, hash) => {
   await q('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
 };
 
+// ── PLAN LIMITS ───────────────────────────────────────────────
+const countUserProjects = async (userId) => {
+  const r = await q('SELECT COUNT(*) as n FROM projects WHERE user_id = $1', [userId]);
+  return parseInt(r.rows[0].n, 10);
+};
+
+const countUserCompanies = async (userId) => {
+  const r = await q('SELECT COUNT(*) as n FROM companies WHERE user_id = $1', [userId]);
+  return parseInt(r.rows[0].n, 10);
+};
+
+const getAdminEmail = async () => {
+  const r = await q("SELECT email FROM users WHERE role='admin' AND email != '' ORDER BY id LIMIT 1");
+  return r.rows[0]?.email || null;
+};
+
 module.exports = {
   init,
   getUser, saveUser, findUserByEmail, createAuthUser, getAllUsers, setUserPlan,
@@ -875,7 +891,8 @@ module.exports = {
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
   getProjectStatsDetail, getTreasuryData,
-  countUsers, createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword,
+  countUsers, countUserProjects, countUserCompanies, getAdminEmail,
+  createResetToken, findResetToken, deleteResetToken, deleteExpiredTokens, updatePassword,
   getInvoices, getInvoice, getInvoiceLines, createInvoice, updateInvoice, issueInvoice,
   deleteInvoiceDraft, setInvoiceLines, getNextInvoiceNumber, updateInvoiceNumber, getInvoiceSeries,
   getActiveTimers, upsertTimer, clearTimer,

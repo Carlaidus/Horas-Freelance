@@ -60,6 +60,64 @@ const VFX = {
 
   _lsKey(key) { return this.state.userId ? `${key}_u${this.state.userId}` : key; },
 
+  isPro() { return this.state.plan !== 'free'; },
+
+  showUpgradeModal(feature) {
+    const labels = {
+      stats: 'Estadísticas detalladas',
+      facturas: 'Gestión de facturas',
+      pdf: 'Exportar PDF',
+      projects: 'Proyectos ilimitados',
+      companies: 'Empresas ilimitadas',
+    };
+    const name = labels[feature] || feature;
+    this.openModal(`
+      <div class="modal-header">
+        <span class="modal-title">Función exclusiva de Pro</span>
+        <button class="modal-close" onclick="VFX.closeModal()">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:32px 24px">
+        <div class="upgrade-card-icon" style="margin:0 auto 20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <h3 style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">${name}</h3>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:24px">
+          Esta función está disponible en el plan <strong style="color:var(--gold)">Pro</strong>.<br>
+          Actualiza tu cuenta para acceder a proyectos ilimitados, empresas, facturas, estadísticas y exportación PDF.
+        </p>
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:24px;font-size:13px;color:var(--text2)">
+          Escríbenos a <strong style="color:var(--gold)">carlosvfx@yahoo.es</strong> para activar tu cuenta Pro.
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="VFX.closeModal()">Entendido</button>
+      </div>
+    `);
+  },
+
+  _upgradeWallHtml(feature) {
+    const labels = {
+      stats: 'Estadísticas detalladas',
+      facturas: 'Gestión de facturas',
+    };
+    return `
+      <div class="upgrade-wall">
+        <div class="upgrade-card">
+          <div class="upgrade-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <h3>${labels[feature] || feature}</h3>
+          <p>Esta sección está disponible en el plan <strong style="color:var(--gold)">Pro</strong>.<br>
+          Actualiza para acceder a todas las funciones.</p>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px"
+            onclick="VFX.showUpgradeModal('${feature}')">Ver planes Pro</button>
+        </div>
+      </div>
+    `;
+  },
+
   // ── PRIVACY ────────────────────────────────────────────────
   privacy: {
     on: false,
@@ -1300,6 +1358,35 @@ const VFX = {
   // ── STATS ──────────────────────────────────────────────────
   async renderStats() {
     const el = document.getElementById('view-stats');
+    if (!this.isPro()) {
+      el.innerHTML = `
+        <div class="page-header">
+          <div><div class="page-title">Estadísticas</div></div>
+        </div>
+        <div style="position:relative">
+          <div class="plan-locked-wrap" aria-hidden="true">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+              ${[1,2,3,4].map(() => `<div class="metric-card"><div class="metric-label">————</div><div class="metric-value">—.—</div></div>`).join('')}
+            </div>
+            <div class="table-container" style="height:200px"></div>
+          </div>
+          <div class="plan-locked-overlay">
+            <div class="upgrade-card">
+              <div class="upgrade-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <h3>Estadísticas detalladas</h3>
+              <p>Analiza tus horas, ingresos y clientes con el plan <strong style="color:var(--gold)">Pro</strong>.</p>
+              <button class="btn btn-primary" style="width:100%;justify-content:center"
+                onclick="VFX.showUpgradeModal('stats')">Actualizar a Pro</button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
     el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando estadísticas...</div>`;
 
     await this.loadStats();
@@ -1924,6 +2011,7 @@ const VFX = {
   },
 
   downloadProjectReport(id) {
+    if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
     window.open(`/api/projects/${id}/report`, '_blank');
   },
 
@@ -2548,6 +2636,11 @@ const VFX = {
 
   // ── ACTIONS ────────────────────────────────────────────────
   async createProject() {
+    if (!this.isPro() && this.state.projects.length >= 1) {
+      this.closeModal();
+      this.showUpgradeModal('projects');
+      return;
+    }
     const isNew = document.getElementById('tab-new')?.classList.contains('active');
 
     let projectName, companyId, rate;
@@ -2850,6 +2943,7 @@ const VFX = {
   },
 
   async printInvoice(id) {
+    if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
     this.track('invoice_print', { project_id: id });
     const data = await this.api.get(`/api/projects/${id}/export`);
     const { project, entries, user } = data;
@@ -3010,6 +3104,15 @@ const VFX = {
 
   async renderFacturas() {
     const el = document.getElementById('view-facturas');
+    if (!this.isPro()) {
+      el.innerHTML = `
+        <div class="page-header">
+          <div><div class="page-title">Facturas</div></div>
+        </div>
+        ${this._upgradeWallHtml('facturas')}
+      `;
+      return;
+    }
     el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
     const invoices = await this.api.get('/api/invoices');
     this.state.invoices = invoices;
@@ -3475,6 +3578,7 @@ const VFX = {
   },
 
   downloadInvoicePdf(id) {
+    if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
     window.open(`/api/invoices/${id}/pdf`, '_blank');
   },
 

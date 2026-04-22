@@ -94,6 +94,25 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     const userId = await db.createAuthUser({ name, email, password_hash: hash });
     req.session.userId = userId;
+
+    // Notificar al admin del nuevo registro
+    if (resend) {
+      const adminEmail = process.env.ADMIN_EMAIL || await db.getAdminEmail();
+      if (adminEmail) {
+        resend.emails.send({
+          from: FROM_EMAIL,
+          to: adminEmail,
+          subject: `Nuevo usuario registrado — ${name}`,
+          html: `<div style="font-family:sans-serif;padding:24px;background:#06060f;color:#dde0f5;border-radius:12px">
+            <h2 style="color:#f5c842">Nuevo registro en VFX Hours</h2>
+            <p><strong>Nombre:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p style="color:#888;font-size:12px">Plan: Free — activa Pro desde el panel de administración si ha realizado el pago.</p>
+          </div>`
+        }).catch(() => {});
+      }
+    }
+
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -177,8 +196,15 @@ app.get('/api/companies', async (req, res) => {
 });
 
 app.post('/api/companies', async (req, res) => {
-  try { res.json({ id: await db.createCompany({ user_id: getUserId(req), ...req.body }) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const userId = getUserId(req);
+    const user = await db.getUser(userId);
+    if (getEffectivePlan(user) === 'free') {
+      const count = await db.countUserCompanies(userId);
+      if (count >= 1) return res.status(403).json({ error: 'UPGRADE_REQUIRED', feature: 'companies' });
+    }
+    res.json({ id: await db.createCompany({ user_id: userId, ...req.body }) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/companies/:id', async (req, res) => {
@@ -212,8 +238,15 @@ app.get('/api/projects/:id', async (req, res) => {
 });
 
 app.post('/api/projects', async (req, res) => {
-  try { res.json({ id: await db.createProject({ user_id: getUserId(req), ...req.body }) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const userId = getUserId(req);
+    const user = await db.getUser(userId);
+    if (getEffectivePlan(user) === 'free') {
+      const count = await db.countUserProjects(userId);
+      if (count >= 1) return res.status(403).json({ error: 'UPGRADE_REQUIRED', feature: 'projects' });
+    }
+    res.json({ id: await db.createProject({ user_id: userId, ...req.body }) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/projects/:id', async (req, res) => {
