@@ -701,7 +701,7 @@ const updateInvoiceNumber = async (id, userId, number) => {
 // ── ADMIN ─────────────────────────────────────────────────────
 const getAllUsers = async () => {
   const r = await q(`
-    SELECT id, name, email, role, plan, plan_expires_at, created_at,
+    SELECT id, name, email, role, plan, plan_expires_at, plan_period, created_at,
       CASE
         WHEN role = 'admin' THEN NULL
         WHEN plan = 'free' THEN NULL

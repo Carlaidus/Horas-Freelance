@@ -2208,7 +2208,7 @@ const VFX = {
       `<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:${color};color:#000;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:0.06em;white-space:nowrap">TU PLAN ACTUAL</div>`;
 
     const isFreeCurrent  = !isPro;
-    const isProOverview  = isPro; // la tarjeta PRO grande siempre se marca si es Pro
+    const isProOverview  = isPro && !currentPeriod; // solo mensual (sin periodo específico)
     const isQuartCurrent = isPro && currentPeriod === 'quarterly';
     const isSemiCurrent  = isPro && currentPeriod === 'semi';
     const isAnnCurrent   = isPro && currentPeriod === 'annual';
@@ -2268,7 +2268,7 @@ const VFX = {
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
                 ${struck(9, 22)}
               </div>
-              <div style="font-size:12px;color:var(--text3);margin-top:5px">${isPro ? `Plan activo${currentPeriod ? ' · ' + PERIODS[currentPeriod]?.label : ''}` : 'Elige el periodo que prefieras ↓'}</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:5px">${isPro ? (currentPeriod ? `Ver tu plan activo ↓` : 'Plan activo · Mensual') : 'Elige el periodo que prefieras ↓'}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:9px;flex:1">
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--gold);flex-shrink:0">${chk}</span>Proyectos ilimitados</div>
