@@ -687,7 +687,7 @@ const VFX = {
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">PROYECTOS</span>
-          <div style="display:flex;gap:6px">
+          <div class="filter-tabs">
             <button class="${btnCls('all')}" onclick="VFX.filterDashboard('all')">Todos</button>
             <button class="${btnCls('pending')}" onclick="VFX.filterDashboard('pending')">En curso</button>
             <button class="${btnCls('sent')}" onclick="VFX.filterDashboard('sent')">En espera</button>
@@ -695,7 +695,7 @@ const VFX = {
           </div>
         </div>
         ${filtered.length > 0 ? `
-          <table>
+          <table class="dashboard-projects-table">
             <thead>
               <tr>
                 <th>Proyecto / Empresa</th>
@@ -1248,7 +1248,7 @@ const VFX = {
   },
 
   renderStatusDropdown(projectId, status) {
-    const labels = { pending:'⏳ Pendiente', sent:'📤 Enviada', paid:'✅ Cobrada' };
+    const labels = { pending:'En curso', sent:'Enviada', paid:'Cobrada' };
     const options = Object.entries(labels)
       .filter(([k]) => k !== status)
       .map(([k, v]) => `

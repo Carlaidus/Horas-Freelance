@@ -1201,3 +1201,60 @@ tr[data-project-id].row-active td:first-child {
   border-left: 2px solid var(--gold);
   padding-left: calc(12px - 2px);
 }
+
+/* ── FILTER TABS (dashboard) ─────────────────────────────── */
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── RESPONSIVE TABLA PROYECTOS ──────────────────────────── */
+@media (max-width: 768px) {
+  /* Cabecera: título arriba, filtros debajo ocupando todo el ancho */
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .filter-tabs {
+    width: 100%;
+  }
+  .filter-tabs .btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    padding: 7px 6px;
+    font-size: 11px;
+  }
+
+  /* Ocultar columnas Horas (3ª) y Previsión cobro (5ª) */
+  .dashboard-projects-table thead th:nth-child(3),
+  .dashboard-projects-table thead th:nth-child(5),
+  .dashboard-projects-table tbody td:nth-child(3),
+  .dashboard-projects-table tbody td:nth-child(5) {
+    display: none;
+  }
+
+  /* Columna Estado: más compacta */
+  .dashboard-projects-table thead th:nth-child(2),
+  .dashboard-projects-table tbody td:nth-child(2) {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Ocultar icono de reloj (ir a proyecto) en móvil; el tap en la fila ya abre el detalle */
+  .dashboard-projects-table td.actions .btn-icon:first-child {
+    display: none;
+  }
+
+  /* Celdas con menos padding para que quepan bien */
+  .dashboard-projects-table tbody td,
+  .dashboard-projects-table thead th {
+    padding: 10px 10px;
+  }
+  .dashboard-projects-table tbody td:first-child,
+  .dashboard-projects-table thead th:first-child {
+    padding-left: 14px;
+  }
+}
