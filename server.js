@@ -346,6 +346,23 @@ app.put('/admin/api/users/:id/plan', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// ── EXPORT TEMPORAL (SQLite → PostgreSQL) ─────────────────────
+// ELIMINAR este endpoint tras completar la migración
+app.get('/admin/export-sqlite', requireAdmin, (req, res) => {
+  const Database = require('better-sqlite3');
+  const dbPath = process.env.DB_PATH || require('path').join(__dirname, 'database', 'tracker.db');
+  const raw = new Database(dbPath, { readonly: true });
+  const tables = ['users','companies','projects','entries','invoice_series','invoices','invoice_lines','reset_tokens','timers','events'];
+  const dump = {};
+  for (const t of tables) {
+    try { dump[t] = raw.prepare(`SELECT * FROM ${t}`).all(); } catch(_) { dump[t] = []; }
+  }
+  raw.close();
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', 'attachment; filename="sqlite-export.json"');
+  res.json(dump);
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
