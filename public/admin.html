@@ -209,13 +209,26 @@
         <tbody id="events-tbody"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
       </table>
     </div>
-    <div class="section-title">Actividad reciente</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div class="section-title" style="margin:0">Actividad reciente</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--text3)">Mostrar</span>
+        <select id="page-size-select" onchange="setPageSize(+this.value)" style="padding:5px 10px;font-size:12px">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+        <span style="font-size:12px;color:var(--text3)" id="page-info"></span>
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Evento</th><th>Datos</th></tr></thead>
         <tbody id="recent-tbody"><tr><td colspan="4" class="empty">Cargando...</td></tr></tbody>
       </table>
     </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px" id="pagination"></div>
   </div>
 
 </div>
@@ -225,7 +238,7 @@
 const C = { gold:'#f5c842', cyan:'#4ecdc4', green:'#52e875', red:'#ff5576', amber:'#ff9f43', purple:'#a897ff', text3:'#555580', border:'#1a1a35' };
 const EVENT_LABELS = { view:'Vista visitada', timer_start:'Timer iniciado', timer_stop:'Timer finalizado', invoice_print:'Factura generada', entry_create:'Entrada creada' };
 const EVENT_COLORS = { view:C.cyan, timer_start:C.green, timer_stop:C.amber, invoice_print:C.gold, entry_create:C.purple };
-let users = [], analytics = {};
+let users = [], analytics = {}, recentPage = 0, recentPageSize = 50;
 
 Chart.defaults.color = '#555580';
 Chart.defaults.borderColor = '#1a1a35';
@@ -435,9 +448,32 @@ function renderActivityTab() {
       <td class="mono dim">${e.unique_users}</td>
     </tr>
   `).join('') : '<tr><td colspan="5" class="empty">Sin datos aún</td></tr>';
+  renderRecentPage();
+}
 
-  const recent = analytics.recentEvents || [];
-  document.getElementById('recent-tbody').innerHTML = recent.length ? recent.map(e => `
+function setPageSize(size) {
+  recentPageSize = size;
+  recentPage = 0;
+  renderRecentPage();
+}
+
+function goToPage(p) {
+  recentPage = p;
+  renderRecentPage();
+}
+
+function renderRecentPage() {
+  const all = analytics.recentEvents || [];
+  const total = all.length;
+  const totalPages = Math.max(1, Math.ceil(total / recentPageSize));
+  recentPage = Math.min(recentPage, totalPages - 1);
+  const start = recentPage * recentPageSize;
+  const slice = all.slice(start, start + recentPageSize);
+
+  document.getElementById('page-info').textContent =
+    total ? `${start + 1}–${Math.min(start + recentPageSize, total)} de ${total}` : '';
+
+  document.getElementById('recent-tbody').innerHTML = slice.length ? slice.map(e => `
     <tr>
       <td class="mono dim" style="white-space:nowrap;font-size:11px">${e.created_at}</td>
       <td>${e.user_name||'—'}</td>
@@ -445,6 +481,18 @@ function renderActivityTab() {
       <td class="mono dim" style="font-size:11px">${e.metadata||''}</td>
     </tr>
   `).join('') : '<tr><td colspan="4" class="empty">Sin datos aún</td></tr>';
+
+  // Paginación
+  const pg = document.getElementById('pagination');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="btn btn-ghost btn-sm" onclick="goToPage(${recentPage-1})" ${recentPage===0?'disabled':''}>← Anterior</button>`;
+  const from = Math.max(0, recentPage - 2), to = Math.min(totalPages - 1, recentPage + 2);
+  if (from > 0) html += `<button class="btn btn-ghost btn-sm" onclick="goToPage(0)">1</button>${from>1?'<span style="color:var(--text3);padding:0 4px">…</span>':''}`;
+  for (let i = from; i <= to; i++)
+    html += `<button class="btn btn-sm ${i===recentPage?'btn-primary':'btn-ghost'}" onclick="goToPage(${i})">${i+1}</button>`;
+  if (to < totalPages - 1) html += `${to<totalPages-2?'<span style="color:var(--text3);padding:0 4px">…</span>':''}<button class="btn btn-ghost btn-sm" onclick="goToPage(${totalPages-1})">${totalPages}</button>`;
+  html += `<button class="btn btn-ghost btn-sm" onclick="goToPage(${recentPage+1})" ${recentPage===totalPages-1?'disabled':''}>Siguiente →</button>`;
+  pg.innerHTML = html;
 }
 
 function planBadge(u) {

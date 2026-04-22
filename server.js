@@ -195,7 +195,7 @@ app.get('/admin/api/analytics', requireAdmin, (req, res) => {
     newUsersPerMonth: db.getNewUsersPerMonth(),
     topUsers: db.getTopUsersByActivity(10),
     eventStats: db.getEventStats(),
-    recentEvents: db.getRecentEvents(50)
+    recentEvents: db.getRecentEvents(500)
   });
 });
 
