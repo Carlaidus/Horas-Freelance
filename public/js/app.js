@@ -172,7 +172,7 @@ const VFX = {
     const t = this.state.slots[idx]?.timer;
     if (!t?.active) return 0;
     if (t.paused) return t.accumulated;
-    return t.accumulated + (t.startTime ? (Date.now() - new Date(t.startTime).getTime()) / 1000 : 0);
+    return Math.max(0, t.accumulated + (t.startTime ? (Date.now() - new Date(t.startTime).getTime()) / 1000 : 0));
   },
 
   _slotFmt(idx) {
@@ -2756,12 +2756,9 @@ const VFX = {
     if (!slot?.projectId) return;
     const projectId = slot.projectId;
     slot.timerProjectId = projectId;
-    try {
-      const res = await this.api.post(`/api/timers/${projectId}/start`, {});
-      slot.timer = { active: true, paused: false, startTime: res.started_at, accumulated: 0, interval: null };
-    } catch(_) {
-      slot.timer = { active: true, paused: false, startTime: new Date().toISOString(), accumulated: 0, interval: null };
-    }
+    const startTime = new Date().toISOString();
+    slot.timer = { active: true, paused: false, startTime, accumulated: 0, interval: null };
+    try { await this.api.post(`/api/timers/${projectId}/start`, { started_at: startTime }); } catch(_) {}
     this._slotsSave();
     this._startSlotInterval(idx);
     this.renderProyecto();

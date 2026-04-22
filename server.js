@@ -183,7 +183,7 @@ app.get('/api/timers', (req, res) => {
 app.post('/api/timers/:projectId/start', (req, res) => {
   const userId = getUserId(req);
   const projectId = +req.params.projectId;
-  const started_at = new Date().toISOString();
+  const started_at = req.body.started_at || new Date().toISOString();
   db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds: 0 });
   res.json({ started_at });
 });
