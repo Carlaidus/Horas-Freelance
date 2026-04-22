@@ -92,6 +92,24 @@ const VFX = {
     }
   },
 
+  toggleSummary(idx) {
+    const body = document.getElementById(`summary-body-${idx}`);
+    const chevron = document.getElementById(`summary-chevron-${idx}`);
+    if (!body) return;
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  },
+
+  toggleSummaryDetail() {
+    const body = document.getElementById('summary-body-detail');
+    const chevron = document.getElementById('summary-chevron-detail');
+    if (!body) return;
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+  },
+
   togglePrivacy() {
     this.privacy.on = !this.privacy.on;
     this.privacy.save();
@@ -194,7 +212,7 @@ const VFX = {
     slot.projectId = projectId ? parseInt(projectId) : null;
     slot.entries   = projectId ? await this.api.get(`/api/projects/${projectId}/entries`) : [];
     this._slotsSave();
-    if (projectId) { this.state.currentProjectId = parseInt(projectId); this.refreshCockpit(); }
+    if (projectId) this.state.currentProjectId = parseInt(projectId);
     this.renderProyecto();
   },
 
@@ -466,6 +484,8 @@ const VFX = {
     if (isMobile) {
       const open = sidebar.classList.toggle('mobile-open');
       if (backdrop) backdrop.classList.toggle('show', open);
+      const menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn) menuBtn.style.display = open ? 'none' : 'flex';
     } else {
       const collapsed = sidebar.classList.toggle('collapsed');
       layout.classList.toggle('sidebar-collapsed', collapsed);
@@ -479,16 +499,44 @@ const VFX = {
       document.getElementById('sidebar')?.classList.add('collapsed');
       document.getElementById('app')?.classList.add('sidebar-collapsed');
     }
-    // Botón flotante en móvil para abrir sidebar
-    if (isMobile && !document.getElementById('mobile-menu-btn')) {
+    this._initResponsiveSidebar();
+    // Botón hamburguesa — siempre presente, visible/oculto por CSS según viewport
+    if (!document.getElementById('mobile-menu-btn')) {
       const btn = document.createElement('button');
       btn.id = 'mobile-menu-btn';
       btn.onclick = () => VFX.toggleSidebar();
       btn.title = 'Menú';
-      btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:51;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:8px;color:var(--text2);display:flex;align-items:center;cursor:pointer';
-      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>';
       document.body.appendChild(btn);
     }
+  },
+
+  _initResponsiveSidebar() {
+    const BREAKPOINT = 1100; // px — por debajo colapsa automáticamente
+    this._autoCollapsed = false;
+
+    const check = () => {
+      const w = window.innerWidth;
+      if (w <= 768) return; // móvil lo gestiona toggleSidebar
+      const sidebar = document.getElementById('sidebar');
+      const layout  = document.getElementById('app');
+      if (!sidebar || !layout) return;
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      const manuallyCollapsed = localStorage.getItem('vfx_sidebar_collapsed') === 'true';
+
+      if (w < BREAKPOINT && !isCollapsed) {
+        sidebar.classList.add('collapsed');
+        layout.classList.add('sidebar-collapsed');
+        this._autoCollapsed = true;
+      } else if (w >= BREAKPOINT && isCollapsed && this._autoCollapsed && !manuallyCollapsed) {
+        sidebar.classList.remove('collapsed');
+        layout.classList.remove('sidebar-collapsed');
+        this._autoCollapsed = false;
+      }
+    };
+
+    window.addEventListener('resize', check);
+    check();
   },
 
   // ── NAVIGATION ─────────────────────────────────────────────
@@ -498,6 +546,13 @@ const VFX = {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(`view-${view}`)?.classList.add('active');
     document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
+    // Cerrar sidebar en móvil al navegar
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar')?.classList.remove('mobile-open');
+      document.getElementById('sidebar-backdrop')?.classList.remove('show');
+      const menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn) menuBtn.style.display = 'flex';
+    }
 
     if (view === 'dashboard') this.renderDashboard();
     if (view === 'projects') this.renderProjects();
@@ -638,14 +693,8 @@ const VFX = {
     `;
   },
 
-  async selectForCockpit(id) {
-    this.state.currentProjectId = id;
-    this.state.entries = await this.api.get(`/api/projects/${id}/entries`);
-    this.refreshCockpit();
-    // Resaltar fila activa
-    document.querySelectorAll('tr[data-project-id]').forEach(r => r.classList.remove('row-active'));
-    const row = document.querySelector(`tr[data-project-id="${id}"]`);
-    if (row) row.classList.add('row-active');
+  selectForCockpit(id) {
+    this.renderProjectDetail(id);
   },
 
   filterDashboard(filter) {
@@ -663,6 +712,7 @@ const VFX = {
 
   // ── PROYECTO EN CURSO ──────────────────────────────────────
   async renderProyecto() {
+    this._renderingProyecto = true;
     // Cargar entradas de slots que tienen proyecto pero entries vacío
     await Promise.all(this.state.slots.map(async (slot, idx) => {
       if (slot.projectId && slot.entries.length === 0) {
@@ -700,7 +750,11 @@ const VFX = {
       if (s.timer.active && !s.timer.paused) this._startSlotInterval(i);
     });
 
-    if (this.state.currentProjectId) this.refreshCockpit();
+    // Actualizar señal live en sidebar
+    const anyRunning = this.state.slots.some(s => s.timer.active && !s.timer.paused);
+    const signal = document.getElementById('sidebar-signal');
+    if (signal) signal.classList.toggle('live', anyRunning);
+    this._renderingProyecto = false;
   },
 
   _renderSlot(idx) {
@@ -784,6 +838,149 @@ const VFX = {
         </div>`}
         ${noProjects ? '' : timerHtml}
         ${entriesHtml}
+        ${this._renderSlotSummary(idx)}
+      </div>
+    `;
+  },
+
+  _renderSlotSummary(idx) {
+    const slot = this.state.slots[idx];
+    if (!slot?.projectId) return '';
+    const project = this.state.projects.find(p => p.id === slot.projectId);
+    if (!project) return '';
+
+    const entries    = slot.entries || [];
+    const hourlyRate = project.hourly_rate || 0;
+    const dailyRate  = hourlyRate * 8;
+    const totalHours = entries.reduce((s, e) => s + e.hours, 0);
+    const totalDays  = totalHours / 8;
+    const subtotal   = entries.reduce((s, e) => s + e.hours * (e.hourly_rate_override || hourlyRate), 0);
+    const ivaRate    = this.state.user.iva_rate || 21;
+    const irpfRate   = this.state.user.irpf_rate || 15;
+    const ivaAmount  = subtotal * (ivaRate / 100);
+    const irpfAmount = subtotal * (irpfRate / 100);
+    const total      = subtotal + ivaAmount - irpfAmount;
+    const yearEarnings = this.state.stats.summary?.total_earnings || subtotal;
+    const meterPct   = Math.min((yearEarnings / 30000) * 100, 100);
+    const meterClass = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
+
+    return `
+      <div class="project-summary">
+        <div class="summary-header summary-header-toggle" onclick="VFX.toggleSummary(${idx})">
+          <svg class="summary-chevron" id="summary-chevron-${idx}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="summary-header-label">Resumen del proyecto</span>
+        </div>
+
+        <div class="summary-collapsible" id="summary-body-${idx}" style="display:none">
+        <div class="summary-stats">
+          <div class="stat-pill">
+            <div class="stat-pill-label">Horas totales</div>
+            <div class="stat-pill-value cyan">${this.fmt.hours(totalHours)}</div>
+          </div>
+          <div class="stat-pill desktop-only">
+            <div class="stat-pill-label">Días</div>
+            <div class="stat-pill-value cyan">${totalDays.toFixed(2)} d</div>
+          </div>
+          <div class="stat-pill desktop-only">
+            <div class="stat-pill-label">Entradas</div>
+            <div class="stat-pill-value">${entries.length}</div>
+          </div>
+          <div class="stat-pill stat-pill-gold">
+            <div class="stat-pill-label">Total neto</div>
+            <div class="stat-pill-value gold" data-private>${this.fmt.currency(total)}</div>
+          </div>
+        </div>
+
+        <div class="summary-detail desktop-only">
+          <div>
+            <div class="cockpit-section-label" style="margin-bottom:8px">Desglose fiscal</div>
+            <div class="cockpit-row">
+              <span class="cockpit-row-label">Base imponible</span>
+              <span class="cockpit-row-value" data-private>${this.fmt.currency(subtotal)}</span>
+            </div>
+            <div class="cockpit-row">
+              <span class="cockpit-row-label">+ IVA (${ivaRate}%)</span>
+              <span class="cockpit-row-value green" data-private>+${this.fmt.currency(ivaAmount)}</span>
+            </div>
+            <div class="cockpit-row">
+              <span class="cockpit-row-label">− IRPF (${irpfRate}%)</span>
+              <span class="cockpit-row-value red" data-private>−${this.fmt.currency(irpfAmount)}</span>
+            </div>
+            <div class="cockpit-row" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
+              <span class="cockpit-row-label" style="color:var(--text)">Tarifa/día</span>
+              <span class="cockpit-row-value" data-private>${this.fmt.currency(dailyRate)}</span>
+            </div>
+          </div>
+          <div>
+            <div class="cockpit-section-label" style="margin-bottom:8px">Barómetro anual</div>
+            <div class="meter-bar-bg">
+              <div class="meter-bar-fill ${meterClass}" style="width:${meterPct}%"></div>
+            </div>
+            <div class="meter-label-row">
+              <span class="meter-label-text" data-private>${this.fmt.currency(yearEarnings)}</span>
+              <span class="meter-label-text">30.000 €</span>
+            </div>
+            ${project.budget_type === 'fixed' && project.fixed_budget ? `
+            <div style="margin-top:16px">
+              <div class="cockpit-section-label" style="margin-bottom:8px">Presupuesto cerrado</div>
+              <div class="cockpit-row">
+                <span class="cockpit-row-label">Acordado</span>
+                <span class="cockpit-row-value gold" data-private>${this.fmt.currency(project.fixed_budget)}</span>
+              </div>
+              <div class="cockpit-row">
+                <span class="cockpit-row-label">Balance</span>
+                <span class="cockpit-row-value ${project.fixed_budget - subtotal >= 0 ? 'green' : 'red'}" data-private>
+                  ${project.fixed_budget - subtotal >= 0 ? '+' : ''}${this.fmt.currency(project.fixed_budget - subtotal)}
+                </span>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div>
+          <div class="summary-controls-row">
+            <div>
+              <div class="cockpit-section-label" style="margin-bottom:8px">Trabajo</div>
+              <label class="summary-checkbox-label">
+                <input type="checkbox" ${project.is_completed ? 'checked' : ''} onchange="VFX.setProjectCompleted(${project.id}, this.checked)">
+                Trabajo finalizado
+              </label>
+            </div>
+            <div>
+              <div class="cockpit-section-label" style="margin-bottom:8px">Facturación</div>
+              <select class="summary-select" onchange="VFX.updateProjectStatus(${project.id}, this.value)">
+                <option value="pending" ${project.status === 'pending' ? 'selected' : ''}>⏳ Pendiente de envío</option>
+                <option value="sent" ${project.status === 'sent' ? 'selected' : ''}>📤 Enviada / En espera</option>
+                <option value="paid" ${project.status === 'paid' ? 'selected' : ''}>✅ Cobrada</option>
+              </select>
+            </div>
+          </div>
+          ${project.status === 'sent' || project.status === 'paid' ? `
+          <div class="summary-dates desktop-only">
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Fecha de envío de factura</label>
+              <input type="date" value="${project.invoiced_at || ''}" onchange="VFX.updateInvoiceDate(${project.id}, this.value)">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Fecha de cobro esperada <span style="opacity:0.6">(manual)</span></label>
+              <input type="date" value="${project.expected_payment_date || ''}" onchange="VFX.updateExpectedPayment(${project.id}, this.value)">
+            </div>
+          </div>
+          ` : ''}
+        </div>
+
+        <div class="summary-actions">
+          <button class="btn btn-ghost" onclick="VFX.exportProject(${project.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar JSON
+          </button>
+          <button class="btn btn-ghost" onclick="VFX.printInvoice(${project.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir / PDF
+          </button>
+        </div>
+        </div><!-- /summary-collapsible -->
       </div>
     `;
   },
@@ -983,154 +1180,10 @@ const VFX = {
 
   // ── COCKPIT ────────────────────────────────────────────────
   refreshCockpit() {
-    const project = this.state.projects.find(p => p.id === this.state.currentProjectId);
-    if (!project) {
-      document.getElementById('cockpit-body').innerHTML = `
-        <div class="cockpit-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-          <p>Selecciona un<br>proyecto</p>
-        </div>
-      `;
-      document.querySelector('.cockpit-signal').classList.remove('live');
-      return;
-    }
-
-    document.querySelector('.cockpit-signal').classList.add('live');
-
-    const entries = this.state.entries;
-    const hourlyRate = project.hourly_rate || 0;
-    const dailyRate = hourlyRate * 8;
-    const totalHours = entries.reduce((s, e) => s + e.hours, 0);
-    const totalDays = totalHours / 8;
-    const subtotal = entries.reduce((s, e) => s + e.hours * (e.hourly_rate_override || hourlyRate), 0);
-    const iva = (this.state.user.iva_rate || 21) / 100;
-    const irpf = (this.state.user.irpf_rate || 15) / 100;
-    const ivaAmount = subtotal * iva;
-    const irpfAmount = subtotal * irpf;
-    const total = subtotal + ivaAmount - irpfAmount;
-
-    // IRPF semáforo
-    const yearEarnings = this.state.stats.summary?.total_earnings || subtotal;
-    const meterPct = Math.min((yearEarnings / 30000) * 100, 100);
-    const meterClass = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
-
-    document.getElementById('cockpit-body').innerHTML = `
-      <div class="cockpit-project">
-        <div class="cockpit-project-name">${project.name}</div>
-        <div class="cockpit-company">${project.company_name}</div>
-        ${project.purchase_order ? `<div style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:3px">PO: ${project.purchase_order}</div>` : ''}
-        <div style="margin-top:8px">${this.renderBadge(project.status)}</div>
-      </div>
-
-      <div class="cockpit-section">
-        <div class="cockpit-section-label">Resumen</div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">Total horas</span>
-          <span class="cockpit-row-value cyan">${this.fmt.hours(totalHours)}</span>
-        </div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">Total días</span>
-          <span class="cockpit-row-value cyan">${totalDays.toFixed(2)} días</span>
-        </div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">Tarifa/día</span>
-          <span class="cockpit-row-value" data-private>${this.fmt.currency(dailyRate)}</span>
-        </div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">Entradas</span>
-          <span class="cockpit-row-value">${entries.length}</span>
-        </div>
-      </div>
-
-      <div class="cockpit-section">
-        <div class="cockpit-section-label">Desglose fiscal</div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">Subtotal</span>
-          <span class="cockpit-row-value" id="cp-subtotal" data-private>${this.fmt.currency(subtotal)}</span>
-        </div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">+ IVA (${this.state.user.iva_rate || 21}%)</span>
-          <span class="cockpit-row-value green" id="cp-iva" data-private>+${this.fmt.currency(ivaAmount)}</span>
-        </div>
-        <div class="cockpit-row">
-          <span class="cockpit-row-label">− IRPF (${this.state.user.irpf_rate || 15}%)</span>
-          <span class="cockpit-row-value red" id="cp-irpf" data-private>−${this.fmt.currency(irpfAmount)}</span>
-        </div>
-      </div>
-
-      <div class="cockpit-total">
-        <div class="cockpit-total-label">Total neto a cobrar</div>
-        <div class="cockpit-total-value" id="cp-total" data-private>${this.fmt.currency(total)}</div>
-      </div>
-
-      <div class="cockpit-irpf-meter">
-        <div class="cockpit-section-label">Barómetro anual</div>
-        <div class="meter-bar-bg">
-          <div class="meter-bar-fill ${meterClass}" style="width:${meterPct}%"></div>
-        </div>
-        <div class="meter-label-row">
-          <span class="meter-label-text" data-private>${this.fmt.currency(yearEarnings)}</span>
-          <span class="meter-label-text">30.000 €</span>
-        </div>
-      </div>
-
-      ${project.budget_type === 'fixed' && project.fixed_budget ? `
-        <div class="cockpit-section">
-          <div class="cockpit-section-label">Presupuesto cerrado</div>
-          <div class="cockpit-row">
-            <span class="cockpit-row-label">Presupuesto acordado</span>
-            <span class="cockpit-row-value gold" data-private>${this.fmt.currency(project.fixed_budget)}</span>
-          </div>
-          <div class="cockpit-row">
-            <span class="cockpit-row-label">Coste real (×tarifa)</span>
-            <span class="cockpit-row-value" data-private>${this.fmt.currency(subtotal)}</span>
-          </div>
-          <div class="cockpit-row">
-            <span class="cockpit-row-label">Balance cliente</span>
-            <span class="cockpit-row-value ${project.fixed_budget - subtotal >= 0 ? 'green' : 'red'}" data-private>
-              ${project.fixed_budget - subtotal >= 0 ? '+' : ''}${this.fmt.currency(project.fixed_budget - subtotal)}
-            </span>
-          </div>
-        </div>
-      ` : ''}
-
-      <div class="cockpit-status">
-        <div class="cockpit-section-label" style="margin-bottom:8px">Trabajo</div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:10px">
-          <input type="checkbox" ${project.is_completed ? 'checked' : ''} onchange="VFX.setProjectCompleted(${project.id}, this.checked)" style="width:14px;height:14px">
-          Trabajo finalizado
-        </label>
-        <div class="cockpit-section-label" style="margin-bottom:8px">Facturación</div>
-        <select onchange="VFX.updateProjectStatus(${project.id}, this.value)">
-          <option value="pending" ${project.status === 'pending' ? 'selected' : ''}>⏳ Pendiente de envío</option>
-          <option value="sent" ${project.status === 'sent' ? 'selected' : ''}>📤 Enviada / En espera</option>
-          <option value="paid" ${project.status === 'paid' ? 'selected' : ''}>✅ Cobrada</option>
-        </select>
-        ${project.status === 'sent' || project.status === 'paid' ? `
-          <div style="margin-top:10px">
-            <label style="font-size:11px;color:var(--text3)">Fecha de envío de factura</label>
-            <input type="date" value="${project.invoiced_at || ''}" style="margin-top:4px"
-              onchange="VFX.updateInvoiceDate(${project.id}, this.value)">
-          </div>
-          <div style="margin-top:8px">
-            <label style="font-size:11px;color:var(--text3)">Fecha de cobro esperada <span style="opacity:0.6">(manual)</span></label>
-            <input type="date" value="${project.expected_payment_date || ''}" style="margin-top:4px"
-              onchange="VFX.updateExpectedPayment(${project.id}, this.value)">
-          </div>
-        ` : ''}
-      </div>
-
-      <div class="cockpit-actions">
-        <button class="btn btn-ghost w-full" onclick="VFX.exportProject(${project.id})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar datos (JSON)
-        </button>
-        <button class="btn btn-ghost w-full" onclick="VFX.printInvoice(${project.id})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Imprimir / PDF
-        </button>
-      </div>
-    `;
+    const anyRunning = this.state.slots.some(s => s.timer.active && !s.timer.paused);
+    const signal = document.getElementById('sidebar-signal');
+    if (signal) signal.classList.toggle('live', anyRunning);
+    if (this.state.view === 'proyecto' && !this._renderingProyecto) this.renderProyecto();
   },
 
   renderBadge(status) {
@@ -1593,15 +1646,6 @@ const VFX = {
   },
 
   renderProjects() {
-    // Limpiar cockpit al ver la lista de proyectos
-    document.getElementById('cockpit-body').innerHTML = `
-      <div class="cockpit-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-        <p>Haz clic en un<br>proyecto para ver<br>su panel de control</p>
-      </div>
-    `;
-    document.querySelector('.cockpit-signal')?.classList.remove('live');
-
     const projects = this.state.projects;
     const el = document.getElementById('view-projects');
     const total = projects.length;
@@ -1672,10 +1716,8 @@ const VFX = {
       this.api.get(`/api/projects/${id}/entries`)
     ]);
 
-    // Poblar cockpit con datos de este proyecto
     this.state.currentProjectId = p.id;
     this.state.entries = entries;
-    this.refreshCockpit();
 
     const u = this.state.user;
     const ivaRate  = u.iva_rate  ?? 21;
@@ -1720,9 +1762,13 @@ const VFX = {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Editar
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="VFX.downloadProjectReport(${p.id})" style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="VFX.exportProject(${p.id})" style="display:flex;align-items:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar PDF
+            Exportar JSON
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="VFX.printInvoice(${p.id})" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Generar factura
           </button>
         </div>
       </div>
@@ -1737,7 +1783,13 @@ const VFX = {
         ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="project-summary" style="margin-bottom:24px">
+        <div class="summary-header summary-header-toggle" onclick="VFX.toggleSummaryDetail()">
+          <svg class="summary-chevron" id="summary-chevron-detail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="summary-header-label">Resumen del proyecto</span>
+        </div>
+        <div id="summary-body-detail" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px">
         <div class="table-container" style="padding:20px">
           <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:14px">Información del proyecto</div>
           <div style="display:flex;flex-direction:column;gap:10px">
@@ -1785,6 +1837,8 @@ const VFX = {
           </div>
         </div>
       </div>
+        </div><!-- /summary-body-detail -->
+      </div><!-- /project-summary -->
 
       <div class="table-container">
         <div class="table-header">
@@ -2897,7 +2951,10 @@ const VFX = {
           <h1 class="view-title">Facturas</h1>
           <p class="view-subtitle">${invoices.length} facturas · ${totalBorradores} borrador${totalBorradores !== 1 ? 'es' : ''}</p>
         </div>
-        <button class="btn-primary" onclick="VFX.openInvoiceForm()">+ Nueva factura</button>
+        <button class="btn btn-primary" onclick="VFX.openInvoiceForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Nueva factura
+        </button>
       </div>
 
       <div class="stats-row" style="margin-bottom:24px">

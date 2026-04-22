@@ -71,6 +71,15 @@
           <span id="sidebar-expiry" style="display:none"></span>
         </div>
       </div>
+      <div class="sidebar-status-bar">
+        <button id="privacy-toggle" onclick="VFX.togglePrivacy()" title="Ocultar cifras (modo privacidad)">
+          <svg id="privacy-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg id="privacy-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <span class="privacy-label">Privacidad</span>
+        </button>
+        <div id="sidebar-signal"></div>
+      </div>
+
       <a href="/admin" id="sidebar-admin-link" style="display:none;align-items:center;gap:8px;width:100%;padding:9px 14px;background:rgba(150,120,255,0.08);border:1px solid rgba(150,120,255,0.25);border-radius:8px;color:#a897ff;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit;text-decoration:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Panel Admin</span>
@@ -93,25 +102,6 @@
       <div id="view-settings" class="view"></div>
     </main>
 
-    <!-- COCKPIT PANEL -->
-    <aside class="cockpit" id="cockpit">
-      <div class="cockpit-header">
-        <span class="cockpit-label">PANEL DE CONTROL</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="privacy-toggle" onclick="VFX.togglePrivacy()" title="Ocultar cifras (modo privacidad)">
-            <svg id="privacy-icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg id="privacy-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-          </button>
-          <div class="cockpit-signal"></div>
-        </div>
-      </div>
-      <div id="cockpit-body">
-        <div class="cockpit-empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-          <p>Selecciona un<br>proyecto</p>
-        </div>
-      </div>
-    </aside>
   </div>
 
   <!-- MODAL OVERLAY -->
