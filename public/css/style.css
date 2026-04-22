@@ -1308,6 +1308,7 @@ tr[data-project-id].row-active td:first-child {
   padding: 40px 24px;
 }
 
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse-red {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }

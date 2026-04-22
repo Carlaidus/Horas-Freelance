@@ -105,6 +105,28 @@ const VFX = {
     `);
   },
 
+  async requestUpgrade(plan, price, period, btnEl) {
+    const original = btnEl.innerHTML;
+    btnEl.disabled = true;
+    btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>&nbsp;Enviando...`;
+    try {
+      const res = await this.api.post('/api/contact/upgrade', { plan, price, period });
+      btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;¡Solicitud enviada!`;
+      btnEl.style.background = 'var(--green)';
+      btnEl.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btnEl.innerHTML = original;
+        btnEl.disabled = false;
+        btnEl.style.background = '';
+        btnEl.style.borderColor = '';
+      }, 4000);
+    } catch (e) {
+      btnEl.innerHTML = original;
+      btnEl.disabled = false;
+      alert('Error al enviar la solicitud. Inténtalo de nuevo.');
+    }
+  },
+
   _upgradeWallHtml(feature) {
     const labels = {
       stats: 'Estadísticas detalladas',
@@ -2117,42 +2139,36 @@ const VFX = {
       lifetime:  { label: 'Vitalicio',  price: 200, days: null, rank: 4 },
     };
 
-    const mk = (subject, bodyText) => {
-      return `mailto:carlosvfx@yahoo.es?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-    };
-    const mkBody = (planLabel, price, periodo, extra) =>
-      `Hola,\n\nMe gustaría activar el plan Pro de VFX Hours.\n\nNombre: ${userName}\nPlan elegido: ${planLabel}\nPrecio: ${price}\nPeriodo: ${periodo}${extra ? '\n' + extra : ''}\n\nQuedo a la espera de las instrucciones de pago.\n\nGracias.`;
-
     // calcula diferencia de upgrade: valor restante del plan actual prorrateado
     const upgradeDiff = (targetPeriod) => {
       if (!isPro || !daysLeft || !currentPeriod || !PERIODS[currentPeriod]) return null;
       const cur = PERIODS[currentPeriod];
-      if (!cur.days) return null; // vitalicio, no aplica
+      if (!cur.days) return null;
       const tgt = PERIODS[targetPeriod];
-      if (!tgt || tgt.rank <= cur.rank) return null; // no es upgrade
+      if (!tgt || tgt.rank <= cur.rank) return null;
       const dailyRate = cur.price / cur.days;
       const remainingValue = Math.round(dailyRate * daysLeft * 100) / 100;
       const diff = Math.max(0, Math.round((tgt.price - remainingValue) * 100) / 100);
-      return { diff, remainingValue, curLabel: cur.label, daysLeft };
+      return { diff, curLabel: cur.label, daysLeft };
     };
 
     // botón para tarjeta de periodo
-    const periodBtn = (periodKey, btnLabel, subject, bodyFn) => {
+    const periodBtn = (periodKey, btnLabel) => {
       const isCurrent = isPro && currentPeriod === periodKey;
-      if (isCurrent) return ''; // ya tiene badge arriba, sin botón
+      if (isCurrent) return '';
+      const p = PERIODS[periodKey];
       const ud = upgradeDiff(periodKey);
-      if (ud) {
-        // es upgrade: mostrar diferencia + botón con importe calculado
-        const bodyText = bodyFn(`(upgrade desde ${ud.curLabel}, diferencia calculada: ${ud.diff}€)`);
-        return `
-          <div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.5">
-            Te quedan <strong style="color:var(--text)">${ud.daysLeft} días</strong> en tu plan ${ud.curLabel}.<br>
-            Cambio al ${PERIODS[periodKey].label}: <strong style="color:var(--gold)">${ud.diff}€</strong> adicionales.
-          </div>
-          <a href="${mk(subject, bodyText)}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:11px;text-decoration:none">${mailIco}&nbsp;Cambiar a ${PERIODS[periodKey].label}</a>
-        `;
-      }
-      return `<a href="${mk(subject, bodyFn())}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIco}&nbsp;${btnLabel}</a>`;
+      const priceLabel = p.days ? `${p.price}€` : `${p.price}€ (pago único)`;
+      const periodLabel = p.days ? `${p.days} días` : 'Acceso vitalicio';
+      const extraNote = ud ? `, upgrade desde ${ud.curLabel}, diferencia calculada: ${ud.diff}€` : '';
+      const onclickAttr = `VFX.requestUpgrade('${p.label}', '${priceLabel}', '${periodLabel}${extraNote}', this)`;
+      return `
+        ${ud ? `<div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.5">
+          Te quedan <strong style="color:var(--text)">${ud.daysLeft} días</strong> en tu plan ${ud.curLabel}.<br>
+          Cambio al ${p.label}: <strong style="color:var(--gold)">${ud.diff}€</strong> adicionales.
+        </div>` : ''}
+        <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="${onclickAttr}">${mailIco}&nbsp;${btnLabel}</button>
+      `;
     };
 
     // badge de "plan actual" con color por tipo
@@ -2232,7 +2248,7 @@ const VFX = {
             </div>
             ${!isPro ? `<div style="padding-top:16px;border-top:1px solid var(--border);margin-top:16px">
               <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px">O activa directamente el plan mensual</div>
-              <a href="${mk('Activar Pro Mensual — VFX Hours', mkBody('Pro Mensual', '9€/mes', '1 mes (renovación mensual)'))}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px;text-decoration:none">${mailIco}&nbsp;Activar Pro Mensual</a>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:12px" onclick="VFX.requestUpgrade('Pro Mensual','9€/mes','1 mes (renovación mensual)',this)">${mailIco}&nbsp;Activar Pro Mensual</button>
             </div>` : ''}
           </div>
         </div>
@@ -2317,9 +2333,7 @@ const VFX = {
           </div>
 
           <div style="flex-shrink:0;width:210px">
-            ${isLifeCurrent ? '' : periodBtn('lifetime', 'Activar Vitalicio',
-              'Activar Plan Vitalicio — VFX Hours',
-              (extra) => mkBody('Pro Vitalicio', '200€ (pago único)', 'Acceso vitalicio', extra))}
+            ${isLifeCurrent ? '' : periodBtn('lifetime', 'Activar Vitalicio')}
           </div>
         </div>
 
