@@ -147,6 +147,10 @@ const HELP_CONTENT = [
       {
         q: '¿Cómo cambio mis datos o contraseña?',
         a: 'Ve a la sección **Ajustes**. Desde ahí puedes actualizar tu nombre, datos de facturación, profesión y contraseña.'
+      },
+      {
+        q: '¿Qué es la meta de ingresos anual y dónde se configura?',
+        a: 'Es el objetivo de facturación anual que aparece como barómetro en el resumen del proyecto. Ve a **Ajustes → Objetivos** y escribe la cifra que quieres alcanzar. El barómetro muestra en tiempo real qué porcentaje llevas del año.'
       }
     ]
   }
