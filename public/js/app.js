@@ -390,7 +390,8 @@ const VFX = {
     },
     date(d) {
       if (!d) return '—';
-      return new Date(d + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      const s = String(d).slice(0, 10);
+      return new Date(s + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     },
     month(ym) {
       const [y, m] = ym.split('-');
