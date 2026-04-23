@@ -1582,8 +1582,8 @@ const VFX = {
 
     const annualGoal     = this.state.user.annual_goal  || 50000;
     const monthlyGoal    = this.state.user.monthly_goal || 4000;
-    const annualGoalPct  = Math.min(Math.round((totalEarnings / annualGoal) * 100), 100);
-    const monthlyGoalPct = Math.min(Math.round((monthEarnings / monthlyGoal) * 100), 100);
+    const annualGoalPct  = Math.min(Math.round((this.state.yearEarnings  / annualGoal)  * 100), 100);
+    const monthlyGoalPct = Math.min(Math.round((this.state.monthEarnings / monthlyGoal) * 100), 100);
 
     document.getElementById('stats-content').innerHTML = `
       <div class="metrics-grid">
@@ -1607,12 +1607,6 @@ const VFX = {
           <div class="metric-value" style="color:var(--green)">${totalProjects}</div>
           <div class="metric-sub">${totalClients} cliente${totalClients !== 1 ? 's' : ''} distintos</div>
         </div>
-        ${this.state.statsPeriod === '1y' ? `
-        <div class="metric-card">
-          <div class="metric-label">Objetivo anual</div>
-          <div class="metric-value" style="color:${annualGoalPct >= 100 ? 'var(--green)' : 'var(--gold)'}" data-private>${annualGoalPct}%</div>
-          <div class="metric-sub" data-private>${this.fmt.currency(totalEarnings)} de ${this.fmt.currency(annualGoal)}</div>
-        </div>` : ''}
       </div>
 
       <div class="stats-grid">
@@ -1659,12 +1653,36 @@ const VFX = {
               <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:2px">Proyección final</div>
               <div style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--text)">${this.fmt.currency(projectedMonth)}</div>
               <div style="font-size:11px;color:var(--text3);margin-top:6px">Día ${dayOfMonth} de ${daysInMonth}</div>
-              <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Meta mensual · <span data-private>${this.fmt.currency(monthlyGoal)}</span></div>
-                <div style="background:var(--border);border-radius:4px;height:5px">
-                  <div style="background:var(--gold);border-radius:4px;height:5px;width:${monthlyGoalPct}%;transition:width .3s"></div>
-                </div>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px">${monthlyGoalPct}% alcanzado</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Objetivos</div>
+          <div style="display:flex;flex-direction:column;gap:20px;margin-top:4px">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+                <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Mensual</span>
+                <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--green)" data-private>${monthlyGoalPct}%</span>
+              </div>
+              <div style="background:var(--border);border-radius:6px;height:8px;overflow:hidden">
+                <div style="background:var(--green);height:8px;border-radius:6px;width:${monthlyGoalPct}%;transition:width .5s ease"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:5px">
+                <span style="font-size:11px;color:var(--text3)" data-private>${this.fmt.currency(this.state.monthEarnings)}</span>
+                <span style="font-size:11px;color:var(--text3)" data-private>${this.fmt.currency(monthlyGoal)}</span>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+                <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Anual ${new Date().getFullYear()}</span>
+                <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--cyan)" data-private>${annualGoalPct}%</span>
+              </div>
+              <div style="background:var(--border);border-radius:6px;height:8px;overflow:hidden">
+                <div style="background:var(--cyan);height:8px;border-radius:6px;width:${annualGoalPct}%;transition:width .5s ease"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:5px">
+                <span style="font-size:11px;color:var(--text3)" data-private>${this.fmt.currency(this.state.yearEarnings)}</span>
+                <span style="font-size:11px;color:var(--text3)" data-private>${this.fmt.currency(annualGoal)}</span>
               </div>
             </div>
           </div>
