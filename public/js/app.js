@@ -500,14 +500,25 @@ const VFX = {
   },
 
   async loadAll() {
-    const [user, projects, companies] = await Promise.all([
+    const now = new Date();
+    const y = now.getFullYear(), m = String(now.getMonth() + 1).padStart(2, '0');
+    const monthFrom = `${y}-${m}-01`;
+    const monthTo   = `${y}-${m}-${new Date(y, now.getMonth() + 1, 0).getDate()}`;
+    const yearFrom  = `${y}-01-01`;
+    const yearTo    = `${y}-12-31`;
+
+    const [user, projects, companies, monthSummary, yearSummary] = await Promise.all([
       this.api.get('/api/user'),
       this.api.get('/api/projects'),
-      this.api.get('/api/companies')
+      this.api.get('/api/companies'),
+      this.api.get(`/api/stats/summary?from=${monthFrom}&to=${monthTo}`),
+      this.api.get(`/api/stats/summary?from=${yearFrom}&to=${yearTo}`)
     ]);
     this.state.user = user;
     this.state.projects = projects;
     this.state.companies = companies;
+    this.state.monthEarnings = monthSummary?.total_earnings || 0;
+    this.state.yearEarnings  = yearSummary?.total_earnings  || 0;
     // Limpiar slots que apuntan a proyectos que este usuario ya no posee
     let slotsDirty = false;
     this.state.slots.forEach(s => {
@@ -1057,10 +1068,14 @@ const VFX = {
     const ivaAmount  = subtotal * (ivaRate / 100);
     const irpfAmount = subtotal * (irpfRate / 100);
     const total      = subtotal + ivaAmount - irpfAmount;
-    const yearEarnings = this.state.stats.summary?.total_earnings || subtotal;
-    const annualGoal  = this.state.user.annual_goal || 50000;
-    const meterPct   = Math.min((yearEarnings / annualGoal) * 100, 100);
-    const meterClass = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
+    const yearEarnings   = this.state.yearEarnings  || 0;
+    const monthEarnings  = this.state.monthEarnings || 0;
+    const annualGoal     = this.state.user.annual_goal  || 50000;
+    const monthlyGoal    = this.state.user.monthly_goal || 4000;
+    const meterPct       = Math.min((yearEarnings  / annualGoal)  * 100, 100);
+    const monthMeterPct  = Math.min((monthEarnings / monthlyGoal) * 100, 100);
+    const meterClass     = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
+    const monthMeterClass = monthMeterPct < 33 ? 'low' : monthMeterPct < 66 ? 'mid' : 'high';
 
     return `
       <div class="project-summary">
@@ -1110,13 +1125,21 @@ const VFX = {
             </div>
           </div>
           <div>
-            <div class="cockpit-section-label" style="margin-bottom:8px">Barómetro anual</div>
+            <div class="cockpit-section-label" style="margin-bottom:8px">Meta de ingresos anual</div>
             <div class="meter-bar-bg">
               <div class="meter-bar-fill ${meterClass}" style="width:${meterPct}%"></div>
             </div>
             <div class="meter-label-row">
               <span class="meter-label-text" data-private>${this.fmt.currency(yearEarnings)}</span>
-              <span class="meter-label-text">30.000 €</span>
+              <span class="meter-label-text" data-private>${this.fmt.currency(annualGoal)}</span>
+            </div>
+            <div class="cockpit-section-label" style="margin-bottom:8px;margin-top:16px">Meta de ingresos mensual</div>
+            <div class="meter-bar-bg">
+              <div class="meter-bar-fill ${monthMeterClass}" style="width:${monthMeterPct}%"></div>
+            </div>
+            <div class="meter-label-row">
+              <span class="meter-label-text" data-private>${this.fmt.currency(monthEarnings)}</span>
+              <span class="meter-label-text" data-private>${this.fmt.currency(monthlyGoal)}</span>
             </div>
             ${project.budget_type === 'fixed' && project.fixed_budget ? `
             <div style="margin-top:16px">
@@ -1581,7 +1604,7 @@ const VFX = {
           <div class="metric-value" style="color:var(--green)">${totalProjects}</div>
           <div class="metric-sub">${totalClients} cliente${totalClients !== 1 ? 's' : ''} distintos</div>
         </div>
-        ${period === '1y' ? `
+        ${this.state.statsPeriod === '1y' ? `
         <div class="metric-card">
           <div class="metric-label">Objetivo anual</div>
           <div class="metric-value" style="color:${annualGoalPct >= 100 ? 'var(--green)' : 'var(--gold)'}" data-private>${annualGoalPct}%</div>
