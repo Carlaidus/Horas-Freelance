@@ -34,7 +34,7 @@ const HELP_CONTENT = [
       },
       {
         q: '¿Funciona sin conexión a internet?',
-        a: 'No. VFX Hours necesita conexión para cargar y guardar los datos. Si pierdes la conexión en mitad de una sesión, el timer seguirá mostrándose en pantalla, pero los cambios no se guardarán hasta que vuelva la conexión.\n\nRecomendamos instalar la app en la pantalla de inicio para acceder rápido y asegurarte de no perder el contador por cerrar accidentalmente el navegador.'
+        a: 'No. VFX Hours necesita conexión para cargar y guardar los datos. Si pierdes la conexión en mitad de una sesión, el timer seguirá mostrándose en pantalla, pero los cambios no se sincronizarán hasta que vuelva la conexión.'
       }
     ]
   },
@@ -73,8 +73,8 @@ const HELP_CONTENT = [
     title: 'Timer y registros de tiempo',
     items: [
       {
-        q: '¿El timer sigue contando si cierro la app o la pantalla?',
-        a: 'Si cierras completamente el navegador o la pestaña, el timer se detiene. Por eso recomendamos **instalar la app en la pantalla de inicio**: con un toque la tienes lista sin riesgo de cerrarla por accidente.\n\nSi solo bloqueas la pantalla del móvil con la app en segundo plano, en algunos dispositivos el timer puede seguir activo, pero no está garantizado.'
+        q: '¿El timer sigue contando si cierro el navegador o cambio de dispositivo?',
+        a: 'Sí. El timer está guardado en la nube — puedes cerrar el navegador, apagar el dispositivo o abrir la app desde otro sitio y seguirá donde lo dejaste. La app se sincroniza automáticamente cada 15 segundos entre todos tus dispositivos.'
       },
       {
         q: '¿Puedo tener varios timers corriendo a la vez?',
