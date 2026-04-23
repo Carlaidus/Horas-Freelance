@@ -1739,7 +1739,8 @@ const VFX = {
         <div class="metric-card">
           <div class="metric-label">Período</div>
           <div style="font-size:13px;font-weight:600;color:var(--text1);margin-top:6px">${summary?.first_date ? this.fmt.date(summary.first_date) : '—'}</div>
-          <div style="font-size:13px;font-weight:600;color:var(--text1);margin-top:2px">${summary?.last_date ? this.fmt.date(summary.last_date) : '—'}</div>
+          <div style="font-size:11px;color:var(--text3);margin:2px 0">↓</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">${summary?.last_date ? this.fmt.date(summary.last_date) : '—'}</div>
         </div>`}
       </div>
       <div class="stats-grid">
