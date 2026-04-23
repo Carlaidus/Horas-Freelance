@@ -431,8 +431,10 @@ app.get('/api/stats/summary', async (req, res) => {
 });
 
 app.get('/api/stats/project/:id', async (req, res) => {
-  try { res.json(await db.getProjectStatsDetail(+req.params.id)); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const { from, to, group } = req.query;
+    res.json(await db.getProjectStatsDetail(+req.params.id, from, to, group || 'month'));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/stats/treasury', async (req, res) => {

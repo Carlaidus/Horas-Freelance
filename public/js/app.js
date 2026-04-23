@@ -1702,8 +1702,10 @@ const VFX = {
       return;
     }
     el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
-    const { summary, monthly } = await this.api.get(`/api/stats/project/${projectId}`);
+    const { from, to, group } = this.periodDates(this.state.statsPeriod);
+    const { summary, monthly } = await this.api.get(`/api/stats/project/${projectId}?from=${from}&to=${to}&group=${group}`);
     const project = this.state.projects.find(p => p.id === projectId) || {};
+    const groupLabel = group === 'day' ? 'día' : group === 'week' ? 'semana' : 'mes';
     const iva = (this.state.user.iva_rate || 21) / 100;
     const irpf = (this.state.user.irpf_rate || 15) / 100;
     const subtotal = summary?.total_amount || 0;
@@ -1741,7 +1743,7 @@ const VFX = {
       </div>
       <div class="stats-grid">
         <div class="chart-card full">
-          <div class="chart-title">Horas e ingresos por mes — ${project.name || ''}</div>
+          <div class="chart-title">Horas e ingresos por ${groupLabel} — ${project.name || ''}</div>
           <div class="chart-wrap" style="height:200px">
             <canvas id="chart-monthly"></canvas>
           </div>
@@ -1749,7 +1751,7 @@ const VFX = {
       </div>
     `;
     if (this.applyPrivacy) this.applyPrivacy();
-    this.renderPeriodicChart(monthly, 'month');
+    this.renderPeriodicChart(monthly, group);
   },
 
   async changeStatsPeriod(period) {

@@ -466,7 +466,14 @@ const getClientStatsRange = async (userId, from, to) => {
   return r.rows;
 };
 
-const getProjectStatsDetail = async (projectId) => {
+const getProjectStatsDetail = async (projectId, from, to, group = 'month') => {
+  const fmt = group === 'day'  ? `TO_CHAR(e.date::date, 'YYYY-MM-DD')`
+            : group === 'week' ? `TO_CHAR(e.date::date, 'IYYY-IW')`
+            :                    `TO_CHAR(e.date::date, 'YYYY-MM')`;
+  const params = [projectId];
+  let dateWhere = '';
+  if (from && to) { params.push(from, to); dateWhere = `AND e.date >= $2 AND e.date <= $3`; }
+
   const sr = await q(`
     SELECT
       COALESCE(SUM(e.hours), 0) as total_hours,
@@ -477,18 +484,18 @@ const getProjectStatsDetail = async (projectId) => {
       COALESCE(AVG(e.hours), 0) as avg_hours_per_entry
     FROM entries e
     JOIN projects p ON e.project_id = p.id
-    WHERE e.project_id = $1
-  `, [projectId]);
+    WHERE e.project_id = $1 ${dateWhere}
+  `, params);
   const mr = await q(`
-    SELECT TO_CHAR(e.date::date, 'YYYY-MM') as period,
+    SELECT ${fmt} as period,
       SUM(e.hours) as hours,
       SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) as earnings
     FROM entries e
     JOIN projects p ON e.project_id = p.id
-    WHERE e.project_id = $1
-    GROUP BY TO_CHAR(e.date::date, 'YYYY-MM')
+    WHERE e.project_id = $1 ${dateWhere}
+    GROUP BY ${fmt}
     ORDER BY period ASC
-  `, [projectId]);
+  `, params);
   return { summary: sr.rows[0], monthly: mr.rows };
 };
 
