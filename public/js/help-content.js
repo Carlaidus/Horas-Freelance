@@ -145,8 +145,8 @@ const HELP_CONTENT = [
         a: 'Ve a la sección **Ajustes**. Desde ahí puedes actualizar tu nombre, datos de facturación, profesión y contraseña.'
       },
       {
-        q: '¿Qué es la meta de ingresos anual y dónde se configura?',
-        a: 'Es el objetivo de facturación anual que aparece como barómetro en el resumen del proyecto. Ve a **Ajustes → Objetivos** y escribe la cifra que quieres alcanzar. El barómetro muestra en tiempo real qué porcentaje llevas del año.'
+        q: '¿Qué son las metas de ingresos y dónde se configuran?',
+        a: 'En **Ajustes → Objetivos** puedes fijar dos metas:\n\n• **Meta anual:** aparece como barómetro en el resumen del proyecto y como métrica en Estadísticas cuando el período es "Este año".\n• **Meta mensual:** aparece en la tarjeta de proyección de Estadísticas con una barra de progreso del mes en curso.'
       }
     ]
   }

@@ -1058,7 +1058,7 @@ const VFX = {
     const irpfAmount = subtotal * (irpfRate / 100);
     const total      = subtotal + ivaAmount - irpfAmount;
     const yearEarnings = this.state.stats.summary?.total_earnings || subtotal;
-    const annualGoal  = this.state.user.annual_goal || 30000;
+    const annualGoal  = this.state.user.annual_goal || 50000;
     const meterPct   = Math.min((yearEarnings / annualGoal) * 100, 100);
     const meterClass = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
 
@@ -1554,6 +1554,11 @@ const VFX = {
     const projPct        = Math.min(Math.round((dayOfMonth / daysInMonth) * 100), 100);
     const circumference  = 2 * Math.PI * 30;
 
+    const annualGoal     = this.state.user.annual_goal  || 50000;
+    const monthlyGoal    = this.state.user.monthly_goal || 4000;
+    const annualGoalPct  = Math.min(Math.round((totalEarnings / annualGoal) * 100), 100);
+    const monthlyGoalPct = Math.min(Math.round((monthEarnings / monthlyGoal) * 100), 100);
+
     document.getElementById('stats-content').innerHTML = `
       <div class="metrics-grid">
         <div class="metric-card">
@@ -1576,6 +1581,12 @@ const VFX = {
           <div class="metric-value" style="color:var(--green)">${totalProjects}</div>
           <div class="metric-sub">${totalClients} cliente${totalClients !== 1 ? 's' : ''} distintos</div>
         </div>
+        ${period === '1y' ? `
+        <div class="metric-card">
+          <div class="metric-label">Objetivo anual</div>
+          <div class="metric-value" style="color:${annualGoalPct >= 100 ? 'var(--green)' : 'var(--gold)'}" data-private>${annualGoalPct}%</div>
+          <div class="metric-sub" data-private>${this.fmt.currency(totalEarnings)} de ${this.fmt.currency(annualGoal)}</div>
+        </div>` : ''}
       </div>
 
       <div class="stats-grid">
@@ -1622,6 +1633,13 @@ const VFX = {
               <div style="font-size:11px;color:var(--text3);margin-top:8px;margin-bottom:2px">Proyección final</div>
               <div style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--text)">${this.fmt.currency(projectedMonth)}</div>
               <div style="font-size:11px;color:var(--text3);margin-top:6px">Día ${dayOfMonth} de ${daysInMonth}</div>
+              <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Meta mensual · <span data-private>${this.fmt.currency(monthlyGoal)}</span></div>
+                <div style="background:var(--border);border-radius:4px;height:5px">
+                  <div style="background:var(--gold);border-radius:4px;height:5px;width:${monthlyGoalPct}%;transition:width .3s"></div>
+                </div>
+                <div style="font-size:11px;color:var(--text3);margin-top:3px">${monthlyGoalPct}% alcanzado</div>
+              </div>
             </div>
           </div>
         </div>
@@ -2476,10 +2494,14 @@ const VFX = {
 
             <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
               <div class="settings-section-title">Objetivos</div>
-              <div class="form-grid" style="max-width:200px">
-                <div class="form-group">
-                  <label>Meta de ingresos anual (€)</label>
-                  <input type="number" name="annual_goal" value="${u.annual_goal||30000}" step="1000" min="0">
+              <div style="display:flex;flex-direction:column;gap:10px;max-width:480px">
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="flex:1;min-width:180px;font-size:13px;color:var(--text2);margin:0">Meta de ingresos anual (€)</label>
+                  <input type="number" name="annual_goal" value="${u.annual_goal||50000}" step="1000" min="0" style="width:150px;flex-shrink:0">
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                  <label style="flex:1;min-width:180px;font-size:13px;color:var(--text2);margin:0">Meta de ingresos mensual (€)</label>
+                  <input type="number" name="monthly_goal" value="${u.monthly_goal||4000}" step="500" min="0" style="width:150px;flex-shrink:0">
                 </div>
               </div>
             </div>
@@ -3186,7 +3208,8 @@ const VFX = {
     const data = Object.fromEntries(new FormData(form));
     data.iva_rate = parseFloat(data.iva_rate) || 21;
     data.irpf_rate = parseFloat(data.irpf_rate) || 15;
-    data.annual_goal = parseInt(data.annual_goal) || 30000;
+    data.annual_goal  = parseInt(data.annual_goal)  || 50000;
+    data.monthly_goal = parseInt(data.monthly_goal) || 4000;
     await this.api.put('/api/user', data);
     this.state.user = { ...this.state.user, ...data };
     this.updateSidebarUser();

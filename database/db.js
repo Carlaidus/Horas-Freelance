@@ -182,7 +182,8 @@ const init = async () => {
   `);
   // columnas añadidas después del despliegue inicial
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_period TEXT DEFAULT NULL`);
-  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS annual_goal INTEGER DEFAULT 30000`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS annual_goal INTEGER DEFAULT 50000`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS monthly_goal INTEGER DEFAULT 4000`);
 };
 
 // ── USER ──────────────────────────────────────────────────────
@@ -194,13 +195,14 @@ const getUser = async (id) => {
 const saveUser = async (data) => {
   await q(`
     UPDATE users SET name=$1, email=$2, nif=$3, address=$4, city=$5, postal_code=$6,
-    phone=$7, profession=$8, iva_rate=$9, irpf_rate=$10, iban=$11, annual_goal=$12
-    WHERE id=$13
+    phone=$7, profession=$8, iva_rate=$9, irpf_rate=$10, iban=$11, annual_goal=$12, monthly_goal=$13
+    WHERE id=$14
   `, [
     data.name ?? '', data.email ?? '', data.nif ?? '', data.address ?? '',
     data.city ?? '', data.postal_code ?? '', data.phone ?? '',
     data.profession ?? 'VFX Compositor', data.iva_rate ?? 21.0,
-    data.irpf_rate ?? 15.0, data.iban ?? '', data.annual_goal ?? 30000, data.id
+    data.irpf_rate ?? 15.0, data.iban ?? '', data.annual_goal ?? 50000,
+    data.monthly_goal ?? 4000, data.id
   ]);
 };
 
