@@ -917,7 +917,8 @@ const VFX = {
     // Preservar estado abierto del acordeón de resumen antes del re-render
     const openSummaries = new Set();
     this.state.slots.forEach((_, i) => {
-      if (document.getElementById(`summary-body-${i}`)?.style.display !== 'none') openSummaries.add(i);
+      const b = document.getElementById(`summary-body-${i}`);
+      if (b && b.style.display !== 'none') openSummaries.add(i);
     });
 
     const el = document.getElementById('view-proyecto');
@@ -1125,21 +1126,23 @@ const VFX = {
             </div>
           </div>
           <div>
-            <div class="cockpit-section-label" style="margin-bottom:8px">Meta de ingresos anual</div>
-            <div class="meter-bar-bg">
-              <div class="meter-bar-fill ${meterClass}" style="width:${meterPct}%"></div>
-            </div>
-            <div class="meter-label-row">
-              <span class="meter-label-text" data-private>${this.fmt.currency(yearEarnings)}</span>
-              <span class="meter-label-text" data-private>${this.fmt.currency(annualGoal)}</span>
-            </div>
-            <div class="cockpit-section-label" style="margin-bottom:8px;margin-top:16px">Meta de ingresos mensual</div>
-            <div class="meter-bar-bg">
-              <div class="meter-bar-fill ${monthMeterClass}" style="width:${monthMeterPct}%"></div>
-            </div>
-            <div class="meter-label-row">
-              <span class="meter-label-text" data-private>${this.fmt.currency(monthEarnings)}</span>
-              <span class="meter-label-text" data-private>${this.fmt.currency(monthlyGoal)}</span>
+            <div style="margin-top:16px">
+              <div class="cockpit-section-label" style="margin-bottom:8px">Meta de ingresos mensual</div>
+              <div class="meter-bar-bg">
+                <div class="meter-bar-fill" style="width:${monthMeterPct}%;background:var(--green)"></div>
+              </div>
+              <div class="meter-label-row">
+                <span class="meter-label-text" data-private>${this.fmt.currency(monthEarnings)}</span>
+                <span class="meter-label-text" data-private>${this.fmt.currency(monthlyGoal)}</span>
+              </div>
+              <div class="cockpit-section-label" style="margin-bottom:8px;margin-top:16px">Meta de ingresos anual</div>
+              <div class="meter-bar-bg">
+                <div class="meter-bar-fill" style="width:${meterPct}%;background:var(--cyan)"></div>
+              </div>
+              <div class="meter-label-row">
+                <span class="meter-label-text" data-private>${this.fmt.currency(yearEarnings)}</span>
+                <span class="meter-label-text" data-private>${this.fmt.currency(annualGoal)}</span>
+              </div>
             </div>
             ${project.budget_type === 'fixed' && project.fixed_budget ? `
             <div style="margin-top:16px">
@@ -1191,7 +1194,7 @@ const VFX = {
           ` : ''}
         </div>
 
-        <div class="summary-actions">
+        <div class="summary-actions" style="margin-top:16px">
           <button class="btn btn-ghost" onclick="VFX.exportProject(${project.id})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar JSON
