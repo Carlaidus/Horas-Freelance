@@ -2464,7 +2464,7 @@ const VFX = {
       <div class="settings-section">
         <div class="settings-section-title">Datos personales</div>
         <div class="settings-card">
-          <form id="settings-form" onsubmit="VFX.saveSettings(event)">
+          <form id="settings-form" onsubmit="VFX.saveSettings(event)" oninput="VFX._settingsDirty()" onchange="VFX._settingsDirty()">
             <div class="form-grid">
               <div class="form-group">
                 <label>Nombre completo *</label>
@@ -2580,7 +2580,7 @@ const VFX = {
             </div>
 
             <div style="margin-top:20px">
-              <button type="submit" class="btn btn-primary">
+              <button type="submit" id="settings-save-btn" class="btn btn-primary" disabled style="opacity:0.35;cursor:default;transition:opacity .2s">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Guardar cambios
               </button>
@@ -3230,18 +3230,35 @@ const VFX = {
 
   async saveSettings(e) {
     e.preventDefault();
-    const form = e.target;
-    const data = Object.fromEntries(new FormData(form));
-    data.iva_rate = parseFloat(data.iva_rate) || 21;
-    data.irpf_rate = parseFloat(data.irpf_rate) || 15;
-    data.annual_goal  = parseInt(data.annual_goal)  || 50000;
-    data.monthly_goal = parseInt(data.monthly_goal) || 4000;
+    const data = Object.fromEntries(new FormData(e.target));
+    data.iva_rate     = parseFloat(data.iva_rate)     || 21;
+    data.irpf_rate    = parseFloat(data.irpf_rate)    || 15;
+    data.annual_goal  = parseInt(data.annual_goal)    || 50000;
+    data.monthly_goal = parseInt(data.monthly_goal)   || 4000;
     await this.api.put('/api/user', data);
     this.state.user = { ...this.state.user, ...data };
     this.updateSidebarUser();
     this.closeModal();
-    if (this.state.view === 'settings') this.renderSettings();
     this.refreshCockpit();
+    const btn = document.getElementById('settings-save-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'default';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Cambios guardados`;
+      setTimeout(() => { if (this.state.view === 'settings') this.renderSettings(); }, 2500);
+    } else {
+      if (this.state.view === 'settings') this.renderSettings();
+    }
+  },
+
+  _settingsDirty() {
+    const btn = document.getElementById('settings-save-btn');
+    if (!btn || !btn.disabled) return;
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = '';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios`;
   },
 
   // ── TIMER ──────────────────────────────────────────────────
