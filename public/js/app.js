@@ -737,6 +737,7 @@ const VFX = {
     if (view === 'companies') this.renderCompanies();
     if (view === 'planes') this.renderPlanes();
     if (view === 'settings') this.renderSettings();
+    if (view === 'ayuda') this.renderAyuda();
   },
 
   // ── DASHBOARD (overview facturación) ──────────────────────
@@ -3896,6 +3897,128 @@ const VFX = {
   downloadInvoicePdf(id) {
     if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
     window.open(`/api/invoices/${id}/pdf`, '_blank');
+  },
+
+  // ── AYUDA ───────────────────────────────────────────────────
+  renderAyuda() {
+    document.getElementById('view-ayuda').innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ayuda</div>
+          <div class="page-subtitle">Respuestas rápidas a las dudas más frecuentes</div>
+        </div>
+      </div>
+
+      <div style="max-width:720px">
+        <div style="position:relative;margin-bottom:28px">
+          <svg style="position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.45;pointer-events:none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="help-search" placeholder="Busca cualquier duda…"
+            autocomplete="off" spellcheck="false"
+            style="width:100%;box-sizing:border-box;padding:12px 12px 12px 42px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text1);font-family:inherit;font-size:14px;outline:none;transition:border-color .15s"
+            oninput="VFX._renderHelpResults(this.value)"
+            onfocus="this.style.borderColor='var(--gold)'"
+            onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div id="help-results"></div>
+      </div>
+    `;
+    this._renderHelpResults('');
+  },
+
+  _renderHelpResults(query) {
+    const el = document.getElementById('help-results');
+    if (!el) return;
+    const results = this._searchHelp(query);
+
+    if (results !== null) {
+      if (results.length === 0) {
+        el.innerHTML = `
+          <div style="text-align:center;padding:48px 20px;color:var(--text3)">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:12px"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+            <div style="font-size:14px;margin-bottom:4px">Sin resultados para <em>"${this._escHtml(query)}"</em></div>
+            <div style="font-size:12px">Prueba con otras palabras</div>
+          </div>`;
+        return;
+      }
+      el.innerHTML = results.map(item => `
+        <div style="margin-bottom:6px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <button onclick="VFX._toggleHelpItem(this)"
+            style="width:100%;text-align:left;padding:13px 16px;background:var(--bg2);border:none;color:var(--text1);font-family:inherit;font-size:13.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:4px">${this._escHtml(item.section)}</div>
+              <div style="font-weight:500;line-height:1.4">${this._escHtml(item.q)}</div>
+            </div>
+            <svg style="flex-shrink:0;margin-top:2px;transition:transform .2s" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div style="display:none;padding:13px 16px;background:var(--bg3);border-top:1px solid var(--border);color:var(--text2);font-size:13px;line-height:1.65">
+            ${this._formatHelpAnswer(item.a)}
+          </div>
+        </div>
+      `).join('');
+      return;
+    }
+
+    el.innerHTML = HELP_CONTENT.map(section => `
+      <div style="margin-bottom:20px">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:700;margin-bottom:8px;padding-left:2px">${this._escHtml(section.title)}</div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          ${section.items.map((item, i) => `
+            <div style="${i > 0 ? 'border-top:1px solid var(--border)' : ''}">
+              <button onclick="VFX._toggleHelpItem(this)"
+                style="width:100%;text-align:left;padding:13px 16px;background:var(--bg2);border:none;color:var(--text1);font-family:inherit;font-size:13.5px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                <span style="font-weight:500;line-height:1.4">${this._escHtml(item.q)}</span>
+                <svg style="flex-shrink:0;margin-top:3px;transition:transform .2s" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div style="display:none;padding:13px 16px;background:var(--bg3);border-top:1px solid var(--border);color:var(--text2);font-size:13px;line-height:1.65">
+                ${this._formatHelpAnswer(item.a)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  },
+
+  _searchHelp(query) {
+    const q = query.trim();
+    if (!q) return null;
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const words = norm(q).split(/\s+/).filter(Boolean);
+    const results = [];
+    for (const section of HELP_CONTENT) {
+      for (const item of section.items) {
+        const nq = norm(item.q);
+        const na = norm(item.a);
+        let score = 0, matched = 0;
+        for (const w of words) {
+          if (nq.includes(w))      { score += 3; matched++; }
+          else if (na.includes(w)) { score += 1; matched++; }
+        }
+        if (matched === words.length && words.length > 1) score += 3;
+        if (score > 0) results.push({ ...item, section: section.title, score });
+      }
+    }
+    return results.sort((a, b) => b.score - a.score);
+  },
+
+  _toggleHelpItem(btn) {
+    const answer = btn.nextElementSibling;
+    const icon = btn.querySelector('svg');
+    const open = answer.style.display !== 'none';
+    answer.style.display = open ? 'none' : 'block';
+    icon.style.transform = open ? '' : 'rotate(180deg)';
+  },
+
+  _formatHelpAnswer(text) {
+    return text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+  },
+
+  _escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   },
 
 };
