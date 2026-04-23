@@ -25,10 +25,6 @@ const HELP_CONTENT = [
         a: '**En iPhone / iPad (Safari):**\nToca el botón de compartir (el cuadrado con una flecha hacia arriba, en la barra inferior del navegador) y selecciona **"Añadir a pantalla de inicio"**.\n\n**En Android (Chrome):**\nToca los tres puntos del menú (arriba a la derecha) y selecciona **"Añadir a pantalla de inicio"** o **"Instalar app"**.\n\nUna vez instalada se abre como una app nativa: pantalla completa, sin barra del navegador, y con acceso directo desde el escritorio del dispositivo.'
       },
       {
-        q: '¿Cómo instalo VFX Hours en el ordenador?',
-        a: 'En **Chrome o Edge**, cuando estés en la web verás un pequeño icono de instalación en la barra de direcciones (a la derecha de la URL). Haz clic en él y confirma la instalación.\n\nTambién puedes ir al menú del navegador → **"Instalar VFX Hours"**.\n\nTras instalarlo se abre como ventana independiente sin interfaz del navegador, igual que cualquier otra aplicación del escritorio.'
-      },
-      {
         q: '¿Qué ventaja tiene instalarlo frente a abrirlo desde el navegador?',
         a: 'Al abrirlo desde el icono de la pantalla de inicio:\n\n• La interfaz ocupa toda la pantalla (sin URL, pestañas ni botones del navegador).\n• Acceso en un toque, sin buscar la web ni recordar la dirección.\n• En móvil se comporta exactamente igual que una app nativa.\n\nLos datos son los mismos — no hay diferencia de funcionalidad, solo de experiencia de uso.'
       },
