@@ -903,6 +903,12 @@ const VFX = {
       }
     }));
 
+    // Preservar estado abierto del acordeón de resumen antes del re-render
+    const openSummaries = new Set();
+    this.state.slots.forEach((_, i) => {
+      if (document.getElementById(`summary-body-${i}`)?.style.display !== 'none') openSummaries.add(i);
+    });
+
     const el = document.getElementById('view-proyecto');
     const slotsHtml = this.state.slots.map((_, idx) => this._renderSlot(idx)).join('');
 
@@ -927,6 +933,14 @@ const VFX = {
         Visualizar otro proyecto
       </button>
     `;
+
+    // Restaurar acordeones que estaban abiertos antes del re-render
+    openSummaries.forEach(i => {
+      const body = document.getElementById(`summary-body-${i}`);
+      const chevron = document.getElementById(`summary-chevron-${i}`);
+      if (body) body.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+    });
 
     // Reiniciar intervalos tras re-render
     this.state.slots.forEach((s, i) => {
@@ -1044,7 +1058,8 @@ const VFX = {
     const irpfAmount = subtotal * (irpfRate / 100);
     const total      = subtotal + ivaAmount - irpfAmount;
     const yearEarnings = this.state.stats.summary?.total_earnings || subtotal;
-    const meterPct   = Math.min((yearEarnings / 30000) * 100, 100);
+    const annualGoal  = this.state.user.annual_goal || 30000;
+    const meterPct   = Math.min((yearEarnings / annualGoal) * 100, 100);
     const meterClass = meterPct < 33 ? 'low' : meterPct < 66 ? 'mid' : 'high';
 
     return `
@@ -2460,6 +2475,16 @@ const VFX = {
             </div>
 
             <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+              <div class="settings-section-title">Objetivos</div>
+              <div class="form-grid" style="max-width:200px">
+                <div class="form-group">
+                  <label>Meta de ingresos anual (€)</label>
+                  <input type="number" name="annual_goal" value="${u.annual_goal||30000}" step="1000" min="0">
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
               <div class="settings-section-title">Privacidad</div>
               <div class="toggle-row">
                 <div>
@@ -3161,6 +3186,7 @@ const VFX = {
     const data = Object.fromEntries(new FormData(form));
     data.iva_rate = parseFloat(data.iva_rate) || 21;
     data.irpf_rate = parseFloat(data.irpf_rate) || 15;
+    data.annual_goal = parseInt(data.annual_goal) || 30000;
     await this.api.put('/api/user', data);
     this.state.user = { ...this.state.user, ...data };
     this.updateSidebarUser();
