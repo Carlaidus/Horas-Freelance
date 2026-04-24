@@ -1,11 +1,8 @@
 'use strict';
 
-const path = require('path');
-
 const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
-const { getUserId, getEffectivePlan, getDaysRemaining, requireAdmin } = require('./src/server/middleware/auth.middleware');
 
 // ── AUTH ───────────────────────────────────────────────────────
 app.use('/api/auth', require('./src/server/modules/auth/auth.routes'));
@@ -38,33 +35,7 @@ app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
 app.use('/api/invoices', require('./src/server/modules/invoices/invoices.routes'));
 
 // ── ADMIN ─────────────────────────────────────────────────────
-app.get('/admin', async (req, res) => {
-  try {
-    const user = req.session.userId ? await db.getUser(req.session.userId) : null;
-    if (!user || user.role !== 'admin') return res.redirect('/');
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-  } catch (e) { res.redirect('/'); }
-});
-
-app.get('/admin/api/users', requireAdmin, async (req, res) => {
-  try {
-    const users = (await db.getAllUsers()).map(u => ({
-      ...u,
-      effective_plan: getEffectivePlan(u),
-      days_remaining: getDaysRemaining(u)
-    }));
-    res.json(users);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/admin/api/users/:id/plan', requireAdmin, async (req, res) => {
-  try {
-    const { plan, expires_at, period, is_trial } = req.body;
-    if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
-    await db.setUserPlan(+req.params.id, plan, expires_at || null, period || null, !!is_trial);
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+app.use('/', require('./src/server/modules/admin/admin.routes'));
 
 // ── BOOT ──────────────────────────────────────────────────────
 db.init().then(() => {
