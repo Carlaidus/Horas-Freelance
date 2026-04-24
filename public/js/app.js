@@ -205,15 +205,7 @@ const VFX = {
     } catch(_) {}
   },
 
-  _startSlotInterval(idx) {
-    const slot = this.state.slots[idx];
-    if (!slot) return;
-    if (slot.timer.interval) clearInterval(slot.timer.interval);
-    slot.timer.interval = setInterval(() => {
-      const el = document.getElementById(`timer-display-${idx}`);
-      if (el) el.textContent = this._slotFmt(idx);
-    }, 1000);
-  },
+  _startSlotInterval(idx) { window.CronorasSlots.startSlotInterval(idx); },
 
   addSlot() {
     this.state.slots.push({ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } });

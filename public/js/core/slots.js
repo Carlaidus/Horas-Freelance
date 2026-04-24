@@ -48,4 +48,14 @@ function slotFmt(idx) {
   return [Math.floor(s/3600), Math.floor((s%3600)/60), s%60].map(n => String(n).padStart(2,'0')).join(':');
 }
 
-window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt };
+function startSlotInterval(idx) {
+  const slot = VFX.state.slots[idx];
+  if (!slot) return;
+  if (slot.timer.interval) clearInterval(slot.timer.interval);
+  slot.timer.interval = setInterval(() => {
+    const el = document.getElementById(`timer-display-${idx}`);
+    if (el) el.textContent = slotFmt(idx);
+  }, 1000);
+}
+
+window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval };
