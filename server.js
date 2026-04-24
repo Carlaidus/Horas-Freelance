@@ -6,6 +6,7 @@ const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
 const { getUserId, getEffectivePlan, requireAdmin } = require('./src/server/middleware/auth.middleware');
+const { ownProject } = require('./src/server/modules/projects/projects.controller');
 const { generateInvoicePdf }       = require('./lib/invoice-pdf');
 const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
@@ -22,52 +23,7 @@ app.use('/api/user', require('./src/server/modules/users/users.routes'));
 app.use('/api/companies', require('./src/server/modules/companies/companies.routes'));
 
 // ── PROJECTS ──────────────────────────────────────────────────
-const ownProject = async (req, res) => {
-  const p = await db.getProject(+req.params.id);
-  if (!p || p.user_id !== getUserId(req)) {
-    res.status(404).json({ error: 'No encontrado' });
-    return null;
-  }
-  return p;
-};
-
-app.get('/api/projects', async (req, res) => {
-  try { res.json(await db.getProjects(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/projects/:id', async (req, res) => {
-  try { const p = await ownProject(req, res); if (p) res.json(p); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/projects', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const user = await db.getUser(userId);
-    if (getEffectivePlan(user) === 'free') {
-      const count = await db.countUserProjects(userId);
-      if (count >= 1) return res.status(403).json({ error: 'UPGRADE_REQUIRED', feature: 'projects' });
-    }
-    res.json({ id: await db.createProject({ user_id: userId, ...req.body }) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/projects/:id', async (req, res) => {
-  try {
-    if (!await ownProject(req, res)) return;
-    await db.updateProject(+req.params.id, req.body);
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/projects/:id', async (req, res) => {
-  try {
-    if (!await ownProject(req, res)) return;
-    await db.deleteProject(+req.params.id);
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+app.use('/api/projects', require('./src/server/modules/projects/projects.routes'));
 
 // ── ENTRIES ───────────────────────────────────────────────────
 app.get('/api/projects/:id/entries', async (req, res) => {
