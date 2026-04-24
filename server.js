@@ -6,7 +6,6 @@ const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
 const { getUserId, getEffectivePlan, getDaysRemaining, requireAdmin } = require('./src/server/middleware/auth.middleware');
-const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
 // ── AUTH ───────────────────────────────────────────────────────
 app.use('/api/auth', require('./src/server/modules/auth/auth.routes'));
@@ -37,27 +36,6 @@ app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
 
 // ── INVOICES ──────────────────────────────────────────────────
 app.use('/api/invoices', require('./src/server/modules/invoices/invoices.routes'));
-
-// ── PROJECT REPORT PDF ────────────────────────────────────────
-app.get('/api/projects/:id/report', async (req, res) => {
-  try {
-    const project = await db.getProject(+req.params.id);
-    if (!project) return res.status(404).json({ error: 'No encontrado' });
-    const entries = await db.getEntries(+req.params.id);
-    const user = await db.getUser(getUserId(req));
-    generateProjectReportPdf(project, entries, user, res);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── EXPORT ────────────────────────────────────────────────────
-app.get('/api/projects/:id/export', async (req, res) => {
-  try {
-    const project = await db.getProject(+req.params.id);
-    const entries = await db.getEntries(+req.params.id);
-    const user = await db.getUser(getUserId(req));
-    res.json({ project, entries, user });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
 // ── ADMIN ─────────────────────────────────────────────────────
 app.get('/admin', async (req, res) => {
