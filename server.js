@@ -1,69 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-const session = require('express-session');
+'use strict';
+
+const path   = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const path = require('path');
-const db = require('./database/db');
-const { Resend } = require('resend');
-const { generateInvoicePdf } = require('./lib/invoice-pdf');
-const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const APP_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
-const FROM_EMAIL = process.env.RESEND_FROM || 'onboarding@resend.dev';
-
-const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-const PASSWORD_HINT = 'Mínimo 8 caracteres, una mayúscula, un número y un símbolo';
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-const REQUIRE_AUTH = process.env.REQUIRE_AUTH === 'true';
-
-app.use(cors());
-app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'cronoras-local-dev-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
-}));
-
-// ── AUTH MIDDLEWARE ────────────────────────────────────────────
-const getUserId = (req) => req.session.userId || 1;
-
-const getEffectivePlan = (user) => {
-  if (!user) return 'free';
-  if (user.role === 'admin') return 'pro';
-  if (!user.plan || user.plan === 'free') return 'free';
-  if (user.plan_expires_at && new Date(user.plan_expires_at) < new Date()) return 'free';
-  return user.plan;
-};
-
-const getDaysRemaining = (user) => {
-  if (!user || user.role === 'admin' || !user.plan_expires_at || user.plan === 'free') return null;
-  const diff = Math.ceil((new Date(user.plan_expires_at) - new Date()) / (1000 * 60 * 60 * 24));
-  return diff;
-};
-
-const requireAdmin = async (req, res, next) => {
-  try {
-    const user = await db.getUser(getUserId(req));
-    if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Acceso denegado' });
-    next();
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
-
-app.use((req, res, next) => {
-  const isPublic = req.path === '/login.html' || req.path === '/reset-password.html'
-    || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/')
-    || req.path.startsWith('/js/');
-  if (!REQUIRE_AUTH || isPublic || req.session.userId) return next();
-  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado' });
-  res.redirect('/login.html');
-});
+const app = require('./src/server/app');
+const db  = require('./database/db');
+const { resend, PORT, APP_URL, FROM_EMAIL, PASSWORD_REGEX, PASSWORD_HINT } = require('./src/server/config/env');
+const { getUserId, getEffectivePlan, getDaysRemaining, requireAdmin }       = require('./src/server/middleware/auth.middleware');
+const { generateInvoicePdf }        = require('./lib/invoice-pdf');
+const { generateProjectReportPdf }  = require('./lib/project-report-pdf');
 
 // ── AUTH ROUTES ────────────────────────────────────────────────
 app.get('/api/auth/me', async (req, res) => {
@@ -574,8 +520,6 @@ app.put('/admin/api/users/:id/plan', requireAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-app.use(express.static(path.join(__dirname, 'public')));
 
 // ── BOOT ──────────────────────────────────────────────────────
 db.init().then(() => {
