@@ -56,4 +56,6 @@ const sendPasswordResetEmail = async (user, token) => {
   });
 };
 
-module.exports = { sendExpiryWarning, sendRegistrationEmail, sendPasswordResetEmail };
+const isEmailConfigured = () => !!resend;
+
+module.exports = { sendExpiryWarning, sendRegistrationEmail, sendPasswordResetEmail, isEmailConfigured };

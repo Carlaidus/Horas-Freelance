@@ -4,9 +4,9 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const db = require('../../../../database/db');
-const { REQUIRE_AUTH, PASSWORD_REGEX, PASSWORD_HINT, resend } = require('../../config/env');
+const { REQUIRE_AUTH, PASSWORD_REGEX, PASSWORD_HINT } = require('../../config/env');
 const { getEffectivePlan, getDaysRemaining } = require('../../middleware/auth.middleware');
-const { sendExpiryWarning, sendRegistrationEmail, sendPasswordResetEmail } = require('./auth.service');
+const { sendExpiryWarning, sendRegistrationEmail, sendPasswordResetEmail, isEmailConfigured } = require('./auth.service');
 
 const me = async (req, res) => {
   try {
@@ -72,7 +72,7 @@ const forgotPassword = async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Falta el email' });
     const user = await db.findUserByEmail(email);
     if (!user) return res.json({ success: true }); // no revelar si existe
-    if (!resend) return res.status(503).json({ error: 'Servicio de email no configurado' });
+    if (!isEmailConfigured()) return res.status(503).json({ error: 'Servicio de email no configurado' });
     await db.deleteExpiredTokens();
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
