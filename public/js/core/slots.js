@@ -187,7 +187,7 @@ async function saveTimerEntry(idx, projectId) {
   const hours = parseFloat(document.getElementById('timer-hours').value);
   const desc  = document.getElementById('timer-desc').value.trim();
   if (!hours) return;
-  const dailyOverride = getDailyRateValue('timer-rate');
+  const dailyOverride = window.CronorasRates.getDailyRateValue('timer-rate');
   const rateOverride = dailyOverride > 0 ? dailyOverride / 8 : null;
   VFX.track('entry_create', { project_id: projectId, hours });
   await VFX.api.post('/api/entries', { project_id: projectId, date, hours, description: desc, hourly_rate_override: rateOverride });
