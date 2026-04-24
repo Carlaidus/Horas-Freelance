@@ -132,36 +132,7 @@ const VFX = {
   },
 
   // ── PRIVACY ────────────────────────────────────────────────
-  privacy: {
-    on: false,
-    load() {
-      const def = localStorage.getItem(VFX._lsKey('vfx_privacy_default')) === 'true';
-      const saved = localStorage.getItem(VFX._lsKey('vfx_privacy_on'));
-      this.on = saved !== null ? saved === 'true' : def;
-    },
-    save() { localStorage.setItem(VFX._lsKey('vfx_privacy_on'), this.on); },
-    async checkLocation() {
-      if (localStorage.getItem('vfx_privacy_location') !== 'true') return;
-      const homeLat = parseFloat(localStorage.getItem('vfx_home_lat'));
-      const homeLng = parseFloat(localStorage.getItem('vfx_home_lng'));
-      if (!homeLat || !homeLng) return;
-      try {
-        const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000 })
-        );
-        const dist = this._dist(pos.coords.latitude, pos.coords.longitude, homeLat, homeLng);
-        const radius = parseFloat(localStorage.getItem('vfx_home_radius') || '500');
-        this.on = dist > radius;
-        this.save();
-      } catch(_) { /* sin permiso o sin GPS, dejar estado actual */ }
-    },
-    _dist(a1, b1, a2, b2) {
-      const R = 6371000, r = Math.PI / 180;
-      const dA = (a2 - a1) * r, dB = (b2 - b1) * r;
-      const x = Math.sin(dA/2)**2 + Math.cos(a1*r) * Math.cos(a2*r) * Math.sin(dB/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
-    }
-  },
+  privacy:                window.CronorasPrivacy.privacy,
 
   toggleSummary(idx) {
     const body = document.getElementById(`summary-body-${idx}`);
@@ -181,24 +152,8 @@ const VFX = {
     if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
   },
 
-  togglePrivacy() {
-    this.privacy.on = !this.privacy.on;
-    this.privacy.save();
-    this.applyPrivacy();
-  },
-
-  applyPrivacy() {
-    document.body.classList.toggle('privacy-mode', this.privacy.on);
-    const eyeOn = document.getElementById('privacy-icon-eye');
-    const eyeOff = document.getElementById('privacy-icon-off');
-    const btn = document.getElementById('privacy-toggle');
-    if (eyeOn) eyeOn.style.display = this.privacy.on ? 'none' : 'block';
-    if (eyeOff) eyeOff.style.display = this.privacy.on ? 'block' : 'none';
-    if (btn) {
-      btn.classList.toggle('active', this.privacy.on);
-      btn.title = this.privacy.on ? 'Mostrar cifras' : 'Ocultar cifras (modo privacidad)';
-    }
-  },
+  togglePrivacy:          window.CronorasPrivacy.togglePrivacy,
+  applyPrivacy:           window.CronorasPrivacy.applyPrivacy,
 
   // ── SLOTS (un panel por proyecto) ─────────────────────────
   // state.slots = [{ projectId, entries, timer: { active, paused, startTime, accumulated, interval } }]
@@ -356,29 +311,9 @@ const VFX = {
     requestAnimationFrame(step);
   },
 
-  savePrivacyDefault(val) {
-    localStorage.setItem(this._lsKey('vfx_privacy_default'), val);
-  },
-
-  toggleLocationPrivacy(enabled) {
-    localStorage.setItem('vfx_privacy_location', enabled);
-    const block = document.getElementById('location-settings-block');
-    if (block) block.style.display = enabled ? 'block' : 'none';
-  },
-
-  saveHomeLocation() {
-    if (!navigator.geolocation) return alert('Tu navegador no soporta geolocalización');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        localStorage.setItem('vfx_home_lat', pos.coords.latitude);
-        localStorage.setItem('vfx_home_lng', pos.coords.longitude);
-        const el = document.getElementById('home-location-display');
-        if (el) el.textContent = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-        alert('✓ Ubicación de casa guardada correctamente');
-      },
-      () => alert('No se pudo obtener tu ubicación. Comprueba los permisos del navegador.')
-    );
-  },
+  savePrivacyDefault:     window.CronorasPrivacy.savePrivacyDefault,
+  toggleLocationPrivacy:  window.CronorasPrivacy.toggleLocationPrivacy,
+  saveHomeLocation:       window.CronorasPrivacy.saveHomeLocation,
 
   // ── INIT ───────────────────────────────────────────────────
   async init() {
