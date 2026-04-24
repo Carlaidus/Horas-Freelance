@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════
-   VFX HOURS — Contenido de la página de Ayuda
+   CRONORAS — Contenido de la página de Ayuda
    ════════════════════════════════════════════════════════════
    Edita este fichero para actualizar las preguntas y respuestas
    sin necesidad de tocar ningún otro archivo de la aplicación.
@@ -21,7 +21,7 @@ const HELP_CONTENT = [
     title: 'Instalar como app',
     items: [
       {
-        q: '¿Cómo instalo VFX Hours en el móvil o tablet?',
+        q: '¿Cómo instalo Cronoras en el móvil o tablet?',
         a: '**En iPhone / iPad (Safari):**\nToca el botón de compartir (el cuadrado con una flecha hacia arriba, en la barra inferior del navegador) y selecciona **"Añadir a pantalla de inicio"**.\n\n**En Android (Chrome):**\nToca los tres puntos del menú (arriba a la derecha) y selecciona **"Añadir a pantalla de inicio"** o **"Instalar app"**.\n\nUna vez instalada se abre como una app nativa: pantalla completa, sin barra del navegador, y con acceso directo desde el escritorio del dispositivo.'
       },
       {
@@ -30,7 +30,7 @@ const HELP_CONTENT = [
       },
       {
         q: '¿Funciona sin conexión a internet?',
-        a: 'No. VFX Hours necesita conexión para cargar y guardar los datos. Si pierdes la conexión en mitad de una sesión, el timer seguirá mostrándose en pantalla, pero los cambios no se sincronizarán hasta que vuelva la conexión.'
+        a: 'No. Cronoras necesita conexión para cargar y guardar los datos. Si pierdes la conexión en mitad de una sesión, el timer seguirá mostrándose en pantalla, pero los cambios no se sincronizarán hasta que vuelva la conexión.'
       }
     ]
   },
@@ -42,7 +42,7 @@ const HELP_CONTENT = [
     items: [
       {
         q: '¿Qué incluye cada plan?',
-        a: '**Plan Básico (gratuito):**\n• 1 proyecto activo\n• 1 empresa\n• Timer y registro de horas ✓\n• Dashboard ✓\n• Estadísticas ✗ (visible pero bloqueado)\n• Facturas y PDF ✗ (visible pero bloqueado)\n\n**Plan Pro:**\n• Proyectos y empresas ilimitados\n• Timer con múltiples slots simultáneos\n• Dashboard ✓\n• Estadísticas completas ✓\n• Gestión de facturas ✓\n• Exportación a PDF ✓'
+        a: '**Al registrarte:** 30 días de Pro gratis, sin tarjeta ni compromiso. Pasado ese período, la cuenta pasa automáticamente al plan Básico.\n\n**Plan Básico (gratuito):**\n• 1 proyecto activo\n• 1 empresa\n• Timer y registro de horas ✓\n• Dashboard ✓\n• Estadísticas ✗ (visible pero bloqueado)\n• Facturas y PDF ✗ (visible pero bloqueado)\n\n**Plan Pro:**\n• Proyectos y empresas ilimitados\n• Timer con múltiples slots simultáneos\n• Dashboard ✓\n• Estadísticas completas ✓\n• Gestión de facturas ✓\n• Exportación a PDF ✓'
       },
       {
         q: '¿Cuánto cuesta el plan Pro?',

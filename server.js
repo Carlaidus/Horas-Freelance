@@ -105,10 +105,10 @@ app.post('/api/auth/register', async (req, res) => {
           to: adminEmail,
           subject: `Nuevo usuario registrado — ${name}`,
           html: `<div style="font-family:sans-serif;padding:24px;background:#06060f;color:#dde0f5;border-radius:12px">
-            <h2 style="color:#f5c842">Nuevo registro en VFX Hours</h2>
+            <h2 style="color:#f5c842">Nuevo registro en Cronoras</h2>
             <p><strong>Nombre:</strong> ${name}</p>
             <p><strong>Email:</strong> ${email}</p>
-            <p style="color:#888;font-size:12px">Plan: Free — activa Pro desde el panel de administración si ha realizado el pago.</p>
+            <p style="color:#888;font-size:12px">Plan: Pro Trial (30 días gratis) — caduca automáticamente. Activa Pro desde el panel si realiza el pago.</p>
           </div>`
         }).catch(() => {});
       }
@@ -150,10 +150,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Restablecer contraseña — VFX Hours',
+      subject: 'Restablecer contraseña — Cronoras',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#06060f;color:#dde0f5;padding:32px;border-radius:12px">
-          <h2 style="color:#f5c842;margin-bottom:16px">VFX Hours Tracker</h2>
+          <h2 style="color:#f5c842;margin-bottom:16px">Cronoras</h2>
           <p style="margin-bottom:24px">Hola ${user.name || 'compositor'},<br><br>
           Recibimos una solicitud para restablecer tu contraseña.</p>
           <a href="${resetUrl}" style="display:inline-block;background:#f5c842;color:#000;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none">Restablecer contraseña</a>
@@ -247,7 +247,7 @@ app.post('/api/contact/upgrade', async (req, res) => {
       subject: `Solicitud de activación: ${plan} — ${userName}`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#06060f;color:#dde0f5;padding:32px;border-radius:12px">
-          <h2 style="color:#f5c842;margin-bottom:4px">VFX Hours — Solicitud de upgrade</h2>
+          <h2 style="color:#f5c842;margin-bottom:4px">Cronoras — Solicitud de upgrade</h2>
           <p style="color:#555580;font-size:12px;margin-bottom:24px">Recibida desde la app</p>
           <table style="width:100%;border-collapse:collapse;font-size:14px">
             <tr><td style="padding:8px 0;color:#888;width:120px">Usuario</td><td style="color:#dde0f5;font-weight:600">${userName}</td></tr>

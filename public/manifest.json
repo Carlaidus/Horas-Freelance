@@ -1,7 +1,7 @@
 {
-  "name": "VFX Hours",
-  "short_name": "VFX Hours",
-  "description": "Freelance time tracker para profesionales VFX",
+  "name": "Cronoras",
+  "short_name": "Cronoras",
+  "description": "Freelance time tracker para profesionales freelance",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d0d0f",

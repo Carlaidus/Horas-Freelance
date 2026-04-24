@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   VFX HOURS TRACKER — app.js
+   CRONORAS — app.js
    ══════════════════════════════════════════════════════════════ */
 
 // Tarifas diarias VFX (1 día = 8 horas)
@@ -116,15 +116,17 @@ const VFX = {
     const original = btnEl.innerHTML;
     btnEl.disabled = true;
     btnEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" opacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>&nbsp;Enviando...`;
+    // Abrir ventana antes del await para que cuente como gesto del usuario (fix PWA/mobile)
+    const amount = PAYPAL_AMOUNTS[plan];
+    const paypalWin = amount ? window.open('', '_blank') : null;
     try {
       await this.api.post('/api/contact/upgrade', { plan, price, period });
       localStorage.setItem(this._lsKey('vfx_upgrade_requested'), JSON.stringify({ plan, price, period, ts: Date.now() }));
       this.updateSidebarUser();
       this.renderPlanes();
-      // Abrir PayPal con el importe del plan
-      const amount = PAYPAL_AMOUNTS[plan];
-      if (amount) window.open(`https://paypal.me/vfxhours/${amount}EUR`, '_blank');
+      if (paypalWin) paypalWin.location = `https://paypal.me/vfxhours/${amount}EUR`;
     } catch (e) {
+      if (paypalWin) paypalWin.close();
       btnEl.innerHTML = original;
       btnEl.disabled = false;
       alert('Error al enviar la solicitud. Inténtalo de nuevo.');
@@ -2621,7 +2623,7 @@ const VFX = {
           <div class="welcome-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <div class="welcome-title">Bienvenido a VFX Hours</div>
+          <div class="welcome-title">Bienvenido a Cronoras</div>
           <div class="welcome-sub">Configura tus datos para que aparezcan en las facturas</div>
         </div>
         <form onsubmit="VFX.saveSettings(event)">
@@ -3368,7 +3370,7 @@ const VFX = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vfxhours_${data.project.name.replace(/\s+/g, '_')}.json`;
+    a.download = `cronoras_${data.project.name.replace(/\s+/g, '_')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   },
@@ -3521,7 +3523,7 @@ const VFX = {
 
     <div class="footer">
       <span>${user.name || ''}${user.nif ? ' · NIF ' + user.nif : ''}</span>
-      <span>Generado con VFX Hours Tracker</span>
+      <span>Generado con Cronoras</span>
     </div>
     </body></html>`;
 

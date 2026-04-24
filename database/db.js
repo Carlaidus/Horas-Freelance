@@ -213,8 +213,8 @@ const findUserByEmail = async (email) => {
 
 const createAuthUser = async (data) => {
   const r = await q(
-    `INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate, role, plan)
-     VALUES ($1, $2, $3, 21.0, 15.0, 'user', 'free') RETURNING id`,
+    `INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate, role, plan, plan_expires_at)
+     VALUES ($1, $2, $3, 21.0, 15.0, 'user', 'pro', NOW() + INTERVAL '30 days') RETURNING id`,
     [data.name, data.email, data.password_hash]
   );
   return r.rows[0].id;
