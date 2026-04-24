@@ -2679,7 +2679,7 @@ const VFX = {
         <div class="form-grid full">
           <div class="form-group">
             <label>Fecha</label>
-            <input type="date" id="edit-entry-date" value="${entry.date}">
+            <input type="date" id="edit-entry-date" value="${String(entry.date).slice(0, 10)}">
           </div>
           <div class="form-group">
             <label>Horas</label>
