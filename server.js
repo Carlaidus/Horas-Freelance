@@ -5,7 +5,7 @@ const path = require('path');
 const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
-const { getUserId, getEffectivePlan, requireAdmin } = require('./src/server/middleware/auth.middleware');
+const { getUserId, getEffectivePlan, getDaysRemaining, requireAdmin } = require('./src/server/middleware/auth.middleware');
 const { generateInvoicePdf }       = require('./lib/invoice-pdf');
 const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
@@ -27,41 +27,14 @@ app.use('/api/projects', require('./src/server/modules/projects/projects.routes'
 // ── ENTRIES ───────────────────────────────────────────────────
 app.use('/', require('./src/server/modules/entries/entries.routes'));
 
+// ── ANALYTICS ─────────────────────────────────────────────────
+app.use('/', require('./src/server/modules/analytics/analytics.routes'));
+
 // ── TIMERS ────────────────────────────────────────────────────
 app.use('/api/timers', require('./src/server/modules/timers/timers.routes'));
 
 // ── STATS ─────────────────────────────────────────────────────
 app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
-
-// ── ANALYTICS ─────────────────────────────────────────────────
-app.post('/api/track', async (req, res) => {
-  try {
-    const { event, metadata } = req.body;
-    if (event) await db.createEvent(getUserId(req), event, metadata);
-    res.json({ ok: true });
-  } catch (_) { res.json({ ok: true }); }
-});
-
-app.get('/admin/api/events', requireAdmin, async (req, res) => {
-  try { res.json({ stats: await db.getEventStats(), recent: await db.getRecentEvents(100) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/admin/api/analytics', requireAdmin, async (req, res) => {
-  try {
-    const [totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents] = await Promise.all([
-      db.getAppTotals(),
-      db.getEventsPerDay(30),
-      db.getDailyActiveUsers(30),
-      db.getEventsByHour(),
-      db.getNewUsersPerMonth(),
-      db.getTopUsersByActivity(10),
-      db.getEventStats(),
-      db.getRecentEvents(500)
-    ]);
-    res.json({ totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
 // ── INVOICES ──────────────────────────────────────────────────
 app.get('/api/invoices', async (req, res) => {
