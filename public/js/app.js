@@ -2667,7 +2667,13 @@ const VFX = {
     },
 
     editEntry(id) {
-      const entry = VFX.state.entries.find(e => e.id === id);
+      let entry = VFX.state.entries.find(e => e.id === id);
+      if (!entry) {
+        for (const slot of VFX.state.slots) {
+          entry = slot.entries?.find(e => e.id === id);
+          if (entry) break;
+        }
+      }
       if (!entry) return;
       VFX.openModal(`
         <div class="form-grid full">
