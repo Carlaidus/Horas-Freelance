@@ -183,6 +183,8 @@ async function stopTimer(idx) {
 }
 
 async function saveTimerEntry(idx, projectId) {
+  const btn = document.querySelector('.modal-footer .btn-primary');
+  if (btn) { if (btn.disabled) return; btn.disabled = true; }
   const date  = document.getElementById('timer-date').value;
   const hours = parseFloat(document.getElementById('timer-hours').value);
   const desc  = document.getElementById('timer-desc').value.trim();
