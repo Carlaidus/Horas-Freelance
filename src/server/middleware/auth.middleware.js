@@ -31,8 +31,9 @@ const requireAdmin = async (req, res, next) => {
 
 const sessionGuard = (req, res, next) => {
   const isPublic = req.path === '/login.html' || req.path === '/reset-password.html'
+    || req.path === '/manifest.json' || req.path === '/sw.js'
     || req.path.startsWith('/api/auth/') || req.path.startsWith('/css/')
-    || req.path.startsWith('/js/');
+    || req.path.startsWith('/js/') || req.path.startsWith('/icons/');
   if (!REQUIRE_AUTH || isPublic || req.session.userId) return next();
   if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado' });
   res.redirect('/login.html');
