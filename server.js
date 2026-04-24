@@ -19,32 +19,7 @@ app.use('/api/contact', require('./src/server/modules/plans/plans.routes'));
 app.use('/api/user', require('./src/server/modules/users/users.routes'));
 
 // ── COMPANIES ─────────────────────────────────────────────────
-app.get('/api/companies', async (req, res) => {
-  try { res.json(await db.getCompanies(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/companies', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const user = await db.getUser(userId);
-    if (getEffectivePlan(user) === 'free') {
-      const count = await db.countUserCompanies(userId);
-      if (count >= 1) return res.status(403).json({ error: 'UPGRADE_REQUIRED', feature: 'companies' });
-    }
-    res.json({ id: await db.createCompany({ user_id: userId, ...req.body }) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/companies/:id', async (req, res) => {
-  try { await db.updateCompany(+req.params.id, req.body); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/companies/:id', async (req, res) => {
-  try { await db.deleteCompany(+req.params.id); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
+app.use('/api/companies', require('./src/server/modules/companies/companies.routes'));
 
 // ── PROJECTS ──────────────────────────────────────────────────
 const ownProject = async (req, res) => {
