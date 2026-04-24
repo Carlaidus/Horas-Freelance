@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
