@@ -37,54 +37,7 @@ app.use('/api/timers', require('./src/server/modules/timers/timers.routes'));
 app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
 
 // ── INVOICES ──────────────────────────────────────────────────
-app.get('/api/invoices', async (req, res) => {
-  try { res.json(await db.getInvoices(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/invoices/next-number', async (req, res) => {
-  try { res.json({ number: await db.getNextInvoiceNumber(getUserId(req)) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/invoices/:id', async (req, res) => {
-  try {
-    const invoice = await db.getInvoice(+req.params.id);
-    if (!invoice) return res.status(404).json({ error: 'No encontrada' });
-    const lines = await db.getInvoiceLines(invoice.id);
-    res.json({ ...invoice, lines });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/invoices', async (req, res) => {
-  try {
-    const { lines = [], ...data } = req.body;
-    const id = await db.createInvoice({ user_id: getUserId(req), ...data });
-    if (lines.length) await db.setInvoiceLines(id, lines);
-    res.json({ id });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/invoices/:id', async (req, res) => {
-  try {
-    const { lines = [], ...data } = req.body;
-    await db.updateInvoice(+req.params.id, data);
-    await db.setInvoiceLines(+req.params.id, lines);
-    res.json({ success: true });
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
-app.post('/api/invoices/:id/issue', async (req, res) => {
-  try {
-    const invoice = await db.issueInvoice(+req.params.id, getUserId(req));
-    res.json(invoice);
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
-app.delete('/api/invoices/:id', async (req, res) => {
-  try { await db.deleteInvoiceDraft(+req.params.id); res.json({ success: true }); }
-  catch (e) { res.status(400).json({ error: e.message }); }
-});
+app.use('/api/invoices', require('./src/server/modules/invoices/invoices.routes'));
 
 app.get('/api/invoices/:id/pdf', async (req, res) => {
   try {
