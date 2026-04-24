@@ -3062,81 +3062,12 @@ const VFX = {
   },
 
   // ── TIMER ──────────────────────────────────────────────────
-  async startTimer(idx) {
-    const slot = this.state.slots[idx];
-    if (!slot?.projectId) return;
-    const projectId = slot.projectId;
-    slot.timerProjectId = projectId;
-    const startTime = new Date().toISOString();
-    slot.timer = { active: true, paused: false, startTime, accumulated: 0, interval: null };
-    this.track('timer_start', { project_id: projectId });
-    try { await this.api.post(`/api/timers/${projectId}/start`, { started_at: startTime }); } catch(_) {}
-    this._slotsSave();
-    this._startSlotInterval(idx);
-    this.renderProyecto();
-  },
+  async startTimer(idx) { return window.CronorasSlots.startTimer(idx); },
+  async pauseTimer(idx) { return window.CronorasSlots.pauseTimer(idx); },
+  async resumeTimer(idx) { return window.CronorasSlots.resumeTimer(idx); },
 
-  async pauseTimer(idx) {
-    const slot = this.state.slots[idx];
-    if (!slot?.timer.active || slot.timer.paused) return;
-    if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
-    slot.timer.accumulated = this._slotElapsed(idx);
-    slot.timer.paused = true;
-    slot.timer.startTime = null;
-    const projectId = slot.timerProjectId || slot.projectId;
-    try { await this.api.post(`/api/timers/${projectId}/pause`, { accumulated_seconds: slot.timer.accumulated }); } catch(_) {}
-    this._slotsSave();
-    this.renderProyecto();
-  },
-
-  async resumeTimer(idx) {
-    const slot = this.state.slots[idx];
-    if (!slot?.timer.active || !slot.timer.paused) return;
-    const projectId = slot.timerProjectId || slot.projectId;
-    try {
-      const res = await this.api.post(`/api/timers/${projectId}/resume`, { accumulated_seconds: slot.timer.accumulated });
-      slot.timer.startTime = res.started_at;
-    } catch(_) {
-      slot.timer.startTime = new Date().toISOString();
-    }
-    slot.timer.paused = false;
-    this._slotsSave();
-    this._startSlotInterval(idx);
-    this.renderProyecto();
-  },
-
-  async stopTimer(idx) {
-    const slot  = this.state.slots[idx];
-    const elapsed = this._slotElapsed(idx);
-    const hours = elapsed > 0 ? Math.max(Math.round(elapsed / 3600 * 4) / 4, 0.25) : 0;
-    const timerProjectId = slot.timerProjectId || slot.projectId;
-    if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
-    slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
-    slot.timerProjectId = null;
-    this.track('timer_stop', { project_id: timerProjectId, elapsed_seconds: Math.round(elapsed) });
-    try { await this.api.del(`/api/timers/${timerProjectId}`); } catch(_) {}
-    this._slotsSave();
-    this.renderProyecto();
-    if (elapsed > 0) this.modals.timerStop(hours, idx, timerProjectId);
-  },
-
-  async saveTimerEntry(idx, projectId) {
-    const date  = document.getElementById('timer-date').value;
-    const hours = parseFloat(document.getElementById('timer-hours').value);
-    const desc  = document.getElementById('timer-desc').value.trim();
-    if (!hours) return;
-    const dailyOverride = getDailyRateValue('timer-rate');
-    const rateOverride = dailyOverride > 0 ? dailyOverride / 8 : null;
-    this.track('entry_create', { project_id: projectId, hours });
-    await this.api.post('/api/entries', { project_id: projectId, date, hours, description: desc, hourly_rate_override: rateOverride });
-    const slot = this.state.slots[idx];
-    if (slot) slot.entries = await this.api.get(`/api/projects/${projectId}/entries`);
-    if (this.state.currentProjectId === projectId)
-      this.state.entries = slot?.entries || [];
-    await this.loadAll();
-    this.closeModal();
-    this.renderProyecto();
-  },
+  async stopTimer(idx) { return window.CronorasSlots.stopTimer(idx); },
+  async saveTimerEntry(idx, projectId) { return window.CronorasSlots.saveTimerEntry(idx, projectId); },
 
   // ── EXPORT ─────────────────────────────────────────────────
   async exportProject(id) {

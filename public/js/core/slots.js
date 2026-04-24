@@ -124,4 +124,80 @@ async function selectSlotProject(idx, projectId) {
   VFX.renderProyecto();
 }
 
-window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval, syncTimersFromServer, addSlot, removeSlot, selectSlotProject };
+async function startTimer(idx) {
+  const slot = VFX.state.slots[idx];
+  if (!slot?.projectId) return;
+  const projectId = slot.projectId;
+  slot.timerProjectId = projectId;
+  const startTime = new Date().toISOString();
+  slot.timer = { active: true, paused: false, startTime, accumulated: 0, interval: null };
+  VFX.track('timer_start', { project_id: projectId });
+  try { await VFX.api.post(`/api/timers/${projectId}/start`, { started_at: startTime }); } catch(_) {}
+  VFX._slotsSave();
+  VFX._startSlotInterval(idx);
+  VFX.renderProyecto();
+}
+
+async function pauseTimer(idx) {
+  const slot = VFX.state.slots[idx];
+  if (!slot?.timer.active || slot.timer.paused) return;
+  if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
+  slot.timer.accumulated = VFX._slotElapsed(idx);
+  slot.timer.paused = true;
+  slot.timer.startTime = null;
+  const projectId = slot.timerProjectId || slot.projectId;
+  try { await VFX.api.post(`/api/timers/${projectId}/pause`, { accumulated_seconds: slot.timer.accumulated }); } catch(_) {}
+  VFX._slotsSave();
+  VFX.renderProyecto();
+}
+
+async function resumeTimer(idx) {
+  const slot = VFX.state.slots[idx];
+  if (!slot?.timer.active || !slot.timer.paused) return;
+  const projectId = slot.timerProjectId || slot.projectId;
+  try {
+    const res = await VFX.api.post(`/api/timers/${projectId}/resume`, { accumulated_seconds: slot.timer.accumulated });
+    slot.timer.startTime = res.started_at;
+  } catch(_) {
+    slot.timer.startTime = new Date().toISOString();
+  }
+  slot.timer.paused = false;
+  VFX._slotsSave();
+  VFX._startSlotInterval(idx);
+  VFX.renderProyecto();
+}
+
+async function stopTimer(idx) {
+  const slot = VFX.state.slots[idx];
+  const elapsed = VFX._slotElapsed(idx);
+  const hours = elapsed > 0 ? Math.max(Math.round(elapsed / 3600 * 4) / 4, 0.25) : 0;
+  const timerProjectId = slot.timerProjectId || slot.projectId;
+  if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
+  slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
+  slot.timerProjectId = null;
+  VFX.track('timer_stop', { project_id: timerProjectId, elapsed_seconds: Math.round(elapsed) });
+  try { await VFX.api.del(`/api/timers/${timerProjectId}`); } catch(_) {}
+  VFX._slotsSave();
+  VFX.renderProyecto();
+  if (elapsed > 0) VFX.modals.timerStop(hours, idx, timerProjectId);
+}
+
+async function saveTimerEntry(idx, projectId) {
+  const date  = document.getElementById('timer-date').value;
+  const hours = parseFloat(document.getElementById('timer-hours').value);
+  const desc  = document.getElementById('timer-desc').value.trim();
+  if (!hours) return;
+  const dailyOverride = getDailyRateValue('timer-rate');
+  const rateOverride = dailyOverride > 0 ? dailyOverride / 8 : null;
+  VFX.track('entry_create', { project_id: projectId, hours });
+  await VFX.api.post('/api/entries', { project_id: projectId, date, hours, description: desc, hourly_rate_override: rateOverride });
+  const slot = VFX.state.slots[idx];
+  if (slot) slot.entries = await VFX.api.get(`/api/projects/${projectId}/entries`);
+  if (VFX.state.currentProjectId === projectId)
+    VFX.state.entries = slot?.entries || [];
+  await VFX.loadAll();
+  VFX.closeModal();
+  VFX.renderProyecto();
+}
+
+window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval, syncTimersFromServer, addSlot, removeSlot, selectSlotProject, startTimer, pauseTimer, resumeTimer, stopTimer, saveTimerEntry };
