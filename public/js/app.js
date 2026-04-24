@@ -163,47 +163,7 @@ const VFX = {
   _slotElapsed(idx) { return window.CronorasSlots.slotElapsed(idx); },
   _slotFmt(idx)     { return window.CronorasSlots.slotFmt(idx); },
 
-  async _syncTimersFromServer() {
-    try {
-      const serverTimers = await this.api.get('/api/timers');
-      if (!Array.isArray(serverTimers)) return;
-      let dirty = false;
-
-      // Aplicar estado del servidor a los slots locales
-      serverTimers.forEach(st => {
-        let slot = this.state.slots.find(s => s.projectId === st.project_id || s.timerProjectId === st.project_id);
-        if (!slot) {
-          slot = { projectId: st.project_id, timerProjectId: st.project_id, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } };
-          this.state.slots.push(slot);
-        }
-        slot.timerProjectId = st.project_id;
-        slot.timer.active = true;
-        slot.timer.paused = !!st.is_paused;
-        slot.timer.startTime = st.started_at || null;
-        slot.timer.accumulated = st.accumulated_seconds || 0;
-        dirty = true;
-        const idx = this.state.slots.indexOf(slot);
-        if (!st.is_paused && !slot.timer.interval) this._startSlotInterval(idx);
-      });
-
-      // Limpiar timers que ya no existen en el servidor (parados desde otro dispositivo)
-      this.state.slots.forEach((slot, idx) => {
-        if (!slot.timer.active) return;
-        const projectId = slot.timerProjectId || slot.projectId;
-        const stillActive = serverTimers.some(st => st.project_id === projectId);
-        if (!stillActive) {
-          if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
-          slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
-          dirty = true;
-        }
-      });
-
-      if (dirty) {
-        this._slotsSave();
-        if (this.state.view === 'proyecto') this.renderProyecto();
-      }
-    } catch(_) {}
-  },
+  async _syncTimersFromServer() { return window.CronorasSlots.syncTimersFromServer(); },
 
   _startSlotInterval(idx) { window.CronorasSlots.startSlotInterval(idx); },
 

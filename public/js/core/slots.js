@@ -58,4 +58,44 @@ function startSlotInterval(idx) {
   }, 1000);
 }
 
-window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval };
+async function syncTimersFromServer() {
+  try {
+    const serverTimers = await VFX.api.get('/api/timers');
+    if (!Array.isArray(serverTimers)) return;
+    let dirty = false;
+
+    serverTimers.forEach(st => {
+      let slot = VFX.state.slots.find(s => s.projectId === st.project_id || s.timerProjectId === st.project_id);
+      if (!slot) {
+        slot = { projectId: st.project_id, timerProjectId: st.project_id, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } };
+        VFX.state.slots.push(slot);
+      }
+      slot.timerProjectId = st.project_id;
+      slot.timer.active = true;
+      slot.timer.paused = !!st.is_paused;
+      slot.timer.startTime = st.started_at || null;
+      slot.timer.accumulated = st.accumulated_seconds || 0;
+      dirty = true;
+      const idx = VFX.state.slots.indexOf(slot);
+      if (!st.is_paused && !slot.timer.interval) VFX._startSlotInterval(idx);
+    });
+
+    VFX.state.slots.forEach((slot, idx) => {
+      if (!slot.timer.active) return;
+      const projectId = slot.timerProjectId || slot.projectId;
+      const stillActive = serverTimers.some(st => st.project_id === projectId);
+      if (!stillActive) {
+        if (slot.timer.interval) { clearInterval(slot.timer.interval); slot.timer.interval = null; }
+        slot.timer = { active: false, paused: false, startTime: null, accumulated: 0, interval: null };
+        dirty = true;
+      }
+    });
+
+    if (dirty) {
+      VFX._slotsSave();
+      if (VFX.state.view === 'proyecto') VFX.renderProyecto();
+    }
+  } catch(_) {}
+}
+
+window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval, syncTimersFromServer };
