@@ -2,7 +2,7 @@
 
 const path = require('path');
 const db = require('../../../../database/db');
-const { getEffectivePlan, getDaysRemaining, requireAdmin } = require('../../middleware/auth.middleware');
+const { getEffectivePlan, getDaysRemaining } = require('../../middleware/auth.middleware');
 
 const adminPage = async (req, res) => {
   try {
@@ -32,4 +32,4 @@ const setUserPlan = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { adminPage, getUsers, setUserPlan, requireAdmin };
+module.exports = { adminPage, getUsers, setUserPlan };

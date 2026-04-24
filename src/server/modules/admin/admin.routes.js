@@ -1,7 +1,8 @@
 'use strict';
 
 const { Router } = require('express');
-const { adminPage, getUsers, setUserPlan, requireAdmin } = require('./admin.controller');
+const { requireAdmin } = require('../../middleware/auth.middleware');
+const { adminPage, getUsers, setUserPlan } = require('./admin.controller');
 
 const router = Router();
 
