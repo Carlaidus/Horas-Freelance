@@ -23,7 +23,7 @@ const REQUIRE_AUTH = process.env.REQUIRE_AUTH === 'true';
 app.use(cors());
 app.use(express.json());
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'vfxhours-local-dev-secret',
+  secret: process.env.SESSION_SECRET || 'cronoras-local-dev-secret',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }

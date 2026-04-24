@@ -1,7 +1,6 @@
 @echo off
 echo.
-echo  VFX HOURS TRACKER
-echo  ==================
+echo  Cronoras
 echo.
 cd /d "%~dp0"
 start "" "http://localhost:3000"
