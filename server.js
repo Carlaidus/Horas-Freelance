@@ -30,6 +30,9 @@ app.use('/', require('./src/server/modules/entries/entries.routes'));
 // ── TIMERS ────────────────────────────────────────────────────
 app.use('/api/timers', require('./src/server/modules/timers/timers.routes'));
 
+// ── STATS ─────────────────────────────────────────────────────
+app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
+
 // ── ANALYTICS ─────────────────────────────────────────────────
 app.post('/api/track', async (req, res) => {
   try {
@@ -58,48 +61,6 @@ app.get('/admin/api/analytics', requireAdmin, async (req, res) => {
     ]);
     res.json({ totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents });
   } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── STATS ─────────────────────────────────────────────────────
-app.get('/api/stats/monthly', async (req, res) => {
-  try {
-    const { from, to, group } = req.query;
-    if (from && to) return res.json(await db.getMonthlyStatsRange(getUserId(req), from, to, group || 'month'));
-    res.json(await db.getMonthlyStats(getUserId(req)));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/stats/heatmap', async (req, res) => {
-  try { res.json(await db.getHeatmapData(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/stats/clients', async (req, res) => {
-  try {
-    const { from, to } = req.query;
-    if (from && to) return res.json(await db.getClientStatsRange(getUserId(req), from, to));
-    res.json(await db.getClientStats(getUserId(req)));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/stats/summary', async (req, res) => {
-  try {
-    const { from, to } = req.query;
-    if (from && to) return res.json(await db.getSummaryRange(getUserId(req), from, to));
-    res.json(await db.getYearlySummary(getUserId(req)));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/stats/project/:id', async (req, res) => {
-  try {
-    const { from, to, group } = req.query;
-    res.json(await db.getProjectStatsDetail(+req.params.id, from, to, group || 'month'));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/stats/treasury', async (req, res) => {
-  try { res.json(await db.getTreasuryData(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── INVOICES ──────────────────────────────────────────────────
