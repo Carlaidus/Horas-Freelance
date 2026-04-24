@@ -7,3 +7,4 @@ database/tracker.db-wal
 *.db-wal
 .env
 .env.local
+backups/*.json
