@@ -69,14 +69,38 @@ app.use((req, res, next) => {
 app.get('/api/auth/me', async (req, res) => {
   try {
     const user = req.session.userId ? await db.getUser(req.session.userId) : null;
+    const effectivePlan = getEffectivePlan(user);
+    const daysLeft = getDaysRemaining(user);
+
+    // Aviso de expiración: enviar email si quedan ≤7 días y aún no se ha enviado
+    if (user && effectivePlan === 'pro' && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && !user.plan_warning_sent) {
+      db.setWarningFlag(user.id).catch(() => {});
+      if (resend && user.email) {
+        const isTrialMsg = user.is_trial ? 'Tu período de prueba gratuito' : 'Tu plan Pro';
+        resend.emails.send({
+          from: FROM_EMAIL,
+          to: user.email,
+          subject: `Tu plan Pro en Cronoras caduca en ${daysLeft} día${daysLeft === 1 ? '' : 's'}`,
+          html: `<div style="font-family:sans-serif;padding:24px;background:#06060f;color:#dde0f5;border-radius:12px;max-width:480px">
+            <h2 style="color:#f5c842;margin-bottom:8px">⏳ ${isTrialMsg} termina pronto</h2>
+            <p>Hola <strong>${user.name || 'ahí'}</strong>, te quedan <strong style="color:#f5c842">${daysLeft} día${daysLeft === 1 ? '' : 's'}</strong> de plan Pro en Cronoras.</p>
+            <p>Cuando expire, tu cuenta volverá al plan Básico. <strong>Tus datos no se borran</strong> — proyectos, horas, facturas y estadísticas siguen guardados, pero dejarás de poder acceder a las funciones Pro.</p>
+            <p>Si quieres seguir con Pro, ve a la sección <strong>Planes</strong> dentro de la app y elige el período que prefieras.</p>
+            <p style="color:#888;font-size:12px;margin-top:24px">Cronoras · Freelance Tracker</p>
+          </div>`
+        }).catch(() => {});
+      }
+    }
+
     res.json({
       userId: req.session.userId || null,
       requireAuth: REQUIRE_AUTH,
       authenticated: !!req.session.userId,
       role: user?.role || 'user',
-      plan: getEffectivePlan(user),
-      planPeriod: getEffectivePlan(user) === 'free' ? null : (user?.plan_period || null),
-      daysRemaining: getDaysRemaining(user)
+      plan: effectivePlan,
+      planPeriod: effectivePlan === 'free' ? null : (user?.plan_period || null),
+      daysRemaining: daysLeft,
+      isTrial: !!(user?.is_trial && effectivePlan === 'pro')
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -544,9 +568,9 @@ app.get('/admin/api/users', requireAdmin, async (req, res) => {
 
 app.put('/admin/api/users/:id/plan', requireAdmin, async (req, res) => {
   try {
-    const { plan, expires_at, period } = req.body;
+    const { plan, expires_at, period, is_trial } = req.body;
     if (!['free', 'basic', 'pro'].includes(plan)) return res.status(400).json({ error: 'Plan inválido' });
-    await db.setUserPlan(+req.params.id, plan, expires_at || null, period || null);
+    await db.setUserPlan(+req.params.id, plan, expires_at || null, period || null, !!is_trial);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

@@ -77,6 +77,7 @@
     .badge-free{background:rgba(85,85,128,.2);color:var(--text3);border:1px solid var(--border2)}.badge-free::before{background:var(--text3)}
     .badge-basic{background:rgba(78,205,196,.12);color:var(--cyan);border:1px solid rgba(78,205,196,.3)}.badge-basic::before{background:var(--cyan)}
     .badge-pro{background:rgba(245,200,66,.12);color:var(--gold);border:1px solid rgba(245,200,66,.3)}.badge-pro::before{background:var(--gold)}
+    .badge-trial{background:rgba(78,205,196,.12);color:#4ecdc4;border:1px solid rgba(78,205,196,.3)}.badge-trial::before{background:#4ecdc4}
     .badge-admin{background:rgba(150,120,255,.15);color:#a897ff;border:1px solid rgba(150,120,255,.3)}.badge-admin::before{background:#a897ff}
     .badge-expired{background:rgba(255,85,118,.12);color:var(--red);border:1px solid rgba(255,85,118,.3)}.badge-expired::before{background:var(--red)}
 
@@ -408,6 +409,7 @@ function renderTopUsers() {
 function getPlanKey(u) {
   if (!u.plan || u.plan === 'free') return 'free';
   if (u.plan === 'pro') {
+    if (u.is_trial) return 'trial';
     switch (u.plan_period) {
       case 'quarterly': return 'pro_trimestral';
       case 'semi':      return 'pro_semestral';
@@ -431,8 +433,9 @@ function renderUsersTab() {
       <td class="mono dim">${u.plan_expires_at || '—'}</td>
       <td>${u.role === 'admin' ? '<span style="color:var(--text3);font-size:12px">—</span>' : `
         <div class="plan-controls" style="flex-wrap:nowrap;gap:6px">
-          <select id="plankey-${u.id}" onchange="calcEndDate(${u.id})" style="min-width:130px">
-            <option value="free"          ${getPlanKey(u)==='free'?'selected':''}>Free</option>
+          <select id="plankey-${u.id}" onchange="calcEndDate(${u.id})" style="min-width:140px">
+            <option value="free"          ${getPlanKey(u)==='free'   ?'selected':''}>Free</option>
+            <option value="trial"         ${getPlanKey(u)==='trial'  ?'selected':''}>Trial 30d</option>
             <option value="pro_mensual"   ${getPlanKey(u)==='pro_mensual'?'selected':''}>Pro Mensual</option>
             <option value="pro_trimestral"${getPlanKey(u)==='pro_trimestral'?'selected':''}>Pro Trimestral</option>
             <option value="pro_semestral" ${getPlanKey(u)==='pro_semestral'?'selected':''}>Pro Semestral</option>
@@ -511,6 +514,7 @@ function renderRecentPage() {
 function planBadge(u) {
   if (u.role === 'admin') return '<span class="badge badge-admin">Admin</span>';
   if (u.days_remaining !== null && u.days_remaining < 0) return '<span class="badge badge-expired">Expirado</span>';
+  if (u.effective_plan==='pro' && u.is_trial) return '<span class="badge badge-trial">Trial</span>';
   if (u.effective_plan==='pro') return '<span class="badge badge-pro">Pro</span>';
   if (u.effective_plan==='basic') return '<span class="badge badge-basic">Básico</span>';
   return '<span class="badge badge-free">Free</span>';
@@ -524,14 +528,15 @@ function daysHtml(u) {
   return `<span class="days-ok">${u.days_remaining}d</span>`;
 }
 const PLAN_MAP = {
-  free:          { plan: 'free', period: null },
-  pro_mensual:   { plan: 'pro',  period: null },
-  pro_trimestral:{ plan: 'pro',  period: 'quarterly' },
-  pro_semestral: { plan: 'pro',  period: 'semi' },
-  pro_anual:     { plan: 'pro',  period: 'annual' },
-  pro_vitalicio: { plan: 'pro',  period: 'lifetime' },
+  free:          { plan: 'free', period: null,       is_trial: false },
+  trial:         { plan: 'pro',  period: null,       is_trial: true  },
+  pro_mensual:   { plan: 'pro',  period: null,       is_trial: false },
+  pro_trimestral:{ plan: 'pro',  period: 'quarterly',is_trial: false },
+  pro_semestral: { plan: 'pro',  period: 'semi',     is_trial: false },
+  pro_anual:     { plan: 'pro',  period: 'annual',   is_trial: false },
+  pro_vitalicio: { plan: 'pro',  period: 'lifetime', is_trial: false },
 };
-const PLAN_MONTHS = { pro_mensual: 1, pro_trimestral: 3, pro_semestral: 6, pro_anual: 12 };
+const PLAN_MONTHS = { trial: 1, pro_mensual: 1, pro_trimestral: 3, pro_semestral: 6, pro_anual: 12 };
 
 function calcEndDate(userId) {
   const planKey = document.getElementById(`plankey-${userId}`)?.value;
@@ -542,21 +547,25 @@ function calcEndDate(userId) {
     endEl.value = '';
     return;
   }
-  const months = PLAN_MONTHS[planKey];
-  if (!months) return;
   const d = new Date(startVal + 'T12:00:00');
-  d.setMonth(d.getMonth() + months);
+  if (planKey === 'trial') {
+    d.setDate(d.getDate() + 30);
+  } else {
+    const months = PLAN_MONTHS[planKey];
+    if (!months) return;
+    d.setMonth(d.getMonth() + months);
+  }
   endEl.value = d.toISOString().split('T')[0];
 }
 
 async function savePlan(userId) {
   const planKey = document.getElementById(`plankey-${userId}`).value;
   const expires_at = document.getElementById(`end-${userId}`).value || null;
-  const { plan, period } = PLAN_MAP[planKey] || { plan: 'free', period: null };
+  const { plan, period, is_trial } = PLAN_MAP[planKey] || { plan: 'free', period: null, is_trial: false };
   const res = await fetch(`/admin/api/users/${userId}/plan`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, expires_at, period })
+    body: JSON.stringify({ plan, expires_at, period, is_trial })
   });
   if (res.ok) { showToast(); await load(); }
 }

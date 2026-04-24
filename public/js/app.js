@@ -53,6 +53,7 @@ const VFX = {
     role: 'user',
     daysRemaining: null,
     planPeriod: null,
+    isTrial: false,
     userId: null
   },
 
@@ -453,6 +454,7 @@ const VFX = {
     this.state.role = authData.role || 'user';
     this.state.daysRemaining = authData.daysRemaining ?? null;
     this.state.planPeriod = authData.planPeriod || null;
+    this.state.isTrial = !!authData.isTrial;
     this.state.userId = authData.userId || 1;
     if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
@@ -2233,6 +2235,7 @@ const VFX = {
   renderPlanes() {
     const el = document.getElementById('view-planes');
     const isPro = this.isPro();
+    const isTrial = this.state.isTrial;
     const daysLeft = this.state.daysRemaining;
     const currentPeriod = this.state.planPeriod; // quarterly | semi | annual | lifetime | null
     const userName = this.state.user?.name || '';
@@ -2326,7 +2329,10 @@ const VFX = {
 
       <div class="planes-outer" style="max-width:900px;margin:0 auto;padding:0 4px">
 
-        ${isPro ? `<div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
+        ${isPro && isTrial ? `<div style="background:rgba(78,205,196,0.07);border:1px solid rgba(78,205,196,0.3);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Estás en el <strong style="color:#4ecdc4">período de prueba gratuito</strong>${daysLeft !== null ? ` — te quedan <strong style="color:#4ecdc4">${daysLeft} días</strong>` : ''}. Cuando expire, tu cuenta pasará al plan Básico. Tus datos no se borran.</span>
+        </div>` : isPro ? `<div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:14px 18px;margin-bottom:28px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" width="20" height="20"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           <span>Tienes el plan <strong style="color:var(--gold)">Pro</strong> activo${daysLeft !== null ? ` — caduca en <strong style="color:var(--gold)">${daysLeft} días</strong>` : ''}. Gracias por tu apoyo.</span>
         </div>` : ''}
@@ -2344,6 +2350,7 @@ const VFX = {
                 <span style="font-size:13px;color:var(--text3)">/mes</span>
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:5px">Para empezar sin compromiso</div>
+              ${!isPro ? `<div style="margin-top:8px;font-size:11px;font-weight:600;color:#4ecdc4;background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.25);border-radius:6px;padding:4px 8px;display:inline-block">✓ Primer mes Pro gratis al registrarte</div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;gap:9px;flex:1">
               <div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2)"><span style="color:var(--cyan);flex-shrink:0">${chk}</span>1 proyecto activo</div>

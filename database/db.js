@@ -29,9 +29,13 @@ const init = async () => {
       plan TEXT DEFAULT 'free',
       plan_period TEXT DEFAULT NULL,
       plan_expires_at DATE DEFAULT NULL,
+      is_trial BOOLEAN DEFAULT false,
+      plan_warning_sent BOOLEAN DEFAULT false,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_trial BOOLEAN DEFAULT false`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_warning_sent BOOLEAN DEFAULT false`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS companies (
@@ -213,8 +217,8 @@ const findUserByEmail = async (email) => {
 
 const createAuthUser = async (data) => {
   const r = await q(
-    `INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate, role, plan, plan_expires_at)
-     VALUES ($1, $2, $3, 21.0, 15.0, 'user', 'pro', NOW() + INTERVAL '30 days') RETURNING id`,
+    `INSERT INTO users (name, email, password_hash, iva_rate, irpf_rate, role, plan, plan_expires_at, is_trial)
+     VALUES ($1, $2, $3, 21.0, 15.0, 'user', 'pro', NOW() + INTERVAL '30 days', true) RETURNING id`,
     [data.name, data.email, data.password_hash]
   );
   return r.rows[0].id;
@@ -711,7 +715,7 @@ const updateInvoiceNumber = async (id, userId, number) => {
 // ── ADMIN ─────────────────────────────────────────────────────
 const getAllUsers = async () => {
   const r = await q(`
-    SELECT id, name, email, role, plan, plan_expires_at, plan_period, created_at,
+    SELECT id, name, email, role, plan, plan_expires_at, plan_period, is_trial, created_at,
       CASE
         WHEN role = 'admin' THEN NULL
         WHEN plan = 'free' THEN NULL
@@ -724,11 +728,15 @@ const getAllUsers = async () => {
   return r.rows;
 };
 
-const setUserPlan = async (userId, plan, expiresAt, period) => {
+const setUserPlan = async (userId, plan, expiresAt, period, isTrial = false) => {
   await q(
-    'UPDATE users SET plan=$1, plan_expires_at=$2, plan_period=$3 WHERE id=$4',
-    [plan, expiresAt || null, period || null, userId]
+    'UPDATE users SET plan=$1, plan_expires_at=$2, plan_period=$3, is_trial=$4, plan_warning_sent=false WHERE id=$5',
+    [plan, expiresAt || null, period || null, isTrial, userId]
   );
+};
+
+const setWarningFlag = async (userId) => {
+  await q('UPDATE users SET plan_warning_sent=true WHERE id=$1', [userId]);
 };
 
 // ── EVENTS / ANALYTICS ────────────────────────────────────────
@@ -897,7 +905,7 @@ const getAdminEmail = async () => {
 
 module.exports = {
   init,
-  getUser, saveUser, findUserByEmail, createAuthUser, getAllUsers, setUserPlan,
+  getUser, saveUser, findUserByEmail, createAuthUser, getAllUsers, setUserPlan, setWarningFlag,
   getCompanies, createCompany, updateCompany, deleteCompany,
   getProjects, getProject, createProject, updateProject, deleteProject,
   getEntries, createEntry, updateEntry, deleteEntry,
