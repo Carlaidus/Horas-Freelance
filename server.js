@@ -27,6 +27,9 @@ app.use('/api/projects', require('./src/server/modules/projects/projects.routes'
 // ── ENTRIES ───────────────────────────────────────────────────
 app.use('/', require('./src/server/modules/entries/entries.routes'));
 
+// ── TIMERS ────────────────────────────────────────────────────
+app.use('/api/timers', require('./src/server/modules/timers/timers.routes'));
+
 // ── ANALYTICS ─────────────────────────────────────────────────
 app.post('/api/track', async (req, res) => {
   try {
@@ -55,48 +58,6 @@ app.get('/admin/api/analytics', requireAdmin, async (req, res) => {
     ]);
     res.json({ totals, eventsPerDay, dailyActiveUsers, eventsByHour, newUsersPerMonth, topUsers, eventStats, recentEvents });
   } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// ── TIMERS ────────────────────────────────────────────────────
-app.get('/api/timers', async (req, res) => {
-  try { res.json(await db.getActiveTimers(getUserId(req))); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/timers/:projectId/start', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const projectId = +req.params.projectId;
-    const started_at = req.body.started_at || new Date().toISOString();
-    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds: 0 });
-    res.json({ started_at });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/timers/:projectId/pause', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const projectId = +req.params.projectId;
-    const { accumulated_seconds = 0 } = req.body;
-    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 1, started_at: null, accumulated_seconds });
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/timers/:projectId/resume', async (req, res) => {
-  try {
-    const userId = getUserId(req);
-    const projectId = +req.params.projectId;
-    const { accumulated_seconds = 0 } = req.body;
-    const started_at = new Date().toISOString();
-    await db.upsertTimer(userId, projectId, { is_active: 1, is_paused: 0, started_at, accumulated_seconds });
-    res.json({ started_at });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/timers/:projectId', async (req, res) => {
-  try { await db.clearTimer(getUserId(req), +req.params.projectId); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── STATS ─────────────────────────────────────────────────────
