@@ -134,6 +134,7 @@ const VFX = {
   // ── PRIVACY ────────────────────────────────────────────────
   privacy:                window.CronorasPrivacy.privacy,
 
+  // ── UI HELPERS (acordeones) ────────────────────────────────
   toggleSummary(idx) {
     const body = document.getElementById(`summary-body-${idx}`);
     const chevron = document.getElementById(`summary-chevron-${idx}`);
@@ -171,6 +172,7 @@ const VFX = {
   removeSlot(idx)                    { return window.CronorasSlots.removeSlot(idx); },
   async selectSlotProject(idx, pid)  { return window.CronorasSlots.selectSlotProject(idx, pid); },
 
+  // ── ANALYTICS ──────────────────────────────────────────────
   track(event, metadata) {
     fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, metadata }) }).catch(() => {});
   },
@@ -202,7 +204,7 @@ const VFX = {
   toggleLocationPrivacy:  window.CronorasPrivacy.toggleLocationPrivacy,
   saveHomeLocation:       window.CronorasPrivacy.saveHomeLocation,
 
-  // ── INIT ───────────────────────────────────────────────────
+  // ── INIT / BOOTSTRAP ───────────────────────────────────────
   async init() {
     // Comprobar auth (redirige a login si hace falta)
     const authRes = await fetch('/api/auth/me');
@@ -345,6 +347,7 @@ const VFX = {
     }
   },
 
+  // ── SIDEBAR ────────────────────────────────────────────────
   updateSidebarUser() {
     const u = this.state.user;
     const name = u.name || 'Sin configurar';
@@ -1557,8 +1560,7 @@ const VFX = {
     `).join('');
   },
 
-  // ── COMPANIES ──────────────────────────────────────────────
-  // ── PROYECTOS (listado histórico) ─────────────────────────
+  // ── PROYECTOS (listado histórico) + COMPANIES ─────────────
   _projectStatus(p) {
     if (p.status === 'paid')        return { label: 'Cobrado',    cls: 'badge-paid' };
     if (p.status === 'sent')        return { label: 'Facturado',  cls: 'badge-sent' };
@@ -1746,6 +1748,7 @@ const VFX = {
     this.navigate('proyecto');
   },
 
+  // ── RENDER VIEWS (wrappers a módulos core) ─────────────────
   renderCompanies() { return window.CronorasCompaniesView.renderCompanies(); },
   // ── PLANES ─────────────────────────────────────────────────
   renderPlanes() { return window.CronorasPlansView.renderPlanes(); },
