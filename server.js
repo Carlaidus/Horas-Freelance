@@ -6,7 +6,6 @@ const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
 const { getUserId, getEffectivePlan, getDaysRemaining, requireAdmin } = require('./src/server/middleware/auth.middleware');
-const { generateInvoicePdf }       = require('./lib/invoice-pdf');
 const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
 // ── AUTH ───────────────────────────────────────────────────────
@@ -38,15 +37,6 @@ app.use('/api/stats', require('./src/server/modules/stats/stats.routes'));
 
 // ── INVOICES ──────────────────────────────────────────────────
 app.use('/api/invoices', require('./src/server/modules/invoices/invoices.routes'));
-
-app.get('/api/invoices/:id/pdf', async (req, res) => {
-  try {
-    const invoice = await db.getInvoice(+req.params.id);
-    if (!invoice) return res.status(404).json({ error: 'No encontrada' });
-    const lines = await db.getInvoiceLines(invoice.id);
-    generateInvoicePdf(invoice, lines, res);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
 // ── PROJECT REPORT PDF ────────────────────────────────────────
 app.get('/api/projects/:id/report', async (req, res) => {
