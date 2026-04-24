@@ -74,3 +74,18 @@ Cómo probar:
 
 Riesgo:
 - bajo / medio / alto
+
+## Excepciones de formato
+
+El formato corto es obligatorio por defecto.
+
+Se permite ampliar la respuesta SOLO cuando:
+- se pide análisis
+- se pide diseño o planificación
+- hay varias opciones posibles
+- el cambio implica riesgo estructural
+
+En esos casos:
+- añadir contexto útil
+- explicar decisiones
+- no extenderse innecesariamente
