@@ -167,31 +167,9 @@ const VFX = {
 
   _startSlotInterval(idx) { window.CronorasSlots.startSlotInterval(idx); },
 
-  addSlot() {
-    this.state.slots.push({ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } });
-    this._slotsSave();
-    this.renderProyecto();
-  },
-
-  removeSlot(idx) {
-    const slot = this.state.slots[idx];
-    if (slot?.timer.interval) clearInterval(slot.timer.interval);
-    this.state.slots.splice(idx, 1);
-    if (this.state.slots.length === 0)
-      this.state.slots = [{ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } }];
-    this._slotsSave();
-    this.renderProyecto();
-  },
-
-  async selectSlotProject(idx, projectId) {
-    const slot = this.state.slots[idx];
-    if (!slot) return;
-    slot.projectId = projectId ? parseInt(projectId) : null;
-    slot.entries   = projectId ? await this.api.get(`/api/projects/${projectId}/entries`) : [];
-    this._slotsSave();
-    if (projectId) this.state.currentProjectId = parseInt(projectId);
-    this.renderProyecto();
-  },
+  addSlot()                          { return window.CronorasSlots.addSlot(); },
+  removeSlot(idx)                    { return window.CronorasSlots.removeSlot(idx); },
+  async selectSlotProject(idx, pid)  { return window.CronorasSlots.selectSlotProject(idx, pid); },
 
   track(event, metadata) {
     fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event, metadata }) }).catch(() => {});

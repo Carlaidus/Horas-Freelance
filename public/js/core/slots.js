@@ -98,4 +98,30 @@ async function syncTimersFromServer() {
   } catch(_) {}
 }
 
-window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval, syncTimersFromServer };
+function addSlot() {
+  VFX.state.slots.push({ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } });
+  VFX._slotsSave();
+  VFX.renderProyecto();
+}
+
+function removeSlot(idx) {
+  const slot = VFX.state.slots[idx];
+  if (slot?.timer.interval) clearInterval(slot.timer.interval);
+  VFX.state.slots.splice(idx, 1);
+  if (VFX.state.slots.length === 0)
+    VFX.state.slots = [{ projectId: null, entries: [], timer: { active: false, paused: false, startTime: null, accumulated: 0, interval: null } }];
+  VFX._slotsSave();
+  VFX.renderProyecto();
+}
+
+async function selectSlotProject(idx, projectId) {
+  const slot = VFX.state.slots[idx];
+  if (!slot) return;
+  slot.projectId = projectId ? parseInt(projectId) : null;
+  slot.entries   = projectId ? await VFX.api.get(`/api/projects/${projectId}/entries`) : [];
+  VFX._slotsSave();
+  if (projectId) VFX.state.currentProjectId = parseInt(projectId);
+  VFX.renderProyecto();
+}
+
+window.CronorasSlots = { slotsLoad, slotsSave, slotElapsed, slotFmt, startSlotInterval, syncTimersFromServer, addSlot, removeSlot, selectSlotProject };
