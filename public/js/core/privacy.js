@@ -3,11 +3,11 @@
 const _privacy = {
   on: false,
   load() {
-    const def = localStorage.getItem(window.VFX._lsKey('vfx_privacy_default')) === 'true';
-    const saved = localStorage.getItem(window.VFX._lsKey('vfx_privacy_on'));
+    const def = localStorage.getItem(VFX._lsKey('vfx_privacy_default')) === 'true';
+    const saved = localStorage.getItem(VFX._lsKey('vfx_privacy_on'));
     this.on = saved !== null ? saved === 'true' : def;
   },
-  save() { localStorage.setItem(window.VFX._lsKey('vfx_privacy_on'), this.on); },
+  save() { localStorage.setItem(VFX._lsKey('vfx_privacy_on'), this.on); },
   async checkLocation() {
     if (localStorage.getItem('vfx_privacy_location') !== 'true') return;
     const homeLat = parseFloat(localStorage.getItem('vfx_home_lat'));
@@ -32,13 +32,13 @@ const _privacy = {
 };
 
 function togglePrivacy() {
-  window.VFX.privacy.on = !window.VFX.privacy.on;
-  window.VFX.privacy.save();
-  window.VFX.applyPrivacy();
+  VFX.privacy.on = !VFX.privacy.on;
+  VFX.privacy.save();
+  VFX.applyPrivacy();
 }
 
 function applyPrivacy() {
-  const on = window.VFX.privacy.on;
+  const on = VFX.privacy.on;
   document.body.classList.toggle('privacy-mode', on);
   const eyeOn = document.getElementById('privacy-icon-eye');
   const eyeOff = document.getElementById('privacy-icon-off');
@@ -52,7 +52,7 @@ function applyPrivacy() {
 }
 
 function savePrivacyDefault(val) {
-  localStorage.setItem(window.VFX._lsKey('vfx_privacy_default'), val);
+  localStorage.setItem(VFX._lsKey('vfx_privacy_default'), val);
 }
 
 function toggleLocationPrivacy(enabled) {
