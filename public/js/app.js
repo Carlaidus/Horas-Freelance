@@ -2948,6 +2948,8 @@ const VFX = {
     });
     const entries = await this.api.get(`/api/projects/${this.state.currentProjectId}/entries`);
     this.state.entries = entries;
+    const slot = this.state.slots.find(s => s.projectId === this.state.currentProjectId);
+    if (slot) slot.entries = entries;
     await this.loadAll();
     this.closeModal();
     this.renderProyecto();
