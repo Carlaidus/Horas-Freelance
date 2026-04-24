@@ -1,8 +1,10 @@
 'use strict';
 
+const path = require('path');
+
 const app = require('./src/server/app');
 const db  = require('./database/db');
-const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
+const { PORT, REQUIRE_AUTH, resend, FROM_EMAIL } = require('./src/server/config/env');
 const { getUserId, getEffectivePlan, requireAdmin } = require('./src/server/middleware/auth.middleware');
 const { generateInvoicePdf }       = require('./lib/invoice-pdf');
 const { generateProjectReportPdf } = require('./lib/project-report-pdf');
