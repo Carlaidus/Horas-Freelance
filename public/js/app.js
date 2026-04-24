@@ -1732,6 +1732,7 @@ const VFX = {
           <div class="page-title">Proyectos</div>
           <div class="page-subtitle">${total} proyecto${total !== 1 ? 's' : ''} — ${active} en curso, ${completed} completado${completed !== 1 ? 's' : ''}</div>
         </div>
+        <button class="btn btn-primary" onclick="VFX.modals.newProject()">Nuevo proyecto</button>
       </div>
 
       ${total === 0 ? `
