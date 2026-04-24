@@ -6,7 +6,6 @@ const app = require('./src/server/app');
 const db  = require('./database/db');
 const { PORT, REQUIRE_AUTH } = require('./src/server/config/env');
 const { getUserId, getEffectivePlan, requireAdmin } = require('./src/server/middleware/auth.middleware');
-const { ownProject } = require('./src/server/modules/projects/projects.controller');
 const { generateInvoicePdf }       = require('./lib/invoice-pdf');
 const { generateProjectReportPdf } = require('./lib/project-report-pdf');
 
@@ -26,27 +25,7 @@ app.use('/api/companies', require('./src/server/modules/companies/companies.rout
 app.use('/api/projects', require('./src/server/modules/projects/projects.routes'));
 
 // ── ENTRIES ───────────────────────────────────────────────────
-app.get('/api/projects/:id/entries', async (req, res) => {
-  try {
-    if (!await ownProject(req, res)) return;
-    res.json(await db.getEntries(+req.params.id));
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.post('/api/entries', async (req, res) => {
-  try { res.json({ id: await db.createEntry({ user_id: getUserId(req), ...req.body }) }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/entries/:id', async (req, res) => {
-  try { await db.updateEntry(+req.params.id, req.body); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/entries/:id', async (req, res) => {
-  try { await db.deleteEntry(+req.params.id); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
+app.use('/', require('./src/server/modules/entries/entries.routes'));
 
 // ── ANALYTICS ─────────────────────────────────────────────────
 app.post('/api/track', async (req, res) => {
