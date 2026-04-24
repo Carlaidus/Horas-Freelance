@@ -16,15 +16,7 @@ app.use('/api/auth', require('./src/server/modules/auth/auth.routes'));
 app.use('/api/contact', require('./src/server/modules/plans/plans.routes'));
 
 // ── USER ──────────────────────────────────────────────────────
-app.get('/api/user', async (req, res) => {
-  try { res.json(await db.getUser(getUserId(req)) || {}); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.put('/api/user', async (req, res) => {
-  try { await db.saveUser({ id: getUserId(req), ...req.body }); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
-});
+app.use('/api/user', require('./src/server/modules/users/users.routes'));
 
 // ── COMPANIES ─────────────────────────────────────────────────
 app.get('/api/companies', async (req, res) => {
