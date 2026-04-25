@@ -355,50 +355,13 @@ const VFX = {
   _initResponsiveSidebar()     { return window.CronorasSidebar.initResponsiveSidebar(); },
 
   // ── NAVIGATION ─────────────────────────────────────────────
-  navigate(view) {
-    this.track('view', { view });
-    this.state.view = view;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById(`view-${view}`)?.classList.add('active');
-    document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
-    // Cerrar sidebar en móvil al navegar
-    if (window.innerWidth <= 768) {
-      document.getElementById('sidebar')?.classList.remove('mobile-open');
-      document.getElementById('sidebar-backdrop')?.classList.remove('show');
-      const menuBtn = document.getElementById('mobile-menu-btn');
-      if (menuBtn) menuBtn.style.display = 'flex';
-    }
-
-    if (view === 'dashboard') this.renderDashboard();
-    if (view === 'projects') this.renderProjects();
-    if (view === 'proyecto') this.renderProyecto();
-    if (view === 'stats') this.renderStats();
-    if (view === 'facturas') this.renderFacturas();
-    if (view === 'companies') this.renderCompanies();
-    if (view === 'planes') this.renderPlanes();
-    if (view === 'settings') this.renderSettings();
-    if (view === 'ayuda') this.renderAyuda();
-  },
+  navigate(view)              { return window.CronorasNavigation.navigate(view); },
 
   // ── DASHBOARD (overview facturación) ──────────────────────
   async renderDashboard() { return window.CronorasDashboardView.renderDashboard(); },
-  selectForCockpit(id) {
-    this.renderProjectDetail(id);
-  },
-
-  filterDashboard(filter) {
-    this.state.dashboardFilter = filter;
-    this.renderDashboard();
-  },
-
-  async goToProject(id) {
-    this.state.currentProjectId = id;
-    localStorage.setItem(this._lsKey('vfx_current_project'), id);
-    const entries = await this.api.get(`/api/projects/${id}/entries`);
-    this.state.entries = entries;
-    this.navigate('proyecto');
-  },
+  selectForCockpit(id)        { return window.CronorasNavigation.selectForCockpit(id); },
+  filterDashboard(filter)     { return window.CronorasNavigation.filterDashboard(filter); },
+  async goToProject(id)       { return window.CronorasNavigation.goToProject(id); },
 
   // ── PROYECTO EN CURSO ──────────────────────────────────────
   async renderProyecto() {
