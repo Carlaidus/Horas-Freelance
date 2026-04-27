@@ -179,7 +179,7 @@ async function stopTimer(idx) {
   try { await VFX.api.del(`/api/timers/${timerProjectId}`); } catch(_) {}
   VFX._slotsSave();
   VFX.renderProyecto();
-  if (elapsed > 0) VFX.modals.timerStop(hours, idx, timerProjectId);
+  if (elapsed > 0) VFX.modals.timerStop(hours, idx, timerProjectId, elapsed);
 }
 
 async function saveTimerEntry(idx, projectId) {

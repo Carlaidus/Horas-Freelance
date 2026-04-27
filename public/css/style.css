@@ -267,6 +267,7 @@ input, select, textarea { font-family: inherit; }
   .timer-card > div:first-child { width: 100%; }
   .timer-card > div:first-child > div:first-child { justify-content: center; flex-wrap: wrap; }
   .timer-card > div:last-child { width: 100%; justify-content: center !important; }
+  .project-edit-inline { display: none; }
 }
 
 .user-avatar {

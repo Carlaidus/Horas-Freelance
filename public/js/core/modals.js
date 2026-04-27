@@ -314,6 +314,10 @@ window.CronorasModals = {
           </div>
         </div>
         <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
+          <button class="btn btn-danger" onclick="VFX.deleteEntry(${id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Eliminar
+          </button>
           <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
           <button class="btn btn-primary" onclick="VFX.updateEntry(${id})">Guardar</button>
         </div>
@@ -374,14 +378,20 @@ window.CronorasModals = {
       `, isEdit ? 'Editar empresa' : 'Nueva empresa');
     },
 
-    timerStop(hours, idx, projectId) {
+    timerStop(hours, idx, projectId, elapsedSeconds) {
       const today   = new Date().toISOString().split('T')[0];
       const project = VFX.state.projects.find(p => p.id === projectId);
       const defaultHourly = project ? project.hourly_rate : 0;
       const defaultDaily = defaultHourly ? Math.round(defaultHourly * 8) : 0;
+      const totalSeconds = Math.max(0, Math.round(elapsedSeconds || 0));
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      const exactTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
       VFX.openModal(`
         <p style="color:var(--text2);margin-bottom:4px">Sesión finalizada · <strong style="color:var(--text)">${project?.name || ''}</strong></p>
-        <p style="color:var(--text2);margin-bottom:20px">Se han registrado <strong style="color:var(--gold)">${hours} horas</strong>.</p>
+        <p style="color:var(--text2);margin-bottom:4px">Se han registrado <strong style="color:var(--gold)">${hours} horas</strong>.</p>
+        <p style="color:var(--text2);margin-bottom:20px">Tiempo exacto: <strong style="color:var(--text)">${exactTime}</strong>.</p>
         <div class="form-grid full">
           <div class="form-group">
             <label>Descripción del trabajo</label>

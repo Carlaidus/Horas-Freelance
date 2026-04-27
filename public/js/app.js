@@ -494,7 +494,7 @@ const VFX = {
             ${projectOptions}
           </select>
           ${slot.projectId ? `
-            <button class="btn btn-ghost btn-sm" onclick="VFX.modals.editProject(${slot.projectId})">
+            <button class="btn btn-ghost btn-sm project-edit-inline" onclick="VFX.modals.editProject(${slot.projectId})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           ` : ''}
@@ -783,6 +783,12 @@ const VFX = {
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
           <div class="entry-table-actions" style="display:flex;gap:6px;align-items:center">
+            <span id="bulk-delete-btn-${projectId}" style="display:none">
+              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedEntries(${projectId})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <span class="bulk-delete-label">Eliminar seleccionadas</span>
+              </button>
+            </span>
             <span id="bulk-rate-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -830,6 +836,12 @@ const VFX = {
     const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`);
     const btn  = document.getElementById(`bulk-rate-btn-${projectId}`);
     if (btn) btn.style.display = checked.length > 0 ? 'inline' : 'none';
+    const deleteBtn = document.getElementById(`bulk-delete-btn-${projectId}`);
+    if (deleteBtn) {
+      deleteBtn.style.display = checked.length > 0 ? 'inline' : 'none';
+      const label = deleteBtn.querySelector('.bulk-delete-label');
+      if (label) label.textContent = `Eliminar seleccionada${checked.length === 1 ? '' : 's'}`;
+    }
     const cbAll = document.getElementById(`entry-cb-all-${projectId}`);
     if (cbAll) {
       cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
@@ -1789,9 +1801,21 @@ const VFX = {
     if (!confirm('¿Eliminar esta entrada?')) return;
     await this.api.del(`/api/entries/${id}`);
     // Limpiar slot.entries para forzar recarga en renderProyecto
-    this.state.slots.forEach(s => { if (s.entries.some(e => e.id === id)) s.entries = []; });
+    this.state.slots.forEach(s => { if (s.entries?.some(e => e.id === id)) s.entries = []; });
     await this.loadAll();
+    this.closeModal();
     this.renderProyecto();
+  },
+
+  async deleteSelectedEntries(projectId) {
+    const ids = [...document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
+    if (!ids.length) return;
+    const msg = ids.length === 1 ? '¿Eliminar la entrada seleccionada?' : `¿Eliminar ${ids.length} entradas seleccionadas?`;
+    if (!confirm(msg)) return;
+    await Promise.all(ids.map(id => this.api.del(`/api/entries/${id}`)));
+    this.state.slots.forEach(s => { if (s.entries?.some(e => ids.includes(e.id))) s.entries = []; });
+    await this.loadAll();
+    await this.renderProyecto();
   },
 
   async saveCompany(id) {
