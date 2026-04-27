@@ -796,7 +796,7 @@ const VFX = {
           </div>
         </div>
         ${entries.length > 0 ? `
-          <table>
+          <table class="time-entries-table">
             <thead>
               <tr>
                 <th style="width:28px;padding-right:0"><input type="checkbox" id="entry-cb-all-${projectId}" onchange="VFX._toggleAllEntries(this.checked, ${projectId})"></th>
