@@ -268,10 +268,6 @@ input, select, textarea { font-family: inherit; }
   .timer-card > div:first-child > div:first-child { justify-content: center; flex-wrap: wrap; }
   .timer-card > div:last-child { width: 100%; justify-content: center !important; }
 }
-@media (max-width: 1099px) {
-  .project-edit-inline { display: none; }
-}
-
 .user-avatar {
   width: 34px; height: 34px;
   background: var(--gold-glow2);
