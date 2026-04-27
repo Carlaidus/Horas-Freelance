@@ -490,18 +490,28 @@ tbody td {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 9px 16px;
-  font-size: 11px;
+  padding: 6px 16px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--gold);
   text-transform: uppercase;
   letter-spacing: 1px;
   border-left: 2px solid var(--gold);
 }
-.entry-day-header span:last-child {
+.entry-day-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
   color: var(--text3);
   font-weight: 600;
   white-space: nowrap;
+}
+.entry-day-summary strong {
+  min-width: 86px;
+  text-align: right;
+  color: var(--gold);
+  font-family: 'Space Mono', monospace;
 }
 .entry-row td:nth-child(3) {
   position: relative;

@@ -728,11 +728,13 @@ const VFX = {
       const dateKey = String(entry.date || '').slice(0, 10);
       let group = acc.find(g => g.dateKey === dateKey);
       if (!group) {
-        group = { dateKey, entries: [], totalHours: 0 };
+        group = { dateKey, entries: [], totalHours: 0, totalAmount: 0 };
         acc.push(group);
       }
+      const effectiveHourly = entry.hourly_rate_override || hourlyRate;
       group.entries.push(entry);
       group.totalHours += parseFloat(entry.hours || 0);
+      group.totalAmount += parseFloat(entry.hours || 0) * effectiveHourly;
       return acc;
     }, []);
 
@@ -766,8 +768,11 @@ const VFX = {
         <tr class="entry-day-row">
           <td colspan="7">
             <div class="entry-day-header">
-              <span>${this.fmt.date(group.dateKey)}</span>
-              <span>${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</span>
+              <span class="entry-day-date">${this.fmt.date(group.dateKey)}</span>
+              <span class="entry-day-summary">
+                <span>${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</span>
+                <strong data-private>${this.fmt.currency(group.totalAmount)}</strong>
+              </span>
             </div>
           </td>
         </tr>
