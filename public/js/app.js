@@ -723,30 +723,68 @@ const VFX = {
   renderEntriesTable(entries = this.state.entries, projectId = this.state.currentProjectId, slotIdx = null) {
     const project = this.state.projects.find(p => p.id === projectId);
     const hourlyRate = project?.hourly_rate || 0;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const yDate = new Date();
+    yDate.setDate(yDate.getDate() - 1);
+    const yesterdayIso = yDate.toISOString().slice(0, 10);
+    const dayLabel = (iso) => {
+      if (iso === todayIso) return 'Hoy';
+      if (iso === yesterdayIso) return 'Ayer';
+      return this.fmt.date(iso);
+    };
+    const safeEntries = Array.isArray(entries) ? [...entries] : [];
+    safeEntries.sort((a, b) => {
+      const d = (b.date || '').localeCompare(a.date || '');
+      if (d !== 0) return d;
+      return (b.id || 0) - (a.id || 0);
+    });
 
-    const rows = entries.map(e => {
-      const effectiveHourly = e.hourly_rate_override || hourlyRate;
-      const effectiveDaily = effectiveHourly * 8;
-      const total = e.hours * effectiveHourly;
-      const days = e.hours / 8;
-      return `
-        <tr>
-          <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
-          <td class="dim">${this.fmt.date(e.date)}</td>
-          <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
-          <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
-          <td class="mono dim" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
-          <td class="gold" data-private>${this.fmt.currency(total)}</td>
-          <td class="actions">
-            <button class="btn-icon" onclick="VFX.modals.editEntry(${e.id})" data-tip="Editar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="btn-icon" style="color:var(--red)" onclick="VFX.deleteEntry(${e.id})" data-tip="Eliminar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>
+    const grouped = safeEntries.reduce((acc, e) => {
+      const key = e.date || 'sin-fecha';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(e);
+      return acc;
+    }, {});
+    const dayKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+    const rows = dayKeys.map(dayKey => {
+      const dayEntries = grouped[dayKey] || [];
+      const dayHours = dayEntries.reduce((s, e) => s + (e.hours || 0), 0);
+      const dayHeader = `
+        <tr class="entries-day-row">
+          <td colspan="7">
+            <div class="entries-day-header">
+              <span class="entries-day-title">${dayLabel(dayKey)}</span>
+              <span class="entries-day-total">${this.fmt.hours(dayHours)} · ${dayEntries.length} registro${dayEntries.length !== 1 ? 's' : ''}</span>
+            </div>
           </td>
         </tr>
       `;
+      const dayRows = dayEntries.map(e => {
+        const effectiveHourly = e.hourly_rate_override || hourlyRate;
+        const effectiveDaily = effectiveHourly * 8;
+        const total = e.hours * effectiveHourly;
+        const days = e.hours / 8;
+        return `
+          <tr class="entry-row">
+            <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
+            <td class="dim">${this.fmt.date(e.date)}</td>
+            <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
+            <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
+            <td class="mono dim" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
+            <td class="gold" data-private>${this.fmt.currency(total)}</td>
+            <td class="actions">
+              <button class="btn-icon" onclick="VFX.modals.editEntry(${e.id})" data-tip="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="btn-icon" style="color:var(--red)" onclick="VFX.deleteEntry(${e.id})" data-tip="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      return dayHeader + dayRows;
     }).join('');
 
     return `
