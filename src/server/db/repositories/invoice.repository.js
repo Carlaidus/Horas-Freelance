@@ -176,6 +176,7 @@ const validateInvoiceLines = async (lines, companyId) => {
   if (!companyId || !projectIds.length) return;
   const placeholders = projectIds.map((_, i) => `$${i + 1}`).join(',');
   const r = await q(`SELECT id, company_id FROM projects WHERE id IN (${placeholders})`, projectIds);
+  if (r.rows.length !== projectIds.length) throw new Error('Algún proyecto de la factura no existe');
   const wrong = r.rows.filter(p => p.company_id != companyId);
   if (wrong.length) throw new Error('Todos los proyectos deben pertenecer a la misma empresa');
 };
