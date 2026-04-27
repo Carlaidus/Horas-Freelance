@@ -745,7 +745,7 @@ const VFX = {
         const total = e.hours * effectiveHourly;
         const days = e.hours / 8;
         return `
-          <tr class="entry-row">
+          <tr class="entry-row" onclick="if (window.matchMedia('(max-width: 700px)').matches && !event.target.closest('input,button')) VFX.modals.editEntry(${e.id})">
             <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
             <td class="dim">${this.fmt.date(e.date)}</td>
             <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
@@ -782,7 +782,7 @@ const VFX = {
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div class="entry-table-actions" style="display:flex;gap:6px;align-items:center">
             <span id="bulk-rate-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
