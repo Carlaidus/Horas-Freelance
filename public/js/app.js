@@ -2113,20 +2113,23 @@ const VFX = {
                   <td style="text-align:right">${this.fmt.currency(inv.subtotal)}</td>
                   <td style="text-align:right"><strong>${this.fmt.currency(inv.total)}</strong></td>
                   <td>
-                    <span class="badge ${inv.status === 'issued' ? 'badge-sent' : 'badge-pending'}">
-                      ${inv.status === 'issued' ? 'Emitida' : 'Borrador'}
-                    </span>
+                    ${inv.status === 'draft'
+                      ? `<span class="badge badge-pending">Borrador</span>`
+                      : `<select style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:3px 6px;cursor:pointer" onchange="VFX.updateInvoiceStatus(${inv.id}, this.value)">
+                          <option value="issued" ${inv.status === 'issued' ? 'selected' : ''}>Emitida</option>
+                          <option value="paid" ${inv.status === 'paid' ? 'selected' : ''}>Cobrada</option>
+                        </select>`
+                    }
                   </td>
                   <td style="text-align:right;white-space:nowrap">
-                    ${inv.status === 'issued' ? `
+                    ${inv.status !== 'draft' ? `
                       <button class="btn-icon" title="Descargar PDF" onclick="VFX.downloadInvoicePdf(${inv.id})">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                       </button>
-                    ` : `
-                      <button class="btn-icon" title="Editar" onclick="VFX.openInvoiceForm(${inv.id})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                    `}
+                    ` : ''}
+                    <button class="btn-icon" title="Editar" onclick="VFX.openInvoiceForm(${inv.id})">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
                     <button class="btn-icon btn-icon-red" title="Eliminar factura" onclick="VFX.deleteInvoice(${inv.id}, '${inv.status}')">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                     </button>
@@ -2178,7 +2181,7 @@ const VFX = {
 
     const u = this.state.user;
     const today = new Date().toISOString().split('T')[0];
-    const isIssued = inv?.status === 'issued';
+    const isReadOnly = inv?.status !== 'draft';
 
     const companyOptions = companies.map(c =>
       `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
@@ -2187,15 +2190,15 @@ const VFX = {
     const linesHtml = () => lines.map((l, i) => `
       <tr data-line="${i}">
         <td colspan="4" style="padding-bottom:4px">
-          <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px" ${isIssued?'disabled':''}>${(l.description||'').replace(/</g,'&lt;')}</textarea>
+          <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px" ${isReadOnly?'disabled':''}>${(l.description||'').replace(/</g,'&lt;')}</textarea>
         </td>
         <td style="padding-bottom:4px"></td>
       </tr>
       <tr data-line="${i}" data-sub="1">
-        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
-        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" ${isIssued?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" ${isReadOnly?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" ${isReadOnly?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
         <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
-        ${isIssued ? '<td></td>' : `<td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
+        ${isReadOnly ? '<td></td>' : `<td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
       </tr>
     `).join('');
 
@@ -2204,59 +2207,60 @@ const VFX = {
     this._invoiceFormIvaExempt = inv?.iva_exempt ?? 0;
     this._invoiceFormIrpfRate = inv?.irpf_rate ?? 15;
     this._invoiceFormPrefillProjectId = prefillProjectId || null;
+    this._invoiceFormReadOnly = isReadOnly;
 
     const content = `
       <div class="invoice-form">
         <div class="form-row-2">
           <div class="form-group">
             <label>Nº de factura</label>
-            <input type="number" id="inv-number" value="${inv?.number || nextNum.number}" min="1" ${isIssued?'disabled':''}>
+            <input type="number" id="inv-number" value="${inv?.number || nextNum.number}" min="1" ${isReadOnly?'disabled':''}>
           </div>
           <div class="form-group">
             <label>Fecha de emisión</label>
-            <input type="date" id="inv-date" value="${inv?.issue_date || today}" ${isIssued?'disabled':''}>
+            <input type="date" id="inv-date" value="${inv?.issue_date || today}" ${isReadOnly?'disabled':''}>
           </div>
         </div>
 
         <div class="form-group">
           <label>Cliente</label>
-          <select id="inv-company" onchange="VFX._fillInvoiceCustomer()" ${isIssued?'disabled':''}>
+          <select id="inv-company" onchange="VFX._fillInvoiceCustomer()" ${isReadOnly?'disabled':''}>
             <option value="">— Selecciona empresa —</option>
             ${companyOptions}
           </select>
         </div>
 
-        ${isIssued ? '' : `
+        ${isReadOnly ? '' : `
         <div id="inv-project-selector" style="display:none;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
           <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Proyectos de esta empresa</div>
           <div id="inv-projects-list"></div>
         </div>
         `}
 
-        <details style="margin:12px 0" ${isIssued?'open':''}>
+        <details style="margin:12px 0" ${isReadOnly?'open':''}>
           <summary style="cursor:pointer;color:var(--text2);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Datos del cliente (auto desde empresa)</summary>
           <div style="margin-top:10px" class="form-row-2">
             <div class="form-group">
               <label>Nombre / Razón social</label>
-              <input type="text" id="inv-cust-name" value="${inv?.customer_name||''}" placeholder="Empresa S.L." ${isIssued?'disabled':''}>
+              <input type="text" id="inv-cust-name" value="${inv?.customer_name||''}" placeholder="Empresa S.L." ${isReadOnly?'disabled':''}>
             </div>
             <div class="form-group">
               <label>NIF / CIF</label>
-              <input type="text" id="inv-cust-nif" value="${inv?.customer_nif||''}" placeholder="B12345678" ${isIssued?'disabled':''}>
+              <input type="text" id="inv-cust-nif" value="${inv?.customer_nif||''}" placeholder="B12345678" ${isReadOnly?'disabled':''}>
             </div>
           </div>
           <div class="form-group">
             <label>Dirección</label>
-            <input type="text" id="inv-cust-address" value="${inv?.customer_address||''}" ${isIssued?'disabled':''}>
+            <input type="text" id="inv-cust-address" value="${inv?.customer_address||''}" ${isReadOnly?'disabled':''}>
           </div>
           <div class="form-row-2">
             <div class="form-group">
               <label>Ciudad</label>
-              <input type="text" id="inv-cust-city" value="${inv?.customer_city||''}" ${isIssued?'disabled':''}>
+              <input type="text" id="inv-cust-city" value="${inv?.customer_city||''}" ${isReadOnly?'disabled':''}>
             </div>
             <div class="form-group">
               <label>Código postal</label>
-              <input type="text" id="inv-cust-postal" value="${inv?.customer_postal_code||''}" ${isIssued?'disabled':''}>
+              <input type="text" id="inv-cust-postal" value="${inv?.customer_postal_code||''}" ${isReadOnly?'disabled':''}>
             </div>
           </div>
         </details>
@@ -2268,12 +2272,12 @@ const VFX = {
             <tbody id="inv-lines-body">${linesHtml()}</tbody>
           </table>
         </div>
-        ${isIssued ? '' : `<button type="button" id="inv-add-line-btn" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>`}
+        ${isReadOnly ? '' : '<button type="button" id="inv-add-line-btn" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>'}
 
         <div style="margin-top:20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
           <div class="form-group" style="flex:1;min-width:140px">
             <label>IVA</label>
-            <select id="inv-iva" onchange="VFX._updateInvoiceTotals()" ${isIssued?'disabled':''}>
+            <select id="inv-iva" onchange="VFX._updateInvoiceTotals()" ${isReadOnly?'disabled':''}>
               <option value="21" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==21?'selected':''}>21%</option>
               <option value="10" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==10?'selected':''}>10%</option>
               <option value="4" ${this._invoiceFormIvaExempt==0 && this._invoiceFormIvaRate==4?'selected':''}>4%</option>
@@ -2282,7 +2286,7 @@ const VFX = {
           </div>
           <div class="form-group" style="flex:1;min-width:140px">
             <label>Retención IRPF</label>
-            <select id="inv-irpf" onchange="VFX._updateInvoiceTotals()" ${isIssued?'disabled':''}>
+            <select id="inv-irpf" onchange="VFX._updateInvoiceTotals()" ${isReadOnly?'disabled':''}>
               <option value="15" ${this._invoiceFormIrpfRate==15?'selected':''}>15%</option>
               <option value="7" ${this._invoiceFormIrpfRate==7?'selected':''}>7%</option>
               <option value="0" ${this._invoiceFormIrpfRate==0?'selected':''}>Sin retención</option>
@@ -2294,12 +2298,12 @@ const VFX = {
 
         <div class="form-group" style="margin-top:12px">
           <label>Notas (opcional)</label>
-          <textarea id="inv-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical" ${isIssued?'disabled':''}>${inv?.notes||''}</textarea>
+          <textarea id="inv-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical" ${isReadOnly?'disabled':''}>${inv?.notes||''}</textarea>
         </div>
 
-        ${isIssued ? `
-          <div style="margin-top:16px;padding:10px 14px;background:rgba(82,232,117,0.06);border:1px solid rgba(82,232,117,0.2);border-radius:8px;font-size:12px;color:var(--green)">
-            Factura emitida el ${this.fmt.date(inv.issued_at?.split(' ')[0])} — no editable
+        ${isReadOnly ? `
+          <div style="margin-top:16px;padding:10px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">
+            Las facturas emitidas o cobradas no deben modificarse. Si necesitas corregir datos o importes, crea una nueva factura o una factura rectificativa.
           </div>
         ` : ''}
 
@@ -2307,19 +2311,21 @@ const VFX = {
       </div>
     `;
 
-    const title = isIssued ? `Factura ${inv.full_number}` : (invoiceId ? `Borrador — Factura ${inv.number || '#'}` : 'Nueva factura');
+    const title = isReadOnly ? `Factura ${inv.full_number}` : (invoiceId ? `Borrador — Factura ${inv.number || '#'}` : 'Nueva factura');
     this.openModal(content, title);
 
     this._updateInvoiceTotals();
     if (prefillCompanyId) this._fillInvoiceCustomer(prefillCompanyId);
 
-    if (!isIssued) {
-      this._currentInvoiceId = invoiceId || null;
-      const footer = document.getElementById('modal').querySelector('.modal-footer');
-      if (footer) footer.remove();
-      const modalEl = document.getElementById('modal');
-      const footerEl = document.createElement('div');
-      footerEl.className = 'modal-footer';
+    this._currentInvoiceId = invoiceId || null;
+    const footer = document.getElementById('modal').querySelector('.modal-footer');
+    if (footer) footer.remove();
+    const modalEl = document.getElementById('modal');
+    const footerEl = document.createElement('div');
+    footerEl.className = 'modal-footer';
+    if (isReadOnly) {
+      footerEl.innerHTML = `<button class="btn btn-ghost" onclick="VFX.closeModal()">Cerrar</button>`;
+    } else {
       footerEl.innerHTML = `
         <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
         <button class="btn btn-ghost" onclick="VFX.saveInvoiceDraft()" style="margin-left:auto">
@@ -2331,8 +2337,8 @@ const VFX = {
           Emitir factura
         </button>
       `;
-      modalEl.appendChild(footerEl);
     }
+    modalEl.appendChild(footerEl);
   },
 
   _fillInvoiceCustomer(forceId) {
@@ -2473,18 +2479,19 @@ const VFX = {
         </tr>
       `).join('');
     } else {
+      const ro = !!this._invoiceFormReadOnly;
       body.innerHTML = lines.map((l, i) => `
         <tr data-line="${i}">
           <td colspan="4" style="padding-bottom:4px">
-            <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px">${(l.description||'').replace(/</g,'&lt;')}</textarea>
+            <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px" ${ro?'disabled':''}>${(l.description||'').replace(/</g,'&lt;')}</textarea>
           </td>
           <td style="padding-bottom:4px"></td>
         </tr>
         <tr data-line="${i}" data-sub="1">
-          <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" oninput="VFX._recalcLine(${i})"></td>
-          <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" oninput="VFX._recalcLine(${i})"></td>
+          <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" ${ro?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
+          <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" ${ro?'disabled':''} oninput="VFX._recalcLine(${i})"></td>
           <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
-          <td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+          ${ro ? '<td></td>' : `<td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>`}
         </tr>
       `).join('');
     }
@@ -2610,6 +2617,15 @@ const VFX = {
     if (!confirm(msg)) return;
     await this.api.del(`/api/invoices/${id}`);
     this.renderFacturas();
+  },
+
+  async updateInvoiceStatus(id, status) {
+    try {
+      await this.api.patch(`/api/invoices/${id}/status`, { status });
+      this.renderFacturas();
+    } catch (e) {
+      alert(e.message || 'Error al actualizar estado');
+    }
   },
 
   downloadInvoicePdf(id) {

@@ -49,9 +49,9 @@ window.CronorasDashboardView = {
           <div class="metric-sub">${pending.length + sent.length} proyecto${pending.length + sent.length !== 1 ? 's' : ''} abiertos</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Facturas en espera</div>
+          <div class="metric-label">En espera</div>
           <div class="metric-value" style="color:var(--cyan)" data-private>${VFX.fmt.currency(totalEspera)}</div>
-          <div class="metric-sub">${sent.length} enviada${sent.length !== 1 ? 's' : ''}, pendiente de cobro</div>
+          <div class="metric-sub">${sent.length} factura${sent.length !== 1 ? 's' : ''} enviada${sent.length !== 1 ? 's' : ''} pendiente de cobro</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Previsión este mes</div>

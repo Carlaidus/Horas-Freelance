@@ -77,7 +77,7 @@ const createInvoice = async (data) => {
 
 const updateInvoice = async (id, data) => {
   const inv = await getInvoice(id);
-  if (inv?.status === 'issued') throw new Error('No se puede editar una factura emitida');
+  if (inv?.status !== 'draft') throw new Error('Las facturas emitidas o cobradas no se pueden modificar. Crea una nueva factura o una rectificativa si necesitas corregirla.');
   await q(`
     UPDATE invoices SET
       company_id=$1, project_id=$2, issue_date=$3, operation_date=$4,
@@ -181,6 +181,12 @@ const validateInvoiceLines = async (lines, companyId) => {
   if (wrong.length) throw new Error('Todos los proyectos deben pertenecer a la misma empresa');
 };
 
+const updateInvoiceStatus = async (id, status) => {
+  const allowed = ['issued', 'paid'];
+  if (!allowed.includes(status)) throw new Error('Estado no válido');
+  await q("UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2", [status, id]);
+};
+
 const updateInvoiceNumber = async (id, userId, number) => {
   const inv = await getInvoice(id);
   if (!inv) throw new Error('Factura no encontrada');
@@ -196,6 +202,6 @@ const updateInvoiceNumber = async (id, userId, number) => {
 module.exports = {
   getInvoiceSeries, getNextInvoiceNumber,
   getInvoices, getInvoice, getInvoiceLines,
-  createInvoice, updateInvoice, issueInvoice,
+  createInvoice, updateInvoice, updateInvoiceStatus, issueInvoice,
   deleteInvoiceDraft, setInvoiceLines, updateInvoiceNumber, validateInvoiceLines
 };

@@ -62,6 +62,13 @@ const deleteInvoice = async (req, res) => {
   catch (e) { res.status(400).json({ error: e.message }); }
 };
 
+const patchInvoiceStatus = async (req, res) => {
+  try {
+    await db.updateInvoiceStatus(+req.params.id, req.body.status);
+    res.json({ success: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+};
+
 const getInvoicePdf = async (req, res) => {
   try {
     const invoice = await db.getInvoice(+req.params.id);
@@ -71,4 +78,4 @@ const getInvoicePdf = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf };
+module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, patchInvoiceStatus };
