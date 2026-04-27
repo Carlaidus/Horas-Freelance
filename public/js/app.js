@@ -766,15 +766,13 @@ const VFX = {
 
       return `
         <tr class="entry-day-row">
-          <td colspan="7">
-            <div class="entry-day-header">
-              <span class="entry-day-date">${this.fmt.date(group.dateKey)}</span>
-              <span class="entry-day-summary">
-                <span>${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</span>
-                <strong data-private>${this.fmt.currency(group.totalAmount)}</strong>
-              </span>
-            </div>
-          </td>
+          <td></td>
+          <td class="entry-day-date">${this.fmt.date(group.dateKey)}</td>
+          <td></td>
+          <td class="entry-day-summary">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</td>
+          <td></td>
+          <td class="entry-day-total" data-private>${this.fmt.currency(group.totalAmount)}</td>
+          <td></td>
         </tr>
         ${groupRows}
       `;
