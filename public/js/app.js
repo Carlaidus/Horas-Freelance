@@ -2200,6 +2200,7 @@ const VFX = {
     this._invoiceFormIvaRate = inv?.iva_rate ?? 21;
     this._invoiceFormIvaExempt = inv?.iva_exempt ?? 0;
     this._invoiceFormIrpfRate = inv?.irpf_rate ?? 15;
+    this._invoiceFormPrefillProjectId = prefillProjectId || null;
 
     const content = `
       <div class="invoice-form">
@@ -2221,6 +2222,14 @@ const VFX = {
             ${companyOptions}
           </select>
         </div>
+
+        ${isIssued ? '' : `
+        <div id="inv-project-selector" style="display:none;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Proyectos de esta empresa</div>
+          <div id="inv-projects-list"></div>
+          <button type="button" class="btn-ghost" style="margin-top:8px;font-size:12px" onclick="VFX._loadProjectsIntoLines()">↓ Cargar líneas de proyectos seleccionados</button>
+        </div>
+        `}
 
         <details style="margin:12px 0" ${isIssued?'open':''}>
           <summary style="cursor:pointer;color:var(--text2);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Datos del cliente (auto desde empresa)</summary>
@@ -2340,6 +2349,58 @@ const VFX = {
     set('inv-cust-address', company.address);
     set('inv-cust-city', company.city);
     set('inv-cust-postal', company.postal_code);
+    this._renderInvoiceProjectSelector(parseInt(id));
+  },
+
+  _renderInvoiceProjectSelector(companyId) {
+    const container = document.getElementById('inv-project-selector');
+    if (!container) return;
+    const projects = (this.state.projects || []).filter(p => p.company_id == companyId);
+    if (!projects.length) { container.style.display = 'none'; return; }
+    const prefill = this._invoiceFormPrefillProjectId;
+    const list = document.getElementById('inv-projects-list');
+    if (list) {
+      list.innerHTML = projects.map(p => `
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" value="${p.id}" ${prefill == p.id ? 'checked' : ''} style="width:14px;height:14px;cursor:pointer">
+          <span>${p.name}</span>
+          <span style="color:var(--text2);font-size:11px">${p.hourly_rate}€/h</span>
+        </label>
+      `).join('');
+    }
+    container.style.display = 'block';
+  },
+
+  async _loadProjectsIntoLines() {
+    const checkboxes = document.querySelectorAll('#inv-projects-list input[type=checkbox]:checked');
+    const projectIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    if (!projectIds.length) return;
+    const hasLines = this._invoiceFormLines.some(l => l.description || l.unit_price > 0);
+    if (hasLines && !confirm('Esto reemplazará las líneas actuales de la factura por las líneas de los proyectos seleccionados. ¿Continuar?')) return;
+    const btn = document.querySelector('#inv-project-selector button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Cargando...'; }
+    try {
+      const newLines = [];
+      for (const pid of projectIds) {
+        const proj = this.state.projects.find(p => p.id === pid);
+        if (!proj) continue;
+        const entries = await this.api.get(`/api/projects/${pid}/entries`);
+        const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
+        newLines.push({
+          description: `Servicios de ${proj.name}`,
+          quantity: totalHours,
+          unit_price: proj.hourly_rate,
+          line_total: totalHours * proj.hourly_rate,
+          project_id: pid
+        });
+      }
+      if (newLines.length) {
+        this._invoiceFormLines = newLines;
+        this._rerenderLines();
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '↓ Cargar líneas de proyectos seleccionados'; }
+    }
   },
 
   _recalcLine(i) {

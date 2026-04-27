@@ -23,18 +23,27 @@ const getInvoice = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+const resolveInvoiceProjectId = (lines) => {
+  const ids = [...new Set(lines.map(l => l.project_id).filter(id => id != null))];
+  return ids.length === 1 ? ids[0] : null;
+};
+
 const createInvoice = async (req, res) => {
   try {
     const { lines = [], ...data } = req.body;
+    await db.validateInvoiceLines(lines, data.company_id);
+    data.project_id = resolveInvoiceProjectId(lines);
     const id = await db.createInvoice({ user_id: getUserId(req), ...data });
     if (lines.length) await db.setInvoiceLines(id, lines);
     res.json({ id });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 };
 
 const updateInvoice = async (req, res) => {
   try {
     const { lines = [], ...data } = req.body;
+    await db.validateInvoiceLines(lines, data.company_id);
+    data.project_id = resolveInvoiceProjectId(lines);
     await db.updateInvoice(+req.params.id, data);
     await db.setInvoiceLines(+req.params.id, lines);
     res.json({ success: true });

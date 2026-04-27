@@ -165,10 +165,19 @@ const setInvoiceLines = async (invoiceId, lines) => {
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
     await q(
-      "INSERT INTO invoice_lines (invoice_id, description, quantity, unit_price, line_total, sort_order) VALUES ($1,$2,$3,$4,$5,$6)",
-      [invoiceId, l.description || '', l.quantity || 1, l.unit_price || 0, l.line_total || 0, i]
+      "INSERT INTO invoice_lines (invoice_id, description, quantity, unit_price, line_total, sort_order, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+      [invoiceId, l.description || '', l.quantity || 1, l.unit_price || 0, l.line_total || 0, i, l.project_id ?? null]
     );
   }
+};
+
+const validateInvoiceLines = async (lines, companyId) => {
+  const projectIds = lines.map(l => l.project_id).filter(id => id != null);
+  if (!companyId || !projectIds.length) return;
+  const placeholders = projectIds.map((_, i) => `$${i + 1}`).join(',');
+  const r = await q(`SELECT id, company_id FROM projects WHERE id IN (${placeholders})`, projectIds);
+  const wrong = r.rows.filter(p => p.company_id != companyId);
+  if (wrong.length) throw new Error('Todos los proyectos deben pertenecer a la misma empresa');
 };
 
 const updateInvoiceNumber = async (id, userId, number) => {
@@ -187,5 +196,5 @@ module.exports = {
   getInvoiceSeries, getNextInvoiceNumber,
   getInvoices, getInvoice, getInvoiceLines,
   createInvoice, updateInvoice, issueInvoice,
-  deleteInvoiceDraft, setInvoiceLines, updateInvoiceNumber
+  deleteInvoiceDraft, setInvoiceLines, updateInvoiceNumber, validateInvoiceLines
 };

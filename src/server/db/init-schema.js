@@ -141,9 +141,12 @@ const init = async () => {
       quantity FLOAT DEFAULT 1,
       unit_price FLOAT DEFAULT 0,
       line_total FLOAT DEFAULT 0,
-      sort_order INTEGER DEFAULT 0
+      sort_order INTEGER DEFAULT 0,
+      project_id INTEGER DEFAULT NULL
     )
   `);
+
+  await q(`ALTER TABLE invoice_lines ADD COLUMN IF NOT EXISTS project_id INTEGER DEFAULT NULL`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS reset_tokens (
