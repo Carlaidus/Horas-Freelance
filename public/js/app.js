@@ -743,7 +743,7 @@ const VFX = {
         const total = e.hours * effectiveHourly;
         const days = e.hours / 8;
         return `
-          <tr>
+          <tr class="entry-row">
             <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
             <td class="dim">${this.fmt.date(e.date)}</td>
             <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>

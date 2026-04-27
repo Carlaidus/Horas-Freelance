@@ -480,8 +480,8 @@ tbody td {
 }
 .entry-day-row td {
   padding: 0;
-  background: var(--card2);
-  border-top: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(245,200,66,0.08), var(--card2) 18%);
+  border-top: 1px solid rgba(245,200,66,0.16);
   border-bottom: 1px solid var(--border);
 }
 .entry-day-row:hover { background: transparent; }
@@ -493,14 +493,28 @@ tbody td {
   padding: 9px 16px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--text2);
+  color: var(--gold);
   text-transform: uppercase;
   letter-spacing: 1px;
+  border-left: 2px solid var(--gold);
 }
 .entry-day-header span:last-child {
   color: var(--text3);
   font-weight: 600;
   white-space: nowrap;
+}
+.entry-row td:nth-child(3) {
+  position: relative;
+  padding-left: 28px;
+}
+.entry-row td:nth-child(3)::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 5px;
+  height: 1px;
+  background: var(--border2);
 }
 td.mono { font-family: 'Space Mono', monospace; }
 td.dim { color: var(--text2); }
