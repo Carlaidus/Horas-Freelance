@@ -1428,7 +1428,7 @@ const VFX = {
           <td style="color:var(--text3);font-family:'Space Mono',monospace;font-size:12px;white-space:nowrap">${this.fmt.date(e.date)}</td>
           <td style="color:var(--text2)">${e.description || '—'}</td>
           <td class="mono dim" style="text-align:right">${this.fmt.hours(e.hours)}</td>
-          <td class="mono dim" style="text-align:right">${this.fmt.currency(rate)}/h</td>
+          <td class="mono dim" style="text-align:right">${this.fmt.currency(rate * 8)}/día</td>
           <td class="gold" style="text-align:right" data-private>${this.fmt.currency(amount)}</td>
         </tr>
       `;
@@ -1482,18 +1482,20 @@ const VFX = {
             <p>Sin entradas registradas</p>
           </div>
         ` : `
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Descripción</th>
-                <th style="text-align:right">Horas</th>
-                <th style="text-align:right">Tarifa</th>
-                <th style="text-align:right">Importe</th>
-              </tr>
-            </thead>
-            <tbody>${entryRows}</tbody>
-          </table>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th style="text-align:right">Horas</th>
+                  <th style="text-align:right">Tarifa/día</th>
+                  <th style="text-align:right">Importe</th>
+                </tr>
+              </thead>
+              <tbody>${entryRows}</tbody>
+            </table>
+          </div>
         `}
       </div>
 
@@ -1520,8 +1522,8 @@ const VFX = {
                   <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.hours(p.total_hours)}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="color:var(--text2);font-size:13px">Tarifa media</span>
-                  <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate)}/h</span>
+                  <span style="color:var(--text2);font-size:13px">Tarifa media/día</span>
+                  <span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${this.fmt.currency(avgRate * 8)}/día</span>
                 </div>
                 ${p.purchase_order ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Orden de compra</span><span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:12px">${p.purchase_order}</span></div>` : ''}
                 ${p.invoice_number ? `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text2);font-size:13px">Nº Factura</span><span style="color:var(--text);font-family:'Space Mono',monospace;font-size:12px">${p.invoice_number}</span></div>` : ''}
@@ -2417,7 +2419,7 @@ const VFX = {
     const thead = document.getElementById('inv-lines-thead');
     if (thead) {
       thead.innerHTML = isProjectMode
-        ? '<tr><th>Proyecto</th><th style="text-align:right;width:80px">Horas</th><th style="text-align:right;width:110px">Precio/día</th><th style="text-align:right;width:120px">Importe</th></tr>'
+        ? '<tr><th>Proyecto</th><th style="text-align:right;width:80px">Horas</th><th style="text-align:right;width:110px">Tarifa/día</th><th style="text-align:right;width:120px">Importe</th></tr>'
         : '<tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr>';
     }
     const addBtn = document.getElementById('inv-add-line-btn');
