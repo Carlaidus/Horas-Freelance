@@ -783,22 +783,22 @@ const VFX = {
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
           <div class="entry-table-actions" style="display:flex;gap:6px;align-items:center">
-            <span id="bulk-delete-btn-${projectId}" style="display:none">
-              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedEntries(${projectId})">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                <span class="bulk-delete-label">Eliminar seleccionadas</span>
-              </button>
-            </span>
+            <button class="btn btn-ghost btn-sm" onclick="VFX.state.currentProjectId=${projectId};${slotIdx!==null?`VFX._pendingSlotIdx=${slotIdx};`:``}VFX.modals.addEntry()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Añadir entrada
+            </button>
             <span id="bulk-rate-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Cambiar tarifa seleccionadas
               </button>
             </span>
-            <button class="btn btn-ghost btn-sm" onclick="VFX.state.currentProjectId=${projectId};${slotIdx!==null?`VFX._pendingSlotIdx=${slotIdx};`:``}VFX.modals.addEntry()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              Añadir entrada
-            </button>
+            <span id="bulk-delete-btn-${projectId}" style="display:none">
+              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedEntries(${projectId})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <span class="bulk-delete-label">Eliminar seleccionadas</span>
+              </button>
+            </span>
           </div>
         </div>
         ${entries.length > 0 ? `
