@@ -724,28 +724,54 @@ const VFX = {
     const project = this.state.projects.find(p => p.id === projectId);
     const hourlyRate = project?.hourly_rate || 0;
 
-    const rows = entries.map(e => {
-      const effectiveHourly = e.hourly_rate_override || hourlyRate;
-      const effectiveDaily = effectiveHourly * 8;
-      const total = e.hours * effectiveHourly;
-      const days = e.hours / 8;
+    const groups = entries.reduce((acc, entry) => {
+      const dateKey = String(entry.date || '').slice(0, 10);
+      let group = acc.find(g => g.dateKey === dateKey);
+      if (!group) {
+        group = { dateKey, entries: [], totalHours: 0 };
+        acc.push(group);
+      }
+      group.entries.push(entry);
+      group.totalHours += parseFloat(entry.hours || 0);
+      return acc;
+    }, []);
+
+    const rows = groups.map(group => {
+      const groupRows = group.entries.map(e => {
+        const effectiveHourly = e.hourly_rate_override || hourlyRate;
+        const effectiveDaily = effectiveHourly * 8;
+        const total = e.hours * effectiveHourly;
+        const days = e.hours / 8;
+        return `
+          <tr>
+            <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
+            <td class="dim">${this.fmt.date(e.date)}</td>
+            <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
+            <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
+            <td class="mono dim" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
+            <td class="gold" data-private>${this.fmt.currency(total)}</td>
+            <td class="actions">
+              <button class="btn-icon" onclick="VFX.modals.editEntry(${e.id})" data-tip="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="btn-icon" style="color:var(--red)" onclick="VFX.deleteEntry(${e.id})" data-tip="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
       return `
-        <tr>
-          <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
-          <td class="dim">${this.fmt.date(e.date)}</td>
-          <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
-          <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
-          <td class="mono dim" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
-          <td class="gold" data-private>${this.fmt.currency(total)}</td>
-          <td class="actions">
-            <button class="btn-icon" onclick="VFX.modals.editEntry(${e.id})" data-tip="Editar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="btn-icon" style="color:var(--red)" onclick="VFX.deleteEntry(${e.id})" data-tip="Eliminar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>
+        <tr class="entry-day-row">
+          <td colspan="7">
+            <div class="entry-day-header">
+              <span>${this.fmt.date(group.dateKey)}</span>
+              <span>${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</span>
+            </div>
           </td>
         </tr>
+        ${groupRows}
       `;
     }).join('');
 
