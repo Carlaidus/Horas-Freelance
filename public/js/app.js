@@ -2167,7 +2167,8 @@ const VFX = {
             description: `Servicios de ${proj.name}`,
             quantity: totalHours,
             unit_price: rate,
-            line_total: totalHours * rate
+            line_total: totalHours * rate,
+            project_id: prefillProjectId
           }];
         }
       }
@@ -2227,7 +2228,6 @@ const VFX = {
         <div id="inv-project-selector" style="display:none;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
           <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Proyectos de esta empresa</div>
           <div id="inv-projects-list"></div>
-          <button type="button" class="btn-ghost" style="margin-top:8px;font-size:12px" onclick="VFX._loadProjectsIntoLines()">↓ Cargar líneas de proyectos seleccionados</button>
         </div>
         `}
 
@@ -2259,14 +2259,14 @@ const VFX = {
           </div>
         </details>
 
-        <div style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
+        <div id="inv-lines-label" style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
         <div class="table-wrap" style="margin-bottom:8px">
           <table class="data-table" id="inv-lines-table">
-            <thead><tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr></thead>
+            <thead id="inv-lines-thead"><tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr></thead>
             <tbody id="inv-lines-body">${linesHtml()}</tbody>
           </table>
         </div>
-        ${isIssued ? '' : `<button type="button" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>`}
+        ${isIssued ? '' : `<button type="button" id="inv-add-line-btn" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>`}
 
         <div style="margin-top:20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
           <div class="form-group" style="flex:1;min-width:140px">
@@ -2357,50 +2357,72 @@ const VFX = {
     if (!container) return;
     const projects = (this.state.projects || []).filter(p => p.company_id == companyId);
     if (!projects.length) { container.style.display = 'none'; return; }
-    const prefill = this._invoiceFormPrefillProjectId;
+    const checkedIds = new Set(this._invoiceFormLines.map(l => l.project_id).filter(id => id != null));
+    if (this._invoiceFormPrefillProjectId) checkedIds.add(this._invoiceFormPrefillProjectId);
     const list = document.getElementById('inv-projects-list');
     if (list) {
       list.innerHTML = projects.map(p => `
         <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" value="${p.id}" ${prefill == p.id ? 'checked' : ''} style="width:14px;height:14px;cursor:pointer">
+          <input type="checkbox" value="${p.id}" ${checkedIds.has(p.id) ? 'checked' : ''} style="width:14px;height:14px;cursor:pointer" onchange="VFX._onProjectCheckboxChange()">
           <span>${p.name}</span>
-          <span style="color:var(--text2);font-size:11px">${p.hourly_rate}€/h</span>
+          <span style="color:var(--text2);font-size:11px">${Math.round(p.hourly_rate * 8)} €/día</span>
         </label>
       `).join('');
     }
     container.style.display = 'block';
+    this._updateInvoiceMode();
   },
 
-  async _loadProjectsIntoLines() {
+  async _onProjectCheckboxChange() {
     const checkboxes = document.querySelectorAll('#inv-projects-list input[type=checkbox]:checked');
     const projectIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
-    if (!projectIds.length) return;
-    const hasLines = this._invoiceFormLines.some(l => l.description || l.unit_price > 0);
-    if (hasLines && !confirm('Esto reemplazará las líneas actuales de la factura por las líneas de los proyectos seleccionados. ¿Continuar?')) return;
-    const btn = document.querySelector('#inv-project-selector button');
-    if (btn) { btn.disabled = true; btn.textContent = 'Cargando...'; }
-    try {
-      const newLines = [];
-      for (const pid of projectIds) {
-        const proj = this.state.projects.find(p => p.id === pid);
-        if (!proj) continue;
-        const entries = await this.api.get(`/api/projects/${pid}/entries`);
-        const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
-        newLines.push({
-          description: `Servicios de ${proj.name}`,
-          quantity: totalHours,
-          unit_price: proj.hourly_rate,
-          line_total: totalHours * proj.hourly_rate,
-          project_id: pid
-        });
+    if (!projectIds.length) {
+      const hasProjectLines = this._invoiceFormLines.some(l => l.project_id != null);
+      if (hasProjectLines) {
+        this._invoiceFormLines = [{ description: '', quantity: 1, unit_price: 0, line_total: 0 }];
+        this._updateInvoiceMode();
       }
-      if (newLines.length) {
-        this._invoiceFormLines = newLines;
-        this._rerenderLines();
-      }
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '↓ Cargar líneas de proyectos seleccionados'; }
+      return;
     }
+    const hasManualLines = this._invoiceFormLines.some(l => l.project_id == null && (l.description || l.unit_price > 0));
+    if (hasManualLines && !confirm('Esto reemplazará las líneas actuales de la factura por las líneas de los proyectos seleccionados. ¿Continuar?')) return;
+    await this._generateProjectLines(projectIds);
+  },
+
+  async _generateProjectLines(projectIds) {
+    const newLines = [];
+    for (const pid of projectIds) {
+      const proj = this.state.projects.find(p => p.id === pid);
+      if (!proj) continue;
+      const entries = await this.api.get(`/api/projects/${pid}/entries`);
+      const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
+      newLines.push({
+        description: `Servicios de ${proj.name}`,
+        quantity: totalHours,
+        unit_price: proj.hourly_rate,
+        line_total: totalHours * proj.hourly_rate,
+        project_id: pid
+      });
+    }
+    if (newLines.length) {
+      this._invoiceFormLines = newLines;
+      this._updateInvoiceMode();
+    }
+  },
+
+  _updateInvoiceMode() {
+    const isProjectMode = this._invoiceFormLines.some(l => l.project_id != null);
+    const label = document.getElementById('inv-lines-label');
+    if (label) label.textContent = isProjectMode ? 'Proyectos facturados' : 'Líneas de factura';
+    const thead = document.getElementById('inv-lines-thead');
+    if (thead) {
+      thead.innerHTML = isProjectMode
+        ? '<tr><th>Proyecto</th><th style="text-align:right;width:80px">Horas</th><th style="text-align:right;width:110px">Precio/día</th><th style="text-align:right;width:120px">Importe</th></tr>'
+        : '<tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr>';
+    }
+    const addBtn = document.getElementById('inv-add-line-btn');
+    if (addBtn) addBtn.style.display = isProjectMode ? 'none' : '';
+    this._rerenderLines();
   },
 
   _recalcLine(i) {
@@ -2436,20 +2458,34 @@ const VFX = {
     const body = document.getElementById('inv-lines-body');
     if (!body) return;
     const lines = this._invoiceFormLines;
-    body.innerHTML = lines.map((l, i) => `
-      <tr data-line="${i}">
-        <td colspan="4" style="padding-bottom:4px">
-          <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px">${(l.description||'').replace(/</g,'&lt;')}</textarea>
-        </td>
-        <td style="padding-bottom:4px"></td>
-      </tr>
-      <tr data-line="${i}" data-sub="1">
-        <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" oninput="VFX._recalcLine(${i})"></td>
-        <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" oninput="VFX._recalcLine(${i})"></td>
-        <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
-        <td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
-      </tr>
-    `).join('');
+    const isProjectMode = lines.some(l => l.project_id != null);
+    const fmtH = n => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n || 0) + ' h';
+    const fmtD = n => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(n || 0) + ' €/día';
+    if (isProjectMode) {
+      body.innerHTML = lines.map(l => `
+        <tr>
+          <td style="font-size:13px;padding:8px 4px">${(l.description||'').replace(/</g,'&lt;')}</td>
+          <td style="text-align:right;font-size:13px;padding:8px 4px">${fmtH(l.quantity)}</td>
+          <td style="text-align:right;font-size:13px;padding:8px 4px">${fmtD(l.unit_price * 8)}</td>
+          <td style="text-align:right;font-weight:600;font-size:13px;padding:8px 4px">${this.fmt.currency(l.line_total||0)}</td>
+        </tr>
+      `).join('');
+    } else {
+      body.innerHTML = lines.map((l, i) => `
+        <tr data-line="${i}">
+          <td colspan="4" style="padding-bottom:4px">
+            <textarea class="line-desc" rows="2" placeholder="Descripción del servicio" style="width:100%;resize:vertical;min-height:52px">${(l.description||'').replace(/</g,'&lt;')}</textarea>
+          </td>
+          <td style="padding-bottom:4px"></td>
+        </tr>
+        <tr data-line="${i}" data-sub="1">
+          <td><input type="number" class="line-qty" value="${l.quantity||1}" min="0" step="0.5" style="width:80px" oninput="VFX._recalcLine(${i})"></td>
+          <td><input type="number" class="line-price" value="${l.unit_price||0}" min="0" step="0.01" style="width:100px" oninput="VFX._recalcLine(${i})"></td>
+          <td class="line-total-cell" style="text-align:right;font-weight:600;padding-bottom:12px">${this.fmt.currency(l.line_total||0)}</td>
+          <td style="padding-bottom:12px"><button type="button" class="btn-icon btn-icon-red" onclick="VFX._removeLine(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+        </tr>
+      `).join('');
+    }
     this._updateInvoiceTotals();
   },
 
