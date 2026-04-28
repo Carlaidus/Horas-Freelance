@@ -519,6 +519,108 @@ tbody td {
   height: 1px;
   background: var(--border2);
 }
+.project-detail-entries-table {
+  table-layout: fixed;
+}
+.project-detail-entries-table th:nth-child(1),
+.project-detail-entries-table td:nth-child(1) {
+  width: 118px;
+}
+.project-detail-entries-table th:nth-child(3),
+.project-detail-entries-table td:nth-child(3) {
+  width: 140px;
+}
+.project-detail-entries-table th:nth-child(4),
+.project-detail-entries-table td:nth-child(4) {
+  width: 132px;
+}
+.project-detail-entries-table th:nth-child(5),
+.project-detail-entries-table td:nth-child(5) {
+  width: 124px;
+}
+.project-detail-date {
+  color: var(--text3);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.project-detail-description {
+  color: var(--text2);
+}
+.project-detail-hours,
+.project-detail-rate,
+.project-detail-amount {
+  text-align: right;
+  white-space: nowrap;
+}
+.project-day-group-row {
+  cursor: pointer;
+}
+.project-day-group-row td {
+  background: var(--card2);
+  border-top: 1px solid rgba(245,200,66,0.18);
+  font-size: 12px;
+}
+.project-day-group-row td:first-child {
+  border-left: 2px solid var(--gold);
+  padding-left: 14px;
+}
+.project-day-group-date {
+  color: var(--gold);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.project-day-group-description {
+  color: var(--text2);
+}
+.project-day-group-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.project-day-group-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-day-toggle {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.project-day-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transition);
+}
+.project-day-toggle.open svg {
+  transform: rotate(180deg);
+}
+.project-day-child-row td:first-child {
+  padding-left: 30px;
+}
+.project-day-child-row .project-detail-description {
+  position: relative;
+  padding-left: 22px;
+}
+.project-day-child-row .project-detail-description::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 5px;
+  height: 1px;
+  background: var(--border2);
+}
 @media (max-width: 700px) {
   .time-entries-table {
     table-layout: fixed;
@@ -576,6 +678,47 @@ tbody td {
   .entry-row {
     cursor: pointer;
   }
+  .project-detail-entries-table th:nth-child(1),
+  .project-detail-entries-table td:nth-child(1) {
+    width: 86px;
+  }
+  .project-detail-entries-table th:nth-child(3),
+  .project-detail-entries-table td:nth-child(3) {
+    width: 96px;
+  }
+  .project-detail-entries-table th:nth-child(4),
+  .project-detail-entries-table td:nth-child(4) {
+    display: none;
+  }
+  .project-detail-entries-table th:nth-child(5),
+  .project-detail-entries-table td:nth-child(5) {
+    width: 94px;
+  }
+  .project-detail-entries-table tbody td {
+    padding: 11px 8px;
+  }
+  .project-detail-entries-table .project-detail-date {
+    font-size: 11px;
+  }
+  .project-detail-entries-table .project-detail-hours,
+  .project-detail-entries-table .project-detail-amount {
+    font-size: 12px;
+  }
+  .project-day-group-main span {
+    display: none;
+  }
+  .project-day-group-row .project-detail-hours {
+    color: var(--text3);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-day-child-row .project-detail-description {
+    padding-left: 16px;
+  }
+  .project-day-child-row .project-detail-description::before {
+    left: 4px;
+  }
 }
 @media (max-width: 520px) {
   .modal input[type="date"],
@@ -611,6 +754,26 @@ tbody td {
   }
   .entry-row td:nth-child(4) span {
     display: none;
+  }
+  .project-detail-entries-table th:nth-child(2),
+  .project-detail-entries-table td:nth-child(2) {
+    width: auto;
+  }
+  .project-detail-entries-table th:nth-child(3),
+  .project-detail-entries-table td:nth-child(3) {
+    width: 78px;
+  }
+  .project-detail-entries-table th:nth-child(5),
+  .project-detail-entries-table td:nth-child(5) {
+    width: 86px;
+  }
+  .project-detail-entries-table .project-detail-description {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .project-day-group-row .project-detail-hours {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 td.mono { font-family: 'Space Mono', monospace; }

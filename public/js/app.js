@@ -153,6 +153,17 @@ const VFX = {
     if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
   },
 
+  toggleProjectDayEntries(key) {
+    const rows = document.querySelectorAll(`[data-project-day-children="${key}"]`);
+    const toggle = document.querySelector(`[data-project-day-toggle="${key}"]`);
+    const expanded = toggle?.getAttribute('aria-expanded') === 'true';
+    rows.forEach(row => { row.style.display = expanded ? 'none' : 'table-row'; });
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      toggle.classList.toggle('open', !expanded);
+    }
+  },
+
   togglePrivacy:          window.CronorasPrivacy.togglePrivacy,
   applyPrivacy:           window.CronorasPrivacy.applyPrivacy,
 
@@ -1456,17 +1467,56 @@ const VFX = {
     const st = this._projectStatus(p);
     const endDate = p.completed_at || (p.is_completed || p.status === 'paid' ? p.last_entry_date : null);
 
-    const entryRows = entries.map(e => {
+    const entryGroups = entries.reduce((groups, e) => {
+      const dateKey = String(e.date || '').slice(0, 10);
+      if (!groups.has(dateKey)) groups.set(dateKey, []);
+      groups.get(dateKey).push(e);
+      return groups;
+    }, new Map());
+
+    const renderEntryRow = (e, extraClass = '', hiddenKey = '') => {
       const rate   = e.hourly_rate_override ?? p.hourly_rate;
-      const amount = e.hours * rate;
+      const hours  = Number(e.hours || 0);
+      const amount = hours * rate;
       return `
-        <tr>
-          <td style="color:var(--text3);font-family:'Space Mono',monospace;font-size:12px;white-space:nowrap">${this.fmt.date(e.date)}</td>
-          <td style="color:var(--text2)">${e.description || '—'}</td>
-          <td class="mono dim" style="text-align:right">${this.fmt.hours(e.hours)}</td>
-          <td class="mono dim" style="text-align:right">${this.fmt.currency(rate * 8)}/día</td>
-          <td class="gold" style="text-align:right" data-private>${this.fmt.currency(amount)}</td>
+        <tr class="project-detail-entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}>
+          <td class="project-detail-date">${this.fmt.date(e.date)}</td>
+          <td class="project-detail-description">${e.description || '—'}</td>
+          <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}</td>
+          <td class="mono dim project-detail-rate">${this.fmt.currency(rate * 8)}/día</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(amount)}</td>
         </tr>
+      `;
+    };
+
+    const entryRows = Array.from(entryGroups.entries()).map(([dateKey, dayEntries]) => {
+      if (dayEntries.length === 1) return renderEntryRow(dayEntries[0]);
+
+      const totalHours = dayEntries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
+      const totalAmount = dayEntries.reduce((sum, e) => {
+        const rate = e.hourly_rate_override ?? p.hourly_rate;
+        return sum + (Number(e.hours || 0) * rate);
+      }, 0);
+      const key = `project-${p.id}-${dateKey}`;
+      const countLabel = `${dayEntries.length} entradas`;
+      const descriptions = dayEntries.map(e => e.description).filter(Boolean).join(' · ') || 'Varias descripciones';
+
+      return `
+        <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
+          <td class="project-detail-date project-day-group-date">${this.fmt.date(dateKey)}</td>
+          <td class="project-day-group-description">
+            <div class="project-day-group-main">
+              <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <span>${descriptions}</span>
+            </div>
+          </td>
+          <td class="mono dim project-detail-hours">${countLabel} · ${this.fmt.hours(totalHours)}</td>
+          <td class="mono dim project-detail-rate">—</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(totalAmount)}</td>
+        </tr>
+        ${dayEntries.map(e => renderEntryRow(e, 'project-day-child-row', key)).join('')}
       `;
     }).join('');
 
@@ -1519,7 +1569,7 @@ const VFX = {
           </div>
         ` : `
           <div style="overflow-x:auto">
-            <table>
+            <table class="project-detail-entries-table">
               <thead>
                 <tr>
                   <th>Fecha</th>
