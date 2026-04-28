@@ -635,9 +635,6 @@ tbody td {
   height: 1px;
   background: var(--border2);
 }
-.project-day-child-row .project-detail-date {
-  padding-left: 10px;
-}
 @media (max-width: 700px) {
   .time-entries-table {
     table-layout: fixed;
@@ -739,9 +736,6 @@ tbody td {
   }
   .project-day-child-row .project-detail-description::before {
     left: 8px;
-  }
-  .project-day-child-row .project-detail-date {
-    padding-left: 4px;
   }
 }
 @media (max-width: 520px) {

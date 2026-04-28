@@ -1563,8 +1563,8 @@ const VFX = {
               <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <span class="project-day-count">(${dayEntries.length})</span>
               <span>${descriptions}</span>
+              <span class="project-day-count">(${dayEntries.length})</span>
             </div>
           </td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(totalHours)}</td>
