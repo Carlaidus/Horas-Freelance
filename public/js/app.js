@@ -33,6 +33,7 @@ const VFX = {
 
   charts: {},
   _selectedEntryIdsByProject: new Map(),
+  _openEntryGroupKeys: new Set(),
   _modalDragFromInside: false,
 
   _lsKey(key) { return this.state.userId ? `${key}_u${this.state.userId}` : key; },
@@ -163,6 +164,8 @@ const VFX = {
       toggle.setAttribute('aria-expanded', String(!expanded));
       toggle.classList.toggle('open', !expanded);
     }
+    if (expanded) this._openEntryGroupKeys.delete(key);
+    else this._openEntryGroupKeys.add(key);
   },
 
   _toggleAllProjectDetailEntries(checked, projectId) {
@@ -780,14 +783,14 @@ const VFX = {
       return acc;
     }, []);
 
-    const renderEntryRow = (e, extraClass = '', hiddenKey = '') => {
+    const renderEntryRow = (e, extraClass = '', hiddenKey = '', initiallyOpen = false) => {
       const effectiveHourly = e.hourly_rate_override ?? hourlyRate;
       const effectiveDaily = effectiveHourly * 8;
       const hours = Number(e.hours || 0);
       const days = hours / 8;
       const total = hours * effectiveHourly;
       return `
-        <tr class="project-detail-entry-row entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}${mobileEdit(e.id)}>
+        <tr class="project-detail-entry-row entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${mobileEdit(e.id)}>
           <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) ? 'checked' : ''} onchange="${onCheckboxChange}"></td>
           <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
           <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
@@ -804,13 +807,14 @@ const VFX = {
       const key = `${keyPrefix}-${group.dateKey}`;
       const uniqueRates = [...new Set(group.rates)];
       const rateLabel = uniqueRates.length === 1 ? `${this.fmt.currency(uniqueRates[0] * 8)}/día` : 'varias';
+      const isOpen = this._openEntryGroupKeys.has(key);
 
       return `
         <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
           <td class="project-detail-date project-day-group-date" colspan="2">${this.fmt.date(group.dateKey)}</td>
           <td class="project-day-group-description">
             <div class="project-day-group-main">
-              <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
+              <button class="project-day-toggle ${isOpen ? 'open' : ''}" data-project-day-toggle="${key}" aria-expanded="${isOpen ? 'true' : 'false'}" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <span class="project-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''}</span>
@@ -820,7 +824,7 @@ const VFX = {
           <td class="mono dim project-detail-rate">${rateLabel}</td>
           <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}</td>
         </tr>
-        ${group.entries.map(e => renderEntryRow(e, 'project-day-child-row', key)).join('')}
+        ${group.entries.map(e => renderEntryRow(e, 'project-day-child-row', key, isOpen)).join('')}
       `;
     }).join('');
   },
