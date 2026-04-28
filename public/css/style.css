@@ -520,6 +520,21 @@ tbody td {
   background: var(--border2);
 }
 @media (max-width: 700px) {
+  .time-entries-table {
+    table-layout: fixed;
+  }
+  .time-entries-table th:nth-child(1),
+  .time-entries-table td:nth-child(1) {
+    width: 34px;
+  }
+  .time-entries-table th:nth-child(4),
+  .time-entries-table td:nth-child(4) {
+    width: 82px;
+  }
+  .time-entries-table th:nth-child(6),
+  .time-entries-table td:nth-child(6) {
+    width: 94px;
+  }
   .time-entries-table th:nth-child(5),
   .time-entries-table td:nth-child(5),
   .time-entries-table th:nth-child(7),
@@ -542,7 +557,15 @@ tbody td {
     padding: 5px 10px;
   }
   .time-entries-table tbody td {
-    padding: 10px;
+    padding: 10px 8px;
+  }
+  .entry-day-count {
+    display: none;
+  }
+  .entry-day-total,
+  .time-entries-table td.gold {
+    font-size: 12px;
+    white-space: nowrap;
   }
   .entry-row td:nth-child(3) {
     padding-left: 22px;
@@ -555,9 +578,25 @@ tbody td {
   }
 }
 @media (max-width: 520px) {
+  .modal input[type="date"] {
+    width: 100%;
+    max-width: 100%;
+  }
   .time-entries-table th:nth-child(3),
   .time-entries-table td:nth-child(3) {
     display: none;
+  }
+  .time-entries-table th:nth-child(2),
+  .time-entries-table td:nth-child(2) {
+    width: 78px;
+  }
+  .time-entries-table th:nth-child(4),
+  .time-entries-table td:nth-child(4) {
+    width: 70px;
+  }
+  .time-entries-table th:nth-child(6),
+  .time-entries-table td:nth-child(6) {
+    width: 86px;
   }
   .entry-day-row .entry-day-date,
   .entry-row td:nth-child(2) {
@@ -897,6 +936,7 @@ select, textarea {
   outline: none;
   transition: border-color var(--transition);
   width: 100%;
+  min-width: 0;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--gold2); }
 input::placeholder, textarea::placeholder { color: var(--text3); }

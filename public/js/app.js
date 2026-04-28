@@ -764,7 +764,7 @@ const VFX = {
           <td></td>
           <td class="entry-day-date">${this.fmt.date(group.dateKey)}</td>
           <td></td>
-          <td class="entry-day-summary">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · ${this.fmt.hours(group.totalHours)}</td>
+          <td class="entry-day-summary"><span class="entry-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · </span>${this.fmt.hours(group.totalHours)}</td>
           <td></td>
           <td class="entry-day-total" data-private>${this.fmt.currency(group.totalAmount)}</td>
           <td></td>
