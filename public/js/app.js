@@ -179,6 +179,8 @@ const VFX = {
     this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`project-detail-edit-btn-${projectId}`);
     if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
+    const deleteBtn = document.getElementById(`project-detail-delete-btn-${projectId}`);
+    if (deleteBtn) deleteBtn.style.display = checked.length > 1 ? 'inline' : 'none';
     const cbAll = document.getElementById(`project-detail-cb-all-${projectId}`);
     if (cbAll) {
       cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
@@ -858,6 +860,12 @@ const VFX = {
                 Editar seleccionada
               </button>
             </span>
+            <span id="bulk-delete-btn-${projectId}" style="display:none">
+              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedEntries(${projectId})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Eliminar seleccionadas
+              </button>
+            </span>
           </div>
         </div>
         ${entries.length > 0 ? `
@@ -895,6 +903,8 @@ const VFX = {
     this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`bulk-edit-btn-${projectId}`);
     if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
+    const deleteBtn = document.getElementById(`bulk-delete-btn-${projectId}`);
+    if (deleteBtn) deleteBtn.style.display = checked.length > 1 ? 'inline' : 'none';
     const cbAll = document.getElementById(`entry-cb-all-${projectId}`);
     if (cbAll) {
       cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
@@ -1599,6 +1609,12 @@ const VFX = {
               <button class="btn btn-ghost btn-sm" onclick="VFX.editSelectedProjectDetailEntry(${p.id})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Editar seleccionada
+              </button>
+            </span>
+            <span id="project-detail-delete-btn-${p.id}" style="display:none">
+              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedProjectDetailEntries(${p.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Eliminar seleccionadas
               </button>
             </span>
           </div>
