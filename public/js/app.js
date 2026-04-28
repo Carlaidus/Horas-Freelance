@@ -32,6 +32,7 @@ const VFX = {
   },
 
   charts: {},
+  _selectedEntryIdsByProject: new Map(),
   _modalDragFromInside: false,
 
   _lsKey(key) { return this.state.userId ? `${key}_u${this.state.userId}` : key; },
@@ -172,6 +173,7 @@ const VFX = {
   _onProjectDetailEntryCbChange(projectId) {
     const all = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]`);
     const checked = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`);
+    this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`project-detail-edit-btn-${projectId}`);
     const rateBtn = document.getElementById(`project-detail-rate-btn-${projectId}`);
     const deleteBtn = document.getElementById(`project-detail-delete-btn-${projectId}`);
@@ -458,6 +460,9 @@ const VFX = {
     const anyRunning = this.state.slots.some(s => s.timer.active && !s.timer.paused);
     const signal = document.getElementById('sidebar-signal');
     if (signal) signal.classList.toggle('live', anyRunning);
+    this.state.slots.forEach(s => {
+      if (s.projectId) this._onEntryCbChange(s.projectId);
+    });
     this._renderingProyecto = false;
   },
 
@@ -758,6 +763,7 @@ const VFX = {
     const onCheckboxChange = options.onCheckboxChange || `VFX._onEntryCbChange(${projectId})`;
     const keyPrefix = options.keyPrefix || `entries-${projectId}`;
     const mobileEdit = options.mobileEdit ? (id) => ` onclick="if (window.matchMedia('(max-width: 700px)').matches && !event.target.closest('input,button')) VFX.modals.editEntry(${id})"` : () => '';
+    const selectedIds = this._selectedEntryIdsByProject.get(projectId) || new Set();
 
     const groups = entries.reduce((acc, entry) => {
       const dateKey = String(entry.date || '').slice(0, 10);
@@ -782,7 +788,7 @@ const VFX = {
       const total = hours * effectiveHourly;
       return `
         <tr class="project-detail-entry-row entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}${mobileEdit(e.id)}>
-          <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" onchange="${onCheckboxChange}"></td>
+          <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) ? 'checked' : ''} onchange="${onCheckboxChange}"></td>
           <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
           <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}<span class="entry-days-inline">(${days.toFixed(2)}d)</span></td>
@@ -801,8 +807,7 @@ const VFX = {
 
       return `
         <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
-          <td class="project-detail-check"></td>
-          <td class="project-detail-date project-day-group-date">${this.fmt.date(group.dateKey)}</td>
+          <td class="project-detail-date project-day-group-date" colspan="2">${this.fmt.date(group.dateKey)}</td>
           <td class="project-day-group-description">
             <div class="project-day-group-main">
               <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
@@ -891,6 +896,7 @@ const VFX = {
   _onEntryCbChange(projectId) {
     const all     = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`);
     const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`);
+    this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`bulk-edit-btn-${projectId}`);
     if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
     const btn  = document.getElementById(`bulk-rate-btn-${projectId}`);
@@ -1701,6 +1707,7 @@ const VFX = {
         </div><!-- /summary-body-detail -->
       </div><!-- /project-summary -->
     `;
+    this._onProjectDetailEntryCbChange(p.id);
   },
 
   downloadProjectReport(id) {
