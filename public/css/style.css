@@ -578,9 +578,16 @@ tbody td {
   }
 }
 @media (max-width: 520px) {
-  .modal input[type="date"] {
+  .modal input[type="date"],
+  .modal input[type="number"] {
+    height: 40px;
     width: 100%;
     max-width: 100%;
+    line-height: normal;
+  }
+  .modal input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
   }
   .time-entries-table th:nth-child(3),
   .time-entries-table td:nth-child(3) {
