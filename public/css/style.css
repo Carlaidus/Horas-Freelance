@@ -594,6 +594,13 @@ tbody td {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.project-day-group-main .project-day-count {
+  color: var(--gold);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
 .project-day-toggle {
   width: 26px;
   height: 26px;
@@ -617,16 +624,19 @@ tbody td {
 }
 .project-day-child-row .project-detail-description {
   position: relative;
-  padding-left: 22px;
+  padding-left: 30px;
 }
 .project-day-child-row .project-detail-description::before {
   content: '';
   position: absolute;
-  left: 8px;
+  left: 14px;
   top: 50%;
   width: 5px;
   height: 1px;
   background: var(--border2);
+}
+.project-day-child-row .project-detail-date {
+  padding-left: 10px;
 }
 @media (max-width: 700px) {
   .time-entries-table {
@@ -725,10 +735,13 @@ tbody td {
     text-overflow: ellipsis;
   }
   .project-day-child-row .project-detail-description {
-    padding-left: 16px;
+    padding-left: 22px;
   }
   .project-day-child-row .project-detail-description::before {
-    left: 4px;
+    left: 8px;
+  }
+  .project-day-child-row .project-detail-date {
+    padding-left: 4px;
   }
 }
 @media (max-width: 520px) {

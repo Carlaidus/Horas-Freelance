@@ -1550,7 +1550,6 @@ const VFX = {
         return sum + (Number(e.hours || 0) * rate);
       }, 0);
       const key = `project-${p.id}-${dateKey}`;
-      const countLabel = `${dayEntries.length} entradas`;
       const descriptions = dayEntries.map(e => e.description).filter(Boolean).join(' · ') || 'Varias descripciones';
       const dayRates = [...new Set(dayEntries.map(e => e.hourly_rate_override ?? p.hourly_rate))];
       const rateLabel = dayRates.length === 1 ? `${this.fmt.currency(dayRates[0] * 8)}/día` : 'varias';
@@ -1564,10 +1563,11 @@ const VFX = {
               <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
+              <span class="project-day-count">(${dayEntries.length})</span>
               <span>${descriptions}</span>
             </div>
           </td>
-          <td class="mono dim project-detail-hours">${countLabel} · ${this.fmt.hours(totalHours)}</td>
+          <td class="mono dim project-detail-hours">${this.fmt.hours(totalHours)}</td>
           <td class="mono dim project-detail-rate">${rateLabel}</td>
           <td class="gold project-detail-amount" data-private>${this.fmt.currency(totalAmount)}</td>
         </tr>
