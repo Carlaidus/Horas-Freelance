@@ -1035,6 +1035,27 @@ select option { background: var(--card2); }
 }
 .modal-tab.active { background: var(--card2); color: var(--gold); }
 
+.timer-stop-summary {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 20px;
+  color: var(--text2);
+  font-size: 13px;
+}
+.timer-stop-summary div {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  align-items: baseline;
+  gap: 12px;
+}
+.timer-stop-summary span {
+  color: var(--text3);
+}
+.timer-stop-summary strong {
+  color: var(--gold);
+  font-weight: 700;
+}
+
 /* ── STATS VIEW ─────────────────────────────────────────────── */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
 .stats-grid .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; }

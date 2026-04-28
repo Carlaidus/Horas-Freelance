@@ -389,9 +389,11 @@ window.CronorasModals = {
       const s = totalSeconds % 60;
       const exactTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
       VFX.openModal(`
-        <p style="color:var(--text2);margin-bottom:4px">Sesión finalizada · <strong style="color:var(--text)">${project?.name || ''}</strong></p>
-        <p style="color:var(--text2);margin-bottom:4px">Se han registrado <strong style="color:var(--gold)">${hours} horas</strong>.</p>
-        <p style="color:var(--text2);margin-bottom:20px">Tiempo exacto: <strong style="color:var(--text)">${exactTime}</strong>.</p>
+        <div class="timer-stop-summary">
+          <div><span>Proyecto</span><strong>${project?.name || ''}</strong></div>
+          <div><span>Registrado</span><strong>${hours} horas</strong></div>
+          <div><span>Tiempo exacto</span><strong>${exactTime}</strong></div>
+        </div>
         <div class="form-grid full">
           <div class="form-group">
             <label>Descripción del trabajo</label>
