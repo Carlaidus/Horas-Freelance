@@ -134,8 +134,8 @@ async function startTimer(idx) {
   VFX.track('timer_start', { project_id: projectId });
   try { await VFX.api.post(`/api/timers/${projectId}/start`, { started_at: startTime }); } catch(_) {}
   VFX._slotsSave();
+  VFX.refreshSlotTimer(idx);
   VFX._startSlotInterval(idx);
-  VFX.renderProyecto();
 }
 
 async function pauseTimer(idx) {
@@ -148,7 +148,7 @@ async function pauseTimer(idx) {
   const projectId = slot.timerProjectId || slot.projectId;
   try { await VFX.api.post(`/api/timers/${projectId}/pause`, { accumulated_seconds: slot.timer.accumulated }); } catch(_) {}
   VFX._slotsSave();
-  VFX.renderProyecto();
+  VFX.refreshSlotTimer(idx);
 }
 
 async function resumeTimer(idx) {
@@ -163,8 +163,8 @@ async function resumeTimer(idx) {
   }
   slot.timer.paused = false;
   VFX._slotsSave();
+  VFX.refreshSlotTimer(idx);
   VFX._startSlotInterval(idx);
-  VFX.renderProyecto();
 }
 
 async function stopTimer(idx) {

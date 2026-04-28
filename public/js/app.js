@@ -470,17 +470,47 @@ const VFX = {
   _renderSlot(idx) {
     const slot    = this.state.slots[idx];
     const project = slot.projectId ? this.state.projects.find(p => p.id === slot.projectId) : null;
-    const timerProject = slot.timerProjectId ? this.state.projects.find(p => p.id === slot.timerProjectId) : project;
-    const t       = slot.timer;
-    const isRunning = t.active && !t.paused;
     const canRemove = this.state.slots.length > 1;
-    const timerIsForOtherProject = t.active && slot.timerProjectId && slot.timerProjectId !== slot.projectId;
 
     const projectOptions = this.state.projects.map(p =>
       `<option value="${p.id}" ${p.id === slot.projectId ? 'selected' : ''}>${p.name} — ${p.company_name}</option>`
     ).join('');
 
-    const timerHtml = `
+    const noProjects = this.state.projects.length === 0;
+    const entriesHtml = slot.projectId && Array.isArray(slot.entries)
+      ? this.renderEntriesTable(slot.entries, slot.projectId, idx)
+      : (!slot.projectId && noProjects ? this.renderNoProjectHint() : '');
+
+    return `
+      <div style="border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;background:var(--card)">
+        ${noProjects ? '' : `<div class="project-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="color:var(--text3);flex-shrink:0"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+          <select onchange="VFX.selectSlotProject(${idx}, this.value)">
+            <option value="">— Selecciona un proyecto —</option>
+            ${projectOptions}
+          </select>
+          ${canRemove ? `
+            <button class="btn btn-ghost btn-sm" onclick="VFX.removeSlot(${idx})" style="color:var(--red);margin-left:auto" title="Dejar de visualizar este proyecto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          ` : ''}
+        </div>`}
+        ${noProjects ? '' : this._renderSlotTimer(idx)}
+        ${entriesHtml}
+        ${this._renderSlotSummary(idx)}
+      </div>
+    `;
+  },
+
+  _renderSlotTimer(idx) {
+    const slot = this.state.slots[idx];
+    const project = slot?.projectId ? this.state.projects.find(p => p.id === slot.projectId) : null;
+    const timerProject = slot?.timerProjectId ? this.state.projects.find(p => p.id === slot.timerProjectId) : project;
+    const t = slot?.timer || { active: false, paused: false };
+    const isRunning = t.active && !t.paused;
+    const timerIsForOtherProject = t.active && slot.timerProjectId && slot.timerProjectId !== slot.projectId;
+
+    return `
       <div class="timer-card ${isRunning ? 'active' : ''}" id="timer-card-${idx}" style="margin-top:14px">
         <div>
           <div class="timer-label">
@@ -521,31 +551,13 @@ const VFX = {
         </div>
       </div>
     `;
+  },
 
-    const noProjects = this.state.projects.length === 0;
-    const entriesHtml = slot.projectId && Array.isArray(slot.entries)
-      ? this.renderEntriesTable(slot.entries, slot.projectId, idx)
-      : (!slot.projectId && noProjects ? this.renderNoProjectHint() : '');
-
-    return `
-      <div style="border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;background:var(--card)">
-        ${noProjects ? '' : `<div class="project-bar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="color:var(--text3);flex-shrink:0"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-          <select onchange="VFX.selectSlotProject(${idx}, this.value)">
-            <option value="">— Selecciona un proyecto —</option>
-            ${projectOptions}
-          </select>
-          ${canRemove ? `
-            <button class="btn btn-ghost btn-sm" onclick="VFX.removeSlot(${idx})" style="color:var(--red);margin-left:auto" title="Dejar de visualizar este proyecto">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          ` : ''}
-        </div>`}
-        ${noProjects ? '' : timerHtml}
-        ${entriesHtml}
-        ${this._renderSlotSummary(idx)}
-      </div>
-    `;
+  refreshSlotTimer(idx) {
+    const card = document.getElementById(`timer-card-${idx}`);
+    if (card) card.outerHTML = this._renderSlotTimer(idx);
+    const signal = document.getElementById('sidebar-signal');
+    if (signal) signal.classList.toggle('live', this.state.slots.some(s => s.timer.active && !s.timer.paused));
   },
 
   _renderSlotSummary(idx) {
