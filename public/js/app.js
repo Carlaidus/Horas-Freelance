@@ -1883,15 +1883,18 @@ const VFX = {
 
   async updateEntry(id) {
     const existingEntry = this.state.entries.find(e => e.id === id);
+    const oldProjectId = existingEntry?.project_id || this.state.currentProjectId || this._projectDetailId;
+    const newProjectId = parseInt(document.getElementById('edit-entry-project').value);
     const dailyOverride = getDailyRateValue('edit-entry-rate');
     await this.api.put(`/api/entries/${id}`, {
+      project_id: newProjectId,
       date: document.getElementById('edit-entry-date').value,
       hours: parseFloat(document.getElementById('edit-entry-hours').value),
       description: document.getElementById('edit-entry-desc').value,
       hourly_rate_override: dailyOverride > 0 ? dailyOverride / 8 : null
     });
     const slot = this.state.slots.find(s => s.entries?.some(e => e.id === id));
-    const projectId = existingEntry?.project_id || slot?.projectId || this.state.currentProjectId || this._projectDetailId;
+    const projectId = oldProjectId || slot?.projectId || this.state.currentProjectId || this._projectDetailId;
     if (projectId) {
       const entries = await this.api.get(`/api/projects/${projectId}/entries`);
       this.state.entries = entries;

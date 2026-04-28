@@ -294,8 +294,18 @@ window.CronorasModals = {
         }
       }
       if (!entry) return;
+      const currentProjectId = Number(entry.project_id || VFX.state.currentProjectId || VFX._projectDetailId);
+      const projectOptions = VFX.state.projects.map(p =>
+        `<option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>${p.name} — ${p.company_name || 'Sin empresa'}</option>`
+      ).join('');
       VFX.openModal(`
         <div class="form-grid full">
+          <div class="form-group">
+            <label>Proyecto</label>
+            <select id="edit-entry-project">
+              ${projectOptions}
+            </select>
+          </div>
           <div class="form-group">
             <label>Fecha</label>
             <input type="date" id="edit-entry-date" value="${String(entry.date).slice(0, 10)}">

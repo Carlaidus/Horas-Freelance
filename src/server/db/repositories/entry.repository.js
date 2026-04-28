@@ -23,8 +23,10 @@ const createEntry = async (data) => {
 
 const updateEntry = async (id, data) => {
   await q(`
-    UPDATE entries SET date=$1, hours=$2, description=$3, hourly_rate_override=$4 WHERE id=$5
-  `, [data.date, data.hours, data.description, data.hourly_rate_override ?? null, id]);
+    UPDATE entries
+    SET project_id=COALESCE($1, project_id), date=$2, hours=$3, description=$4, hourly_rate_override=$5
+    WHERE id=$6
+  `, [data.project_id ?? null, data.date, data.hours, data.description, data.hourly_rate_override ?? null, id]);
 };
 
 const deleteEntry = async (id) => {
