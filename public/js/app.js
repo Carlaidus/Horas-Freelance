@@ -2380,7 +2380,7 @@ const VFX = {
 
     const u = this.state.user;
     const today = new Date().toISOString().split('T')[0];
-    const isReadOnly = inv?.status !== 'draft';
+    const isReadOnly = !!inv && inv.status !== 'draft';
 
     const companyOptions = companies.map(c =>
       `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
