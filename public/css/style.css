@@ -576,6 +576,10 @@ tbody td {
   border-top: 1px solid rgba(245,200,66,0.18);
   font-size: 12px;
 }
+.project-day-group-row .project-detail-amount {
+  font-size: 13px;
+  color: var(--gold);
+}
 .project-day-group-row td:first-child {
   border-left: 2px solid var(--gold);
   padding-left: 14px;
@@ -642,6 +646,10 @@ tbody td {
   width: 5px;
   height: 1px;
   background: var(--border2);
+}
+.project-day-child-row .project-detail-amount {
+  color: #f7d86b;
+  font-size: 12px;
 }
 @media (max-width: 700px) {
   .time-entries-table {
