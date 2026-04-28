@@ -524,19 +524,29 @@ tbody td {
 }
 .project-detail-entries-table th:nth-child(1),
 .project-detail-entries-table td:nth-child(1) {
-  width: 118px;
+  width: 34px;
+  padding-right: 0;
 }
-.project-detail-entries-table th:nth-child(3),
-.project-detail-entries-table td:nth-child(3) {
-  width: 140px;
+.project-detail-entries-table th:nth-child(2),
+.project-detail-entries-table td:nth-child(2) {
+  width: 118px;
 }
 .project-detail-entries-table th:nth-child(4),
 .project-detail-entries-table td:nth-child(4) {
-  width: 132px;
+  width: 140px;
 }
 .project-detail-entries-table th:nth-child(5),
 .project-detail-entries-table td:nth-child(5) {
+  width: 132px;
+}
+.project-detail-entries-table th:nth-child(6),
+.project-detail-entries-table td:nth-child(6) {
   width: 124px;
+}
+.project-detail-check input {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
 }
 .project-detail-date {
   color: var(--text3);
@@ -604,9 +614,6 @@ tbody td {
 }
 .project-day-toggle.open svg {
   transform: rotate(180deg);
-}
-.project-day-child-row td:first-child {
-  padding-left: 30px;
 }
 .project-day-child-row .project-detail-description {
   position: relative;
@@ -680,18 +687,22 @@ tbody td {
   }
   .project-detail-entries-table th:nth-child(1),
   .project-detail-entries-table td:nth-child(1) {
-    width: 86px;
+    width: 34px;
   }
-  .project-detail-entries-table th:nth-child(3),
-  .project-detail-entries-table td:nth-child(3) {
-    width: 96px;
+  .project-detail-entries-table th:nth-child(2),
+  .project-detail-entries-table td:nth-child(2) {
+    width: 86px;
   }
   .project-detail-entries-table th:nth-child(4),
   .project-detail-entries-table td:nth-child(4) {
-    display: none;
+    width: 96px;
   }
   .project-detail-entries-table th:nth-child(5),
   .project-detail-entries-table td:nth-child(5) {
+    display: none;
+  }
+  .project-detail-entries-table th:nth-child(6),
+  .project-detail-entries-table td:nth-child(6) {
     width: 94px;
   }
   .project-detail-entries-table tbody td {
@@ -757,14 +768,18 @@ tbody td {
   }
   .project-detail-entries-table th:nth-child(2),
   .project-detail-entries-table td:nth-child(2) {
-    width: auto;
+    width: 78px;
   }
   .project-detail-entries-table th:nth-child(3),
   .project-detail-entries-table td:nth-child(3) {
+    width: auto;
+  }
+  .project-detail-entries-table th:nth-child(4),
+  .project-detail-entries-table td:nth-child(4) {
     width: 78px;
   }
-  .project-detail-entries-table th:nth-child(5),
-  .project-detail-entries-table td:nth-child(5) {
+  .project-detail-entries-table th:nth-child(6),
+  .project-detail-entries-table td:nth-child(6) {
     width: 86px;
   }
   .project-detail-entries-table .project-detail-description {

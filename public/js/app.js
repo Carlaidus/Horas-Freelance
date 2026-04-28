@@ -164,6 +164,31 @@ const VFX = {
     }
   },
 
+  _toggleAllProjectDetailEntries(checked, projectId) {
+    document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]`).forEach(cb => { cb.checked = checked; });
+    this._onProjectDetailEntryCbChange(projectId);
+  },
+
+  _onProjectDetailEntryCbChange(projectId) {
+    const all = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]`);
+    const checked = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`);
+    const editBtn = document.getElementById(`project-detail-edit-btn-${projectId}`);
+    const rateBtn = document.getElementById(`project-detail-rate-btn-${projectId}`);
+    const deleteBtn = document.getElementById(`project-detail-delete-btn-${projectId}`);
+    if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
+    if (rateBtn) rateBtn.style.display = checked.length > 0 ? 'inline' : 'none';
+    if (deleteBtn) {
+      deleteBtn.style.display = checked.length > 0 ? 'inline' : 'none';
+      const label = deleteBtn.querySelector('.bulk-delete-label');
+      if (label) label.textContent = `Eliminar seleccionada${checked.length === 1 ? '' : 's'}`;
+    }
+    const cbAll = document.getElementById(`project-detail-cb-all-${projectId}`);
+    if (cbAll) {
+      cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
+      cbAll.checked = all.length > 0 && checked.length === all.length;
+    }
+  },
+
   togglePrivacy:          window.CronorasPrivacy.togglePrivacy,
   applyPrivacy:           window.CronorasPrivacy.applyPrivacy,
 
@@ -874,6 +899,31 @@ const VFX = {
     `, 'Cambiar tarifa en masa');
   },
 
+  editSelectedProjectDetailEntry(projectId) {
+    const ids = [...document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
+    if (ids.length !== 1) return;
+    this.modals.editEntry(ids[0]);
+  },
+
+  openProjectDetailBulkRateModal(projectId) {
+    const proj = this.state.projects.find(p => p.id === projectId);
+    const defaultHourly = proj ? proj.hourly_rate : 0;
+    const ids = [...document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
+    if (!ids.length) return;
+    this.openModal(`
+      <p style="color:var(--text2);margin-bottom:16px">Cambiando tarifa de <strong style="color:var(--text)">${ids.length} entrada${ids.length !== 1 ? 's' : ''}</strong>.</p>
+      <div class="form-group">
+        <label>Nueva tarifa (€/día)</label>
+        ${dailyRateSelect('project-detail-bulk-rate', defaultHourly)}
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">Selecciona "— Selecciona tarifa —" para eliminar la tarifa personalizada y usar la del proyecto.</p>
+      <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="VFX.applyProjectDetailBulkRate(${JSON.stringify(ids)}, ${projectId})">Aplicar</button>
+      </div>
+    `, 'Cambiar tarifa en masa');
+  },
+
   async applyBulkRate(ids, projectId) {
     const dailyVal = getDailyRateValue('bulk-rate');
     const rateOverride = dailyVal > 0 ? dailyVal / 8 : null;
@@ -1446,6 +1496,7 @@ const VFX = {
   async renderProjectDetail(id) {
     const el = document.getElementById('view-projects');
     el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
+    this._projectDetailId = id;
 
     const [p, entries] = await Promise.all([
       this.api.get(`/api/projects/${id}`),
@@ -1480,6 +1531,7 @@ const VFX = {
       const amount = hours * rate;
       return `
         <tr class="project-detail-entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}>
+          <td class="project-detail-check"><input type="checkbox" class="project-detail-entry-cb" data-id="${e.id}" data-project="${p.id}" onchange="VFX._onProjectDetailEntryCbChange(${p.id})"></td>
           <td class="project-detail-date">${this.fmt.date(e.date)}</td>
           <td class="project-detail-description">${e.description || '—'}</td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}</td>
@@ -1500,9 +1552,12 @@ const VFX = {
       const key = `project-${p.id}-${dateKey}`;
       const countLabel = `${dayEntries.length} entradas`;
       const descriptions = dayEntries.map(e => e.description).filter(Boolean).join(' · ') || 'Varias descripciones';
+      const dayRates = [...new Set(dayEntries.map(e => e.hourly_rate_override ?? p.hourly_rate))];
+      const rateLabel = dayRates.length === 1 ? `${this.fmt.currency(dayRates[0] * 8)}/día` : 'varias';
 
       return `
         <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
+          <td class="project-detail-check"></td>
           <td class="project-detail-date project-day-group-date">${this.fmt.date(dateKey)}</td>
           <td class="project-day-group-description">
             <div class="project-day-group-main">
@@ -1513,7 +1568,7 @@ const VFX = {
             </div>
           </td>
           <td class="mono dim project-detail-hours">${countLabel} · ${this.fmt.hours(totalHours)}</td>
-          <td class="mono dim project-detail-rate">—</td>
+          <td class="mono dim project-detail-rate">${rateLabel}</td>
           <td class="gold project-detail-amount" data-private>${this.fmt.currency(totalAmount)}</td>
         </tr>
         ${dayEntries.map(e => renderEntryRow(e, 'project-day-child-row', key)).join('')}
@@ -1561,6 +1616,26 @@ const VFX = {
       <div class="table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TRABAJO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
+          <div class="entry-table-actions project-detail-entry-actions" style="display:flex;gap:6px;align-items:center">
+            <span id="project-detail-edit-btn-${p.id}" style="display:none">
+              <button class="btn btn-ghost btn-sm" onclick="VFX.editSelectedProjectDetailEntry(${p.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar seleccionada
+              </button>
+            </span>
+            <span id="project-detail-rate-btn-${p.id}" style="display:none">
+              <button class="btn btn-ghost btn-sm" onclick="VFX.openProjectDetailBulkRateModal(${p.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Cambiar tarifa seleccionadas
+              </button>
+            </span>
+            <span id="project-detail-delete-btn-${p.id}" style="display:none">
+              <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedProjectDetailEntries(${p.id})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <span class="bulk-delete-label">Eliminar seleccionadas</span>
+              </button>
+            </span>
+          </div>
         </div>
         ${entries.length === 0 ? `
           <div class="empty-table">
@@ -1572,6 +1647,7 @@ const VFX = {
             <table class="project-detail-entries-table">
               <thead>
                 <tr>
+                  <th style="width:28px;padding-right:0"><input type="checkbox" id="project-detail-cb-all-${p.id}" onchange="VFX._toggleAllProjectDetailEntries(this.checked, ${p.id})"></th>
                   <th>Fecha</th>
                   <th>Descripción</th>
                   <th style="text-align:right">Horas</th>
@@ -1823,6 +1899,7 @@ const VFX = {
   },
 
   async updateEntry(id) {
+    const existingEntry = this.state.entries.find(e => e.id === id);
     const dailyOverride = getDailyRateValue('edit-entry-rate');
     await this.api.put(`/api/entries/${id}`, {
       date: document.getElementById('edit-entry-date').value,
@@ -1831,7 +1908,7 @@ const VFX = {
       hourly_rate_override: dailyOverride > 0 ? dailyOverride / 8 : null
     });
     const slot = this.state.slots.find(s => s.entries?.some(e => e.id === id));
-    const projectId = slot?.projectId || this.state.currentProjectId;
+    const projectId = existingEntry?.project_id || slot?.projectId || this.state.currentProjectId || this._projectDetailId;
     if (projectId) {
       const entries = await this.api.get(`/api/projects/${projectId}/entries`);
       this.state.entries = entries;
@@ -1839,6 +1916,10 @@ const VFX = {
     }
     await this.loadAll();
     this.closeModal();
+    if (this.state.view === 'projects' && this._projectDetailId) {
+      await this.renderProjectDetail(this._projectDetailId);
+      return;
+    }
     await this.renderProyecto();
   },
 
@@ -1849,7 +1930,30 @@ const VFX = {
     this.state.slots.forEach(s => { if (s.entries?.some(e => e.id === id)) s.entries = []; });
     await this.loadAll();
     this.closeModal();
+    if (this.state.view === 'projects' && this._projectDetailId) {
+      await this.renderProjectDetail(this._projectDetailId);
+      return;
+    }
     this.renderProyecto();
+  },
+
+  async applyProjectDetailBulkRate(ids, projectId) {
+    const dailyVal = getDailyRateValue('project-detail-bulk-rate');
+    const rateOverride = dailyVal > 0 ? dailyVal / 8 : null;
+    await Promise.all(ids.map(id => {
+      const entry = this.state.entries.find(e => e.id === id);
+      if (!entry) return;
+      return this.api.put(`/api/entries/${id}`, {
+        date: entry.date,
+        hours: entry.hours,
+        description: entry.description || '',
+        hourly_rate_override: rateOverride
+      });
+    }));
+    this.state.slots.forEach(s => { if (s.entries?.some(e => ids.includes(e.id))) s.entries = []; });
+    await this.loadAll();
+    this.closeModal();
+    await this.renderProjectDetail(projectId);
   },
 
   async deleteSelectedEntries(projectId) {
@@ -1861,6 +1965,17 @@ const VFX = {
     this.state.slots.forEach(s => { if (s.entries?.some(e => ids.includes(e.id))) s.entries = []; });
     await this.loadAll();
     await this.renderProyecto();
+  },
+
+  async deleteSelectedProjectDetailEntries(projectId) {
+    const ids = [...document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
+    if (!ids.length) return;
+    const msg = ids.length === 1 ? '¿Eliminar la entrada seleccionada?' : `¿Eliminar ${ids.length} entradas seleccionadas?`;
+    if (!confirm(msg)) return;
+    await Promise.all(ids.map(id => this.api.del(`/api/entries/${id}`)));
+    this.state.slots.forEach(s => { if (s.entries?.some(e => ids.includes(e.id))) s.entries = []; });
+    await this.loadAll();
+    await this.renderProjectDetail(projectId);
   },
 
   async saveCompany(id) {
