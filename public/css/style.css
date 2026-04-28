@@ -622,6 +622,12 @@ tbody td {
 .project-day-toggle.open svg {
   transform: rotate(180deg);
 }
+.project-day-child-row .project-detail-check {
+  padding-left: 16px;
+}
+.project-day-child-row .project-detail-date {
+  padding-left: 8px;
+}
 .project-day-child-row .project-detail-description {
   position: relative;
   padding-left: 30px;
@@ -730,6 +736,12 @@ tbody td {
     font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .project-day-child-row .project-detail-check {
+    padding-left: 10px;
+  }
+  .project-day-child-row .project-detail-date {
+    padding-left: 4px;
   }
   .project-day-child-row .project-detail-description {
     padding-left: 22px;
