@@ -563,6 +563,11 @@ tbody td {
   text-align: right;
   white-space: nowrap;
 }
+.entry-days-inline {
+  font-size: 10px;
+  color: var(--text3);
+  margin-left: 4px;
+}
 .project-day-group-row {
   cursor: pointer;
 }
@@ -727,6 +732,9 @@ tbody td {
   }
   .project-day-group-main span {
     display: none;
+  }
+  .project-day-group-main .project-day-count {
+    display: inline;
   }
   .project-day-group-row .project-detail-hours {
     color: var(--text3);

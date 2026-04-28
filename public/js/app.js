@@ -751,63 +751,84 @@ const VFX = {
     `;
   },
 
-  renderEntriesTable(entries = this.state.entries, projectId = this.state.currentProjectId, slotIdx = null) {
-    const project = this.state.projects.find(p => p.id === projectId);
+  _renderTimeEntryRows(entries, project, options = {}) {
     const hourlyRate = project?.hourly_rate || 0;
+    const projectId = project?.id || options.projectId;
+    const checkboxClass = options.checkboxClass || 'entry-cb';
+    const onCheckboxChange = options.onCheckboxChange || `VFX._onEntryCbChange(${projectId})`;
+    const keyPrefix = options.keyPrefix || `entries-${projectId}`;
+    const mobileEdit = options.mobileEdit ? (id) => ` onclick="if (window.matchMedia('(max-width: 700px)').matches && !event.target.closest('input,button')) VFX.modals.editEntry(${id})"` : () => '';
 
     const groups = entries.reduce((acc, entry) => {
       const dateKey = String(entry.date || '').slice(0, 10);
       let group = acc.find(g => g.dateKey === dateKey);
       if (!group) {
-        group = { dateKey, entries: [], totalHours: 0, totalAmount: 0 };
+        group = { dateKey, entries: [], totalHours: 0, totalAmount: 0, rates: [] };
         acc.push(group);
       }
-      const effectiveHourly = entry.hourly_rate_override || hourlyRate;
+      const effectiveHourly = entry.hourly_rate_override ?? hourlyRate;
       group.entries.push(entry);
-      group.totalHours += parseFloat(entry.hours || 0);
-      group.totalAmount += parseFloat(entry.hours || 0) * effectiveHourly;
+      group.totalHours += Number(entry.hours || 0);
+      group.totalAmount += Number(entry.hours || 0) * effectiveHourly;
+      group.rates.push(effectiveHourly);
       return acc;
     }, []);
 
-    const rows = groups.map(group => {
-      const groupRows = group.entries.map(e => {
-        const effectiveHourly = e.hourly_rate_override || hourlyRate;
-        const effectiveDaily = effectiveHourly * 8;
-        const total = e.hours * effectiveHourly;
-        const days = e.hours / 8;
-        return `
-          <tr class="entry-row" onclick="if (window.matchMedia('(max-width: 700px)').matches && !event.target.closest('input,button')) VFX.modals.editEntry(${e.id})">
-            <td style="width:28px;padding-right:0"><input type="checkbox" class="entry-cb" data-id="${e.id}" data-project="${projectId}" onchange="VFX._onEntryCbChange(${projectId})"></td>
-            <td class="dim">${this.fmt.date(e.date)}</td>
-            <td>${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
-            <td class="mono">${this.fmt.hours(e.hours)}<span style="font-size:10px;color:var(--text3);margin-left:4px">(${days.toFixed(2)}d)</span></td>
-            <td class="mono dim" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
-            <td class="gold" data-private>${this.fmt.currency(total)}</td>
-            <td class="actions">
-              <button class="btn-icon" onclick="VFX.modals.editEntry(${e.id})" data-tip="Editar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button class="btn-icon" style="color:var(--red)" onclick="VFX.deleteEntry(${e.id})" data-tip="Eliminar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+    const renderEntryRow = (e, extraClass = '', hiddenKey = '') => {
+      const effectiveHourly = e.hourly_rate_override ?? hourlyRate;
+      const effectiveDaily = effectiveHourly * 8;
+      const hours = Number(e.hours || 0);
+      const days = hours / 8;
+      const total = hours * effectiveHourly;
+      return `
+        <tr class="project-detail-entry-row entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}${mobileEdit(e.id)}>
+          <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" onchange="${onCheckboxChange}"></td>
+          <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
+          <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
+          <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}<span class="entry-days-inline">(${days.toFixed(2)}d)</span></td>
+          <td class="mono dim project-detail-rate" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}</td>
+        </tr>
+      `;
+    };
+
+    return groups.map(group => {
+      if (group.entries.length === 1) return renderEntryRow(group.entries[0]);
+
+      const key = `${keyPrefix}-${group.dateKey}`;
+      const uniqueRates = [...new Set(group.rates)];
+      const rateLabel = uniqueRates.length === 1 ? `${this.fmt.currency(uniqueRates[0] * 8)}/día` : 'varias';
 
       return `
-        <tr class="entry-day-row">
-          <td></td>
-          <td class="entry-day-date">${this.fmt.date(group.dateKey)}</td>
-          <td></td>
-          <td class="entry-day-summary"><span class="entry-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''} · </span>${this.fmt.hours(group.totalHours)}</td>
-          <td></td>
-          <td class="entry-day-total" data-private>${this.fmt.currency(group.totalAmount)}</td>
-          <td></td>
+        <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
+          <td class="project-detail-check"></td>
+          <td class="project-detail-date project-day-group-date">${this.fmt.date(group.dateKey)}</td>
+          <td class="project-day-group-description">
+            <div class="project-day-group-main">
+              <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <span class="project-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''}</span>
+            </div>
+          </td>
+          <td class="mono dim project-detail-hours">${this.fmt.hours(group.totalHours)}</td>
+          <td class="mono dim project-detail-rate">${rateLabel}</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}</td>
         </tr>
-        ${groupRows}
+        ${group.entries.map(e => renderEntryRow(e, 'project-day-child-row', key)).join('')}
       `;
     }).join('');
+  },
+
+  renderEntriesTable(entries = this.state.entries, projectId = this.state.currentProjectId, slotIdx = null) {
+    const project = this.state.projects.find(p => p.id === projectId);
+    const rows = this._renderTimeEntryRows(entries, project, {
+      projectId,
+      checkboxClass: 'entry-cb',
+      onCheckboxChange: `VFX._onEntryCbChange(${projectId})`,
+      keyPrefix: `current-${projectId}`,
+      mobileEdit: true
+    });
 
     return `
       <div class="table-container">
@@ -818,6 +839,12 @@ const VFX = {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               Añadir entrada
             </button>
+            <span id="bulk-edit-btn-${projectId}" style="display:none">
+              <button class="btn btn-ghost btn-sm" onclick="VFX.editSelectedEntry(${projectId})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar seleccionada
+              </button>
+            </span>
             <span id="bulk-rate-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.openBulkRateModal(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -833,7 +860,7 @@ const VFX = {
           </div>
         </div>
         ${entries.length > 0 ? `
-          <table class="time-entries-table">
+          <table class="time-entries-table project-detail-entries-table">
             <thead>
               <tr>
                 <th style="width:28px;padding-right:0"><input type="checkbox" id="entry-cb-all-${projectId}" onchange="VFX._toggleAllEntries(this.checked, ${projectId})"></th>
@@ -842,7 +869,6 @@ const VFX = {
                 <th>Horas / Días</th>
                 <th>€/día</th>
                 <th>Total</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -865,6 +891,8 @@ const VFX = {
   _onEntryCbChange(projectId) {
     const all     = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`);
     const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`);
+    const editBtn = document.getElementById(`bulk-edit-btn-${projectId}`);
+    if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
     const btn  = document.getElementById(`bulk-rate-btn-${projectId}`);
     if (btn) btn.style.display = checked.length > 0 ? 'inline' : 'none';
     const deleteBtn = document.getElementById(`bulk-delete-btn-${projectId}`);
@@ -878,6 +906,12 @@ const VFX = {
       cbAll.indeterminate = checked.length > 0 && checked.length < all.length;
       cbAll.checked = all.length > 0 && checked.length === all.length;
     }
+  },
+
+  editSelectedEntry(projectId) {
+    const ids = [...document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`)].map(cb => parseInt(cb.dataset.id));
+    if (ids.length !== 1) return;
+    this.modals.editEntry(ids[0]);
   },
 
   openBulkRateModal(projectId) {
@@ -1518,62 +1552,12 @@ const VFX = {
     const st = this._projectStatus(p);
     const endDate = p.completed_at || (p.is_completed || p.status === 'paid' ? p.last_entry_date : null);
 
-    const entryGroups = entries.reduce((groups, e) => {
-      const dateKey = String(e.date || '').slice(0, 10);
-      if (!groups.has(dateKey)) groups.set(dateKey, []);
-      groups.get(dateKey).push(e);
-      return groups;
-    }, new Map());
-
-    const renderEntryRow = (e, extraClass = '', hiddenKey = '') => {
-      const rate   = e.hourly_rate_override ?? p.hourly_rate;
-      const hours  = Number(e.hours || 0);
-      const amount = hours * rate;
-      return `
-        <tr class="project-detail-entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:none"` : ''}>
-          <td class="project-detail-check"><input type="checkbox" class="project-detail-entry-cb" data-id="${e.id}" data-project="${p.id}" onchange="VFX._onProjectDetailEntryCbChange(${p.id})"></td>
-          <td class="project-detail-date">${this.fmt.date(e.date)}</td>
-          <td class="project-detail-description">${e.description || '—'}</td>
-          <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}</td>
-          <td class="mono dim project-detail-rate">${this.fmt.currency(rate * 8)}/día</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(amount)}</td>
-        </tr>
-      `;
-    };
-
-    const entryRows = Array.from(entryGroups.entries()).map(([dateKey, dayEntries]) => {
-      if (dayEntries.length === 1) return renderEntryRow(dayEntries[0]);
-
-      const totalHours = dayEntries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
-      const totalAmount = dayEntries.reduce((sum, e) => {
-        const rate = e.hourly_rate_override ?? p.hourly_rate;
-        return sum + (Number(e.hours || 0) * rate);
-      }, 0);
-      const key = `project-${p.id}-${dateKey}`;
-      const descriptions = dayEntries.map(e => e.description).filter(Boolean).join(' · ') || 'Varias descripciones';
-      const dayRates = [...new Set(dayEntries.map(e => e.hourly_rate_override ?? p.hourly_rate))];
-      const rateLabel = dayRates.length === 1 ? `${this.fmt.currency(dayRates[0] * 8)}/día` : 'varias';
-
-      return `
-        <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
-          <td class="project-detail-check"></td>
-          <td class="project-detail-date project-day-group-date">${this.fmt.date(dateKey)}</td>
-          <td class="project-day-group-description">
-            <div class="project-day-group-main">
-              <button class="project-day-toggle" data-project-day-toggle="${key}" aria-expanded="false" onclick="event.stopPropagation();VFX.toggleProjectDayEntries('${key}')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <span>${descriptions}</span>
-              <span class="project-day-count">(${dayEntries.length})</span>
-            </div>
-          </td>
-          <td class="mono dim project-detail-hours">${this.fmt.hours(totalHours)}</td>
-          <td class="mono dim project-detail-rate">${rateLabel}</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(totalAmount)}</td>
-        </tr>
-        ${dayEntries.map(e => renderEntryRow(e, 'project-day-child-row', key)).join('')}
-      `;
-    }).join('');
+    const entryRows = this._renderTimeEntryRows(entries, p, {
+      projectId: p.id,
+      checkboxClass: 'project-detail-entry-cb',
+      onCheckboxChange: `VFX._onProjectDetailEntryCbChange(${p.id})`,
+      keyPrefix: `project-${p.id}`
+    });
 
     el.innerHTML = `
       <div class="page-header">
@@ -1644,15 +1628,15 @@ const VFX = {
           </div>
         ` : `
           <div style="overflow-x:auto">
-            <table class="project-detail-entries-table">
+            <table class="time-entries-table project-detail-entries-table">
               <thead>
                 <tr>
                   <th style="width:28px;padding-right:0"><input type="checkbox" id="project-detail-cb-all-${p.id}" onchange="VFX._toggleAllProjectDetailEntries(this.checked, ${p.id})"></th>
                   <th>Fecha</th>
                   <th>Descripción</th>
-                  <th style="text-align:right">Horas</th>
-                  <th style="text-align:right">Tarifa/día</th>
-                  <th style="text-align:right">Importe</th>
+                  <th style="text-align:right">Horas / Días</th>
+                  <th style="text-align:right">€/día</th>
+                  <th style="text-align:right">Total</th>
                 </tr>
               </thead>
               <tbody>${entryRows}</tbody>
