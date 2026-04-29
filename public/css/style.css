@@ -1502,6 +1502,83 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .line-desc { resize: vertical; min-height: 52px; line-height: 1.5; }
 .invoice-form details summary { user-select: none; }
 .invoice-form details summary::-webkit-details-marker { display: none; }
+.invoice-status-select {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.invoice-mobile-list {
+  display: none;
+}
+.invoice-mobile-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 12px;
+}
+.invoice-mobile-top,
+.invoice-mobile-footer,
+.invoice-mobile-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.invoice-mobile-label {
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.invoice-mobile-number {
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+.invoice-mobile-total {
+  color: var(--gold);
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.invoice-mobile-client {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.invoice-mobile-meta {
+  color: var(--text3);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.invoice-mobile-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+}
+.invoice-mobile-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.invoice-mobile-empty {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text3);
+  padding: 28px 16px;
+  text-align: center;
+}
 
 .form-error {
   background: rgba(255,85,118,0.1); border: 1px solid rgba(255,85,118,0.3);
@@ -1680,6 +1757,21 @@ tr[data-project-id].row-active td:first-child {
 .pulse-red { animation: pulse-red 2s infinite; }
 
 @media (max-width: 700px) {
+  .invoice-table-wrap {
+    display: none;
+  }
+  .invoice-mobile-list {
+    display: grid;
+    gap: 10px;
+  }
+  .invoice-mobile-actions .btn-icon {
+    min-width: 34px;
+    min-height: 34px;
+    justify-content: center;
+  }
+  .invoice-status-select {
+    max-width: 112px;
+  }
   .planes-outer      { padding: 0 2px !important; }
   .planes-grid       { grid-template-columns: 1fr !important; }
   .planes-small-grid { grid-template-columns: repeat(2, 1fr) !important; }
