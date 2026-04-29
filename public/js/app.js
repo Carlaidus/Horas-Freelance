@@ -1751,6 +1751,7 @@ const VFX = {
   modals: window.CronorasModals,
 
   openModal(content, title) {
+    document.querySelectorAll('#modal > .modal-footer').forEach(el => el.remove());
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-header">
         <span class="modal-title">${title}</span>
