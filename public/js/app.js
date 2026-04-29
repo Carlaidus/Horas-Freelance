@@ -2514,7 +2514,7 @@ const VFX = {
         </details>
 
         <div id="inv-lines-label" style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
-        <div class="table-wrap" style="margin-bottom:8px">
+        <div class="table-wrap invoice-lines-table-wrap" style="margin-bottom:8px">
           <table class="data-table" id="inv-lines-table">
             <thead id="inv-lines-thead"><tr><th>Cantidad</th><th style="width:110px">Precio unit.</th><th style="text-align:right;width:120px">Importe</th><th style="width:30px"></th></tr></thead>
             <tbody id="inv-lines-body">${linesHtml()}</tbody>

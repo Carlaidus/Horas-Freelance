@@ -1502,8 +1502,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .line-desc { resize: vertical; min-height: 52px; line-height: 1.5; }
 .invoice-form details summary { user-select: none; }
 .invoice-form details summary::-webkit-details-marker { display: none; }
-.invoice-lines-cards {
+.invoice-lines-table-wrap {
   display: none;
+}
+.invoice-lines-cards {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .invoice-line-card {
   border: 1px solid var(--border);
@@ -1882,14 +1887,6 @@ tr[data-project-id].row-active td:first-child {
   }
   .invoice-status-select {
     max-width: 112px;
-  }
-  #inv-lines-table {
-    display: none;
-  }
-  .invoice-lines-cards {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 8px;
   }
   .planes-outer      { padding: 0 2px !important; }
   .planes-grid       { grid-template-columns: 1fr !important; }
