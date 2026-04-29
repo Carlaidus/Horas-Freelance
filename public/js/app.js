@@ -2520,6 +2520,7 @@ const VFX = {
             <tbody id="inv-lines-body">${linesHtml()}</tbody>
           </table>
         </div>
+        <div id="inv-lines-cards" class="invoice-lines-cards"></div>
         ${isReadOnly ? '' : '<button type="button" id="inv-add-line-btn" class="btn-ghost" style="font-size:12px" onclick="VFX._addLine()">+ Añadir línea</button>'}
 
         <div style="margin-top:20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
@@ -2561,6 +2562,7 @@ const VFX = {
     this.openModal(content, title);
 
     this._updateInvoiceTotals();
+    this._rerenderLines();
     if (prefillCompanyId) this._fillInvoiceCustomer(prefillCompanyId);
 
     this._currentInvoiceId = invoiceId || null;
@@ -2698,8 +2700,11 @@ const VFX = {
       description: descEls[i]?.value || '',
       quantity: qty, unit_price: price, line_total: total
     };
-    const cell = row.querySelector('.line-total-cell');
+    const row = qtyEls[i]?.closest('tr');
+    const cell = row?.querySelector('.line-total-cell');
     if (cell) cell.textContent = this.fmt.currency(total);
+    const cards = document.getElementById('inv-lines-cards');
+    if (cards) cards.innerHTML = this._invoiceLinesCardsHtml();
     this._updateInvoiceTotals();
   },
 
@@ -2712,6 +2717,72 @@ const VFX = {
     if (this._invoiceFormLines.length <= 1) return;
     this._invoiceFormLines.splice(i, 1);
     this._rerenderLines();
+  },
+
+  _invoiceLinesCardsHtml() {
+    const lines = this._invoiceFormLines;
+    const isProjectMode = lines.some(l => l.project_id != null);
+    const fmtH = n => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(n || 0) + ' h';
+    const fmtD = n => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format((n || 0) * 8) + ' €/día';
+    const esc = s => String(s || '').replace(/</g, '&lt;');
+    return lines.map((l, i) => `
+      <div class="invoice-line-card">
+        <div class="invoice-line-card-top">
+          <div>
+            <div class="invoice-line-card-label">${isProjectMode ? 'Proyecto facturado' : 'Línea de factura'}</div>
+            ${(!isProjectMode && !this._invoiceFormReadOnly) ? `
+              <textarea class="invoice-line-card-desc" rows="2" placeholder="Descripción del servicio" oninput="VFX._recalcCardLine(${i}, this)">${esc(l.description)}</textarea>
+            ` : `<div class="invoice-line-card-title">${esc(l.description) || 'Sin descripción'}</div>`}
+          </div>
+          <div class="invoice-line-card-total" data-private>${this.fmt.currency(l.line_total || 0)}</div>
+        </div>
+        <div class="invoice-line-card-grid">
+          <div>
+            <span>${isProjectMode ? 'Horas' : 'Cantidad'}</span>
+            ${(!isProjectMode && !this._invoiceFormReadOnly)
+              ? `<input type="number" class="invoice-line-card-qty" value="${l.quantity || 1}" min="0" step="0.5" oninput="VFX._recalcCardLine(${i}, this)">`
+              : `<strong>${isProjectMode ? fmtH(l.quantity) : (l.quantity || 0)}</strong>`}
+          </div>
+          <div>
+            <span>${isProjectMode ? 'Tarifa' : 'Precio'}</span>
+            ${(!isProjectMode && !this._invoiceFormReadOnly)
+              ? `<input type="number" class="invoice-line-card-price" value="${l.unit_price || 0}" min="0" step="0.01" oninput="VFX._recalcCardLine(${i}, this)">`
+              : `<strong>${isProjectMode ? fmtD(l.unit_price) : this.fmt.currency(l.unit_price || 0)}</strong>`}
+          </div>
+        </div>
+        ${(!isProjectMode && !this._invoiceFormReadOnly && lines.length > 1) ? `
+          <button type="button" class="btn-icon btn-icon-red invoice-line-card-remove" onclick="VFX._removeLine(${i})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Eliminar línea
+          </button>
+        ` : ''}
+      </div>
+    `).join('');
+  },
+
+  _recalcCardLine(i, el = null) {
+    if (!this._invoiceFormLines[i]) return;
+    const descEls = document.querySelectorAll('#inv-lines-cards .invoice-line-card-desc');
+    const qtyEls = document.querySelectorAll('#inv-lines-cards .invoice-line-card-qty');
+    const priceEls = document.querySelectorAll('#inv-lines-cards .invoice-line-card-price');
+    const qty = parseFloat(qtyEls[i]?.value) || 0;
+    const price = parseFloat(priceEls[i]?.value) || 0;
+    this._invoiceFormLines[i] = {
+      ...this._invoiceFormLines[i],
+      description: descEls[i]?.value || '',
+      quantity: qty,
+      unit_price: price,
+      line_total: qty * price
+    };
+    const tableDescEls = document.querySelectorAll('#inv-lines-body .line-desc');
+    const tableQtyEls = document.querySelectorAll('#inv-lines-body .line-qty');
+    const tablePriceEls = document.querySelectorAll('#inv-lines-body .line-price');
+    if (tableDescEls[i]) tableDescEls[i].value = this._invoiceFormLines[i].description;
+    if (tableQtyEls[i]) tableQtyEls[i].value = this._invoiceFormLines[i].quantity;
+    if (tablePriceEls[i]) tablePriceEls[i].value = this._invoiceFormLines[i].unit_price;
+    const cardTotal = el?.closest('.invoice-line-card')?.querySelector('.invoice-line-card-total');
+    if (cardTotal) cardTotal.textContent = this.fmt.currency(this._invoiceFormLines[i].line_total);
+    this._updateInvoiceTotals();
   },
 
   _rerenderLines() {
@@ -2747,6 +2818,8 @@ const VFX = {
         </tr>
       `).join('');
     }
+    const cards = document.getElementById('inv-lines-cards');
+    if (cards) cards.innerHTML = this._invoiceLinesCardsHtml();
     this._updateInvoiceTotals();
   },
 
