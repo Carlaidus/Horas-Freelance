@@ -1507,6 +1507,35 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 .invoice-form input:focus, .invoice-form select:focus, .invoice-form textarea:focus { border-color: var(--gold2); }
 .invoice-form input:disabled, .invoice-form select:disabled, .invoice-form textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+.invoice-detail-option {
+  background: rgba(120,120,180,0.07);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: -2px 0 10px;
+  padding: 10px 12px;
+}
+.invoice-detail-option label {
+  align-items: center;
+  color: var(--text);
+  cursor: help;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.invoice-detail-option input {
+  flex: 0 0 auto;
+  height: 15px;
+  padding: 0;
+  width: 15px;
+}
+.invoice-detail-option div {
+  margin-top: 4px;
+}
 .line-desc { resize: vertical; min-height: 52px; line-height: 1.5; }
 .invoice-form details summary { user-select: none; }
 .invoice-form details summary::-webkit-details-marker { display: none; }

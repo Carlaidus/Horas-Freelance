@@ -2474,6 +2474,9 @@ const VFX = {
     this._invoiceFormIrpfRate = inv?.irpf_rate ?? 15;
     this._invoiceFormPrefillProjectId = prefillProjectId || null;
     this._invoiceFormReadOnly = isReadOnly;
+    this._invoiceIncludeEntryDetails = invoiceId
+      ? localStorage.getItem(`invoiceEntryDetails:${invoiceId}`) === '1'
+      : false;
 
     const content = `
       <div class="invoice-form">
@@ -2500,6 +2503,13 @@ const VFX = {
         <div id="inv-project-selector" style="display:none;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
           <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Proyectos de esta empresa</div>
           <div id="inv-projects-list"></div>
+        </div>
+        <div id="inv-entry-detail-option" class="invoice-detail-option" style="display:none">
+          <label title="Detalla en el PDF cada entrada registrada: fecha, horas y descripcion de trabajo.">
+            <input type="checkbox" id="inv-entry-details" ${this._invoiceIncludeEntryDetails ? 'checked' : ''} onchange="VFX._invoiceIncludeEntryDetails = this.checked">
+            <span>Incluir detalle de entradas en el PDF</span>
+          </label>
+          <div>Opcional. Añade bajo cada proyecto las entradas de tiempo con su fecha, horas y descripcion.</div>
         </div>
         `}
 
@@ -2702,6 +2712,8 @@ const VFX = {
     }
     const addBtn = document.getElementById('inv-add-line-btn');
     if (addBtn) addBtn.style.display = isProjectMode ? 'none' : '';
+    const detailOption = document.getElementById('inv-entry-detail-option');
+    if (detailOption) detailOption.style.display = isProjectMode && !this._invoiceFormReadOnly ? 'block' : 'none';
     this._rerenderLines();
   },
 
@@ -2912,6 +2924,12 @@ const VFX = {
     };
   },
 
+  _saveInvoiceEntryDetailsPreference(id) {
+    if (!id) return;
+    const checked = !!document.getElementById('inv-entry-details')?.checked;
+    localStorage.setItem(`invoiceEntryDetails:${id}`, checked ? '1' : '0');
+  },
+
   async saveInvoiceDraft() {
     const data = this._getInvoiceFormData();
     try {
@@ -2921,6 +2939,7 @@ const VFX = {
         const r = await this.api.post('/api/invoices', data);
         this._currentInvoiceId = r.id;
       }
+      this._saveInvoiceEntryDetailsPreference(this._currentInvoiceId);
       this.closeModal();
       this.renderFacturas();
     } catch (e) {
@@ -2942,6 +2961,7 @@ const VFX = {
         const r = await this.api.post('/api/invoices', data);
         id = r.id;
       }
+      this._saveInvoiceEntryDetailsPreference(id);
       // Then issue
       const r = await fetch(`/api/invoices/${id}/issue`, { method: 'POST' });
       const result = await r.json();
@@ -2973,7 +2993,8 @@ const VFX = {
 
   downloadInvoicePdf(id) {
     if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
-    window.open(`/api/invoices/${id}/pdf`, '_blank');
+    const details = localStorage.getItem(`invoiceEntryDetails:${id}`) === '1';
+    window.open(`/api/invoices/${id}/pdf${details ? '?entryDetails=1' : ''}`, '_blank');
   },
 
   // ── AYUDA ───────────────────────────────────────────────────

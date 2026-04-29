@@ -10,6 +10,19 @@ const getEntries = async (projectId) => {
   return r.rows;
 };
 
+const getEntriesForProjects = async (projectIds, userId) => {
+  const ids = [...new Set((projectIds || []).map(Number).filter(Boolean))];
+  if (!ids.length) return [];
+  const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+  const r = await q(
+    `SELECT * FROM entries
+     WHERE project_id IN (${placeholders}) AND user_id = $${ids.length + 1}
+     ORDER BY date ASC, created_at ASC`,
+    [...ids, userId]
+  );
+  return r.rows;
+};
+
 const createEntry = async (data) => {
   const r = await q(`
     INSERT INTO entries (project_id, user_id, date, hours, description, hourly_rate_override)
@@ -33,4 +46,4 @@ const deleteEntry = async (id) => {
   await q('DELETE FROM entries WHERE id = $1', [id]);
 };
 
-module.exports = { getEntries, createEntry, updateEntry, deleteEntry };
+module.exports = { getEntries, getEntriesForProjects, createEntry, updateEntry, deleteEntry };

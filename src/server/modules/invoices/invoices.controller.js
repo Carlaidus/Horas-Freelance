@@ -74,7 +74,12 @@ const getInvoicePdf = async (req, res) => {
     const invoice = await db.getInvoice(+req.params.id);
     if (!invoice) return res.status(404).json({ error: 'No encontrada' });
     const lines = await db.getInvoiceLines(invoice.id);
-    generateInvoicePdf(invoice, lines, res);
+    const includeEntryDetails = req.query.entryDetails === '1';
+    const projectIds = lines.map(l => l.project_id).filter(id => id != null);
+    const entryDetails = includeEntryDetails
+      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      : [];
+    generateInvoicePdf(invoice, lines, res, { entryDetails });
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
