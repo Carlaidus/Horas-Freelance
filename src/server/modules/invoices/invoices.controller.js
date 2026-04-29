@@ -99,4 +99,18 @@ const previewInvoicePdf = async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 };
 
-module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, previewInvoicePdf, patchInvoiceStatus };
+const previewExistingInvoicePdf = async (req, res) => {
+  try {
+    const invoice = await db.getInvoice(+req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'No encontrada' });
+    const lines = await db.getInvoiceLines(invoice.id);
+    const includeEntryDetails = req.query.entryDetails === '1';
+    const projectIds = lines.map(l => l.project_id).filter(id => id != null);
+    const entryDetails = includeEntryDetails
+      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      : [];
+    generateInvoicePdf(invoice, lines, res, { entryDetails, preview: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, previewInvoicePdf, previewExistingInvoicePdf, patchInvoiceStatus };

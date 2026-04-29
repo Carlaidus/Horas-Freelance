@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, previewInvoicePdf, patchInvoiceStatus } = require('./invoices.controller');
+const { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, previewInvoicePdf, previewExistingInvoicePdf, patchInvoiceStatus } = require('./invoices.controller');
 
 const router = Router();
 
@@ -9,6 +9,7 @@ router.get('/', getInvoices);
 router.get('/next-number', getNextNumber);  // antes de /:id para evitar conflicto
 router.post('/preview-pdf', previewInvoicePdf);
 router.get('/:id', getInvoice);
+router.get('/:id/preview-pdf', previewExistingInvoicePdf);
 router.get('/:id/pdf', getInvoicePdf);
 router.post('/', createInvoice);
 router.put('/:id', updateInvoice);
