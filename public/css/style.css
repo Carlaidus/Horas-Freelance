@@ -1185,12 +1185,20 @@ select option { background: var(--card2); }
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 24px 48px rgba(0,0,0,0.6);
   animation: modalIn 0.2s ease;
+}
+#modal-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 .modal-body {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 .modal-body::-webkit-scrollbar { width: 4px; }
 .modal-body::-webkit-scrollbar-thumb { background: var(--border2); }
