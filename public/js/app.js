@@ -241,62 +241,80 @@ const VFX = {
 
   // ── INIT / BOOTSTRAP ───────────────────────────────────────
   async init() {
-    // Comprobar auth (redirige a login si hace falta)
-    const authRes = await fetch('/api/auth/me');
-    const authData = await authRes.json();
-    this.state.requireAuth = authData.requireAuth;
-    this.state.plan = authData.plan || 'free';
-    this.state.role = authData.role || 'user';
-    this.state.daysRemaining = authData.daysRemaining ?? null;
-    this.state.planPeriod = authData.planPeriod || null;
-    this.state.isTrial = !!authData.isTrial;
-    this.state.userId = authData.userId || 1;
-    if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
+    try {
+      document.getElementById('view-dashboard').innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">Cargando...</div>`;
+      const authData = await this.api.get('/api/auth/me');
+      this.state.requireAuth = authData.requireAuth;
+      this.state.plan = authData.plan || 'free';
+      this.state.role = authData.role || 'user';
+      this.state.daysRemaining = authData.daysRemaining ?? null;
+      this.state.planPeriod = authData.planPeriod || null;
+      this.state.isTrial = !!authData.isTrial;
+      this.state.userId = authData.userId || 1;
+      if (authData.requireAuth && !authData.authenticated) { window.location.href = '/login.html'; return; }
 
-    this.privacy.load();
-    await this.privacy.checkLocation();
-    this.applyPrivacy();
-    this._slotsLoad();
-    await this.loadAll();
-    await this._syncTimersFromServer();
+      this.privacy.load();
+      await this.privacy.checkLocation();
+      this.applyPrivacy();
+      this._slotsLoad();
+      await this.loadAll();
+      await this._syncTimersFromServer();
 
-    // Restaurar proyecto activo desde localStorage
-    const savedId = localStorage.getItem(this._lsKey('vfx_current_project'));
-    if (savedId) {
-      const exists = this.state.projects.find(p => p.id === parseInt(savedId));
-      if (exists) {
-        this.state.currentProjectId = parseInt(savedId);
-        const entries = await this.api.get(`/api/projects/${savedId}/entries`);
-        this.state.entries = entries;
+      // Restaurar proyecto activo desde localStorage
+      const savedId = localStorage.getItem(this._lsKey('vfx_current_project'));
+      if (savedId) {
+        const exists = this.state.projects.find(p => p.id === parseInt(savedId));
+        if (exists) {
+          this.state.currentProjectId = parseInt(savedId);
+          const entries = await this.api.get(`/api/projects/${savedId}/entries`);
+          this.state.entries = entries;
+        }
       }
+
+      const hasActive = this.state.slots.some(s => s.timer.active);
+      if (hasActive) {
+        this.navigate('proyecto');
+        this.state.slots.forEach((s, i) => { if (s.timer.active && !s.timer.paused) this._startSlotInterval(i); });
+      } else {
+        this.navigate('dashboard');
+      }
+
+      // Polling cada 15s para sincronizar timers entre dispositivos
+      if (this._syncPollInterval) clearInterval(this._syncPollInterval);
+      this._syncPollInterval = setInterval(() => this._syncTimersFromServer(), 15000);
+
+      // Sync inmediato al recuperar el foco (cambio de pestaña, desbloqueo de pantalla)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') this._syncTimersFromServer();
+      });
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('[id^="status-dd-"]').forEach(d => d.style.display = 'none');
+      });
+
+      this._restoreSidebar();
+
+      if (!this.state.user.name) {
+        setTimeout(() => this.modals.settings(), 300);
+      }
+    } catch (e) {
+      this.showBootError(e);
     }
+  },
 
-    const hasActive = this.state.slots.some(s => s.timer.active);
-    if (hasActive) {
-      this.navigate('proyecto');
-      this.state.slots.forEach((s, i) => { if (s.timer.active && !s.timer.paused) this._startSlotInterval(i); });
-    } else {
-      this.navigate('dashboard');
-    }
-
-    // Polling cada 15s para sincronizar timers entre dispositivos
-    if (this._syncPollInterval) clearInterval(this._syncPollInterval);
-    this._syncPollInterval = setInterval(() => this._syncTimersFromServer(), 15000);
-
-    // Sync inmediato al recuperar el foco (cambio de pestaña, desbloqueo de pantalla)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') this._syncTimersFromServer();
-    });
-
-    document.addEventListener('click', () => {
-      document.querySelectorAll('[id^="status-dd-"]').forEach(d => d.style.display = 'none');
-    });
-
-    this._restoreSidebar();
-
-    if (!this.state.user.name) {
-      setTimeout(() => this.modals.settings(), 300);
-    }
+  showBootError(error) {
+    const el = document.getElementById('view-dashboard');
+    if (!el) return;
+    el.innerHTML = `
+      <div style="max-width:420px;margin:48px auto;padding:22px;border:1px solid var(--border);border-radius:12px;background:var(--card);text-align:center">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">No se ha podido cargar Cronoras</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:16px">
+          Revisa la conexión e inténtalo de nuevo. Si vienes de iniciar sesión en móvil, prueba también a recargar la página.
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:16px">${error?.message || 'Error de carga'}</div>
+        <button class="btn btn-primary" onclick="window.location.reload()">Reintentar</button>
+      </div>
+    `;
   },
 
   async loadAll() {
