@@ -1909,6 +1909,13 @@ tr[data-project-id].row-active td:first-child {
   }
   .modal-footer {
     padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal-footer .btn {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    margin-left: 0 !important;
   }
   .invoice-table-wrap {
     display: none;

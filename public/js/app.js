@@ -2610,6 +2610,10 @@ const VFX = {
     } else {
       footerEl.innerHTML = `
         <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-ghost" onclick="VFX.previewInvoicePdf()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          Vista previa
+        </button>
         <button class="btn btn-ghost" onclick="VFX.saveInvoiceDraft()" style="margin-left:auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Guardar borrador
@@ -2920,6 +2924,7 @@ const VFX = {
       irpf_amount: t.irpfAmount,
       total: t.total,
       notes: document.getElementById('inv-notes')?.value || '',
+      include_entry_details: !!document.getElementById('inv-entry-details')?.checked,
       lines: this._invoiceFormLines
     };
   },
@@ -2969,6 +2974,35 @@ const VFX = {
       this.closeModal();
       this.renderFacturas();
     } catch (e) {
+      if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+    }
+  },
+
+  async previewInvoicePdf() {
+    if (!this.isPro()) { this.showUpgradeModal('pdf'); return; }
+    const errEl = document.getElementById('inv-form-error');
+    if (errEl) errEl.style.display = 'none';
+    const win = window.open('', '_blank');
+    try {
+      const r = await fetch('/api/invoices/preview-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this._getInvoiceFormData())
+      });
+      if (!r.ok) {
+        const result = await r.json().catch(() => ({}));
+        throw new Error(result.error || 'No se pudo generar la vista previa');
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      if (win) {
+        win.location = url;
+      } else {
+        window.location.href = url;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch (e) {
+      if (win) win.close();
       if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
     }
   },

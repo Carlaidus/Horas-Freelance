@@ -83,4 +83,20 @@ const getInvoicePdf = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, patchInvoiceStatus };
+const previewInvoicePdf = async (req, res) => {
+  try {
+    const { lines = [], include_entry_details = false, ...data } = req.body;
+    const invoice = {
+      ...data,
+      user_id: getUserId(req),
+      full_number: data.full_number || String(data.number || 'BORRADOR')
+    };
+    const projectIds = lines.map(l => l.project_id).filter(id => id != null);
+    const entryDetails = include_entry_details
+      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      : [];
+    generateInvoicePdf(invoice, lines, res, { entryDetails, preview: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+};
+
+module.exports = { getInvoices, getNextNumber, getInvoice, createInvoice, updateInvoice, issueInvoice, deleteInvoice, getInvoicePdf, previewInvoicePdf, patchInvoiceStatus };
