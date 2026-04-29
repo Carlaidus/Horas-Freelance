@@ -2669,6 +2669,9 @@ const VFX = {
     if (newLines.length) {
       this._invoiceFormLines = newLines;
       this._updateInvoiceMode();
+      if (window.matchMedia('(max-width: 700px)').matches) {
+        setTimeout(() => document.getElementById('inv-lines-label')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0);
+      }
     }
   },
 
