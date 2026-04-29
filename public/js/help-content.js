@@ -123,6 +123,10 @@ const HELP_CONTENT = [
       {
         q: '¿Puedo personalizar el número de serie de las facturas?',
         a: 'Sí. En la sección **Facturas** puedes configurar las series de numeración (por ejemplo "2025-" o "F-"). Cada serie mantiene su propio contador automático.'
+      },
+      {
+        q: '¿Por qué no puedo modificar una factura emitida?',
+        a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea los datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error en una factura ya emitida o cobrada, no modifiques esa factura: crea una nueva factura o una rectificativa según corresponda. La opción **Duplicar como nueva** solo copia los datos a un nuevo borrador para trabajar más rápido; no corrige ni anula legalmente la factura original.'
       }
     ]
   },

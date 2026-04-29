@@ -2326,6 +2326,9 @@ const VFX = {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                       </button>
                     ` : ''}
+                    <button class="btn-icon" title="Duplicar como nueva" onclick="VFX.openInvoiceForm(null, null, ${inv.id})">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
+                    </button>
                     <button class="btn-icon" title="Editar" onclick="VFX.openInvoiceForm(${inv.id})">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
@@ -2339,10 +2342,13 @@ const VFX = {
           </tbody>
         </table>
       </div>
+      <div style="margin-top:10px;color:var(--text3);font-size:11px;line-height:1.45">
+        Nota legal orientativa: las facturas emitidas conservan sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda; duplicar como nueva solo genera un borrador y no altera la factura original.
+      </div>
     `;
   },
 
-  async openInvoiceForm(invoiceId = null, prefillProjectId = null) {
+  async openInvoiceForm(invoiceId = null, prefillProjectId = null, duplicateFromId = null) {
     const [nextNum, companies] = await Promise.all([
       this.api.get('/api/invoices/next-number'),
       Promise.resolve(this.state.companies)
@@ -2355,6 +2361,19 @@ const VFX = {
       const data = await this.api.get(`/api/invoices/${invoiceId}`);
       inv = data;
       lines = data.lines?.length ? data.lines : lines;
+    }
+    if (duplicateFromId) {
+      const source = await this.api.get(`/api/invoices/${duplicateFromId}`);
+      inv = {
+        ...source,
+        id: null,
+        status: 'draft',
+        number: nextNum.number,
+        full_number: String(nextNum.number),
+        issue_date: new Date().toISOString().split('T')[0]
+      };
+      lines = source.lines?.length ? source.lines.map(l => ({ ...l })) : lines;
+      invoiceId = null;
     }
 
     // Pre-fill from project if provided
@@ -2500,6 +2519,10 @@ const VFX = {
           <textarea id="inv-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical" ${isReadOnly?'disabled':''}>${inv?.notes||''}</textarea>
         </div>
 
+        <div style="margin-top:16px;padding:10px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.45">
+          Nota legal orientativa: las facturas ya emitidas conservan sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda; "Duplicar como nueva" solo crea un nuevo borrador y no modifica la factura original.
+        </div>
+
         ${isReadOnly ? `
           <div style="margin-top:16px;padding:10px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">
             Las facturas emitidas o cobradas no deben modificarse. Si necesitas corregir datos o importes, crea una nueva factura o una factura rectificativa.
@@ -2510,7 +2533,7 @@ const VFX = {
       </div>
     `;
 
-    const title = isReadOnly ? `Factura ${inv.full_number}` : (invoiceId ? `Borrador — Factura ${inv.number || '#'}` : 'Nueva factura');
+    const title = duplicateFromId ? 'Duplicar como nueva' : (isReadOnly ? `Factura ${inv.full_number}` : (invoiceId ? `Borrador — Factura ${inv.number || '#'}` : 'Nueva factura'));
     this.openModal(content, title);
 
     this._updateInvoiceTotals();
@@ -2523,7 +2546,13 @@ const VFX = {
     const footerEl = document.createElement('div');
     footerEl.className = 'modal-footer';
     if (isReadOnly) {
-      footerEl.innerHTML = `<button class="btn btn-ghost" onclick="VFX.closeModal()">Cerrar</button>`;
+      footerEl.innerHTML = `
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cerrar</button>
+        <button class="btn btn-primary" onclick="VFX.openInvoiceForm(null, null, ${invoiceId})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>
+          Duplicar como nueva
+        </button>
+      `;
     } else {
       footerEl.innerHTML = `
         <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
