@@ -126,7 +126,7 @@ const HELP_CONTENT = [
       },
       {
         q: '¿Por qué no puedo modificar una factura emitida?',
-        a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea los datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error en una factura ya emitida o cobrada, no modifiques esa factura: crea una nueva factura o una rectificativa según corresponda. La opción **Duplicar como nueva** solo copia los datos a un nuevo borrador para trabajar más rápido; no corrige ni anula legalmente la factura original.'
+        a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea sus datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error después de emitirla, lo prudente es no modificar la factura original. Crea una nueva factura o una rectificativa según corresponda a tu caso. La opción **Duplicar como nueva** solo copia los datos a un nuevo borrador para trabajar más rápido; no corrige, sustituye ni anula legalmente la factura original.'
       }
     ]
   },

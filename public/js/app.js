@@ -2345,7 +2345,7 @@ const VFX = {
         </table>
       </div>
       <div style="margin-top:10px;color:var(--text3);font-size:11px;line-height:1.45">
-        Nota legal orientativa: las facturas emitidas conservan sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda; duplicar como nueva solo genera un borrador y no altera la factura original.
+        Nota orientativa: una factura emitida conserva sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda. Duplicar como nueva solo crea un borrador y no modifica la factura original.
       </div>
     `;
   },
@@ -2522,14 +2522,8 @@ const VFX = {
         </div>
 
         <div style="margin-top:16px;padding:10px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.45">
-          Nota legal orientativa: las facturas ya emitidas conservan sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda; "Duplicar como nueva" solo crea un nuevo borrador y no modifica la factura original.
+          Nota orientativa: una factura emitida conserva sus datos fiscales. Para corregir errores, crea una nueva factura o una rectificativa segun corresponda. Duplicar como nueva solo prepara un nuevo borrador y no modifica ni anula la factura original.
         </div>
-
-        ${isReadOnly ? `
-          <div style="margin-top:16px;padding:10px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2)">
-            Las facturas emitidas o cobradas no deben modificarse. Si necesitas corregir datos o importes, crea una nueva factura o una factura rectificativa.
-          </div>
-        ` : ''}
 
         <div id="inv-form-error" class="form-error" style="display:none;margin-top:12px"></div>
       </div>
