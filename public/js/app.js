@@ -2344,8 +2344,9 @@ const VFX = {
           </tbody>
         </table>
       </div>
-      <div style="margin-top:10px;color:var(--text3);font-size:11px;line-height:1.45">
-        Nota orientativa: una factura emitida conserva sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda. Duplicar como nueva solo crea un borrador y no modifica la factura original.
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;line-height:1.55">
+        <strong style="color:var(--text)">Nota orientativa sobre facturas:</strong>
+        una factura emitida conserva sus datos fiscales. Si detectas un error, crea una nueva factura o una rectificativa segun corresponda. Duplicar como nueva solo crea un borrador y no modifica la factura original.
       </div>
     `;
   },

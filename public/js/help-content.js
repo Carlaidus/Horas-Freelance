@@ -125,8 +125,16 @@ const HELP_CONTENT = [
         a: 'Sí. En la sección **Facturas** puedes configurar las series de numeración (por ejemplo "2025-" o "F-"). Cada serie mantiene su propio contador automático.'
       },
       {
+        q: '¿Qué estados tiene una factura y qué puedo editar?',
+        a: '**Borrador:** puedes modificar cliente, fecha, líneas, importes, IVA, IRPF y notas.\n\n**Emitida:** la factura ya existe como documento fiscal. La app permite verla, descargarla, marcarla como cobrada o duplicarla como nueva, pero bloquea la edición de sus datos fiscales principales.\n\n**Cobrada:** se mantiene bloqueada igual que una emitida, porque forma parte del historial de facturación.'
+      },
+      {
         q: '¿Por qué no puedo modificar una factura emitida?',
-        a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea sus datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error después de emitirla, lo prudente es no modificar la factura original. Crea una nueva factura o una rectificativa según corresponda a tu caso. La opción **Duplicar como nueva** solo copia los datos a un nuevo borrador para trabajar más rápido; no corrige, sustituye ni anula legalmente la factura original.'
+        a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea sus datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error después de emitirla, lo prudente es no modificar la factura original. Crea una nueva factura o una rectificativa según corresponda a tu caso.'
+      },
+      {
+        q: '¿Para qué sirve Duplicar como nueva?',
+        a: '**Duplicar como nueva** copia cliente, líneas, impuestos y notas a un nuevo borrador con el siguiente número disponible y fecha actual. Sirve para ahorrar tiempo cuando necesitas crear otra factura parecida.\n\nImportante: duplicar no corrige, sustituye ni anula legalmente la factura original. La factura anterior queda intacta.'
       }
     ]
   },
