@@ -2435,7 +2435,7 @@ const VFX = {
           const totalHours = entries.reduce((s, e) => s + e.hours, 0);
           const rate = proj.hourly_rate;
           lines = [{
-            description: `Servicios de ${proj.name}`,
+            description: `Proyecto ${proj.name}`,
             quantity: totalHours,
             unit_price: rate,
             line_total: totalHours * rate,
@@ -2691,7 +2691,7 @@ const VFX = {
       const entries = await this.api.get(`/api/projects/${pid}/entries`);
       const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
       newLines.push({
-        description: `Servicios de ${proj.name}`,
+        description: `Proyecto ${proj.name}`,
         quantity: totalHours,
         unit_price: proj.hourly_rate,
         line_total: totalHours * proj.hourly_rate,
