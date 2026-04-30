@@ -260,7 +260,7 @@ input, select, textarea { font-family: inherit; }
 #mobile-menu-btn:hover { background: var(--card2); color: var(--text); }
 @media (max-width: 768px) {
   #mobile-menu-btn { display: flex; }
-  .view { padding-top: 20px; padding-left: 16px; padding-right: 16px; padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+  .view { padding-top: 20px; padding-left: 16px; padding-right: 16px; padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
   #view-stats { max-width: 100%; overflow-x: hidden; }
   #view-stats * { min-width: 0; box-sizing: border-box; }
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; width: 100%; }
