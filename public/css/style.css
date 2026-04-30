@@ -821,6 +821,16 @@ tbody td {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .project-day-group-row .project-detail-hours,
+  .project-day-group-row .project-detail-rate {
+    display: none;
+  }
+  .project-day-group-row .project-detail-amount {
+    display: table-cell;
+    font-size: 12px;
+    text-align: right;
+    width: 94px;
+  }
   .project-day-child-row td {
     transform: translateX(8px);
   }
@@ -889,6 +899,9 @@ tbody td {
   .project-day-group-row .project-detail-hours {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .project-day-group-row .project-detail-amount {
+    width: 86px;
   }
 }
 td.mono { font-family: 'Space Mono', monospace; }
