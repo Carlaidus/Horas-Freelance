@@ -618,10 +618,6 @@ const VFX = {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
               Pausar
             </button>
-            <button class="btn btn-danger" onclick="VFX.stopTimer(${idx})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg>
-              Finalizar
-            </button>
           `}
         </div>
       </div>
