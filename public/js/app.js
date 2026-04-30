@@ -678,7 +678,7 @@ const VFX = {
           </div>
         </div>
 
-        <div class="summary-detail desktop-only">
+        <div class="summary-detail">
           <div class="summary-panel">
             <div class="cockpit-section-label">Desglose fiscal</div>
             <div class="cockpit-row">
@@ -743,13 +743,9 @@ const VFX = {
           <div class="summary-controls-row">
             <div>
               <div class="cockpit-section-label" style="margin-bottom:8px">Trabajo</div>
-              <label class="summary-checkbox-label">
-                <input type="checkbox" ${project.is_completed ? 'checked' : ''} onchange="VFX.setProjectCompleted(${project.id}, this.checked)">
-                <span class="summary-switch-text">
-                  <strong>${project.is_completed ? 'Trabajo finalizado' : 'Trabajo abierto'}</strong>
-                  <small>${project.is_completed ? 'No se esperan más entradas' : 'Aún puede recibir entradas'}</small>
-                </span>
-              </label>
+              <button class="summary-complete-btn ${project.is_completed ? 'done' : ''}" onclick="VFX.setProjectCompleted(${project.id}, ${project.is_completed ? 'false' : 'true'})">
+                <span>${project.is_completed ? 'Trabajo terminado' : 'Marcar trabajo terminado'}</span>
+              </button>
             </div>
             <div>
               <div class="cockpit-section-label" style="margin-bottom:8px">Facturación</div>

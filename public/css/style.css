@@ -1496,20 +1496,20 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 14px;
+  padding: 16px;
 }
 .summary-panel .cockpit-section-label {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 .summary-goals {
   display: grid;
-  gap: 16px;
+  gap: 22px;
   grid-template-columns: minmax(0, 1fr);
 }
 .summary-budget {
   border-top: 1px solid var(--border);
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 22px;
+  padding-top: 18px;
 }
 .summary-controls-row {
   display: grid;
@@ -1526,36 +1526,25 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
   border-radius: 8px;
   padding: 12px;
 }
-.summary-checkbox-label {
-  display: flex;
+.summary-complete-btn {
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--text2);
-  cursor: pointer;
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 400;
-  white-space: normal;
-}
-.summary-checkbox-label input {
-  accent-color: var(--gold);
-  flex-shrink: 0;
-  height: 18px;
-  width: 18px;
-}
-.summary-switch-text {
-  display: grid;
-  gap: 1px;
-}
-.summary-switch-text strong {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
   color: var(--text);
+  display: flex;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 700;
+  justify-content: center;
+  min-height: 40px;
+  padding: 9px 12px;
+  width: 100%;
 }
-.summary-switch-text small {
-  color: var(--text3);
-  font-size: 11px;
+.summary-complete-btn.done {
+  background: rgba(82,232,117,0.1);
+  border-color: rgba(82,232,117,0.35);
+  color: var(--green);
 }
 .summary-select {
   width: 100%;
