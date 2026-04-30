@@ -530,13 +530,18 @@ const VFX = {
     return `
       <div class="current-project-slot">
         ${noProjects ? '' : `<div class="project-bar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="color:var(--text3);flex-shrink:0"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-          <select onchange="VFX.selectSlotProject(${idx}, this.value)">
-            <option value="">— Selecciona un proyecto —</option>
-            ${projectOptions}
-          </select>
+          <div class="project-bar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+          </div>
+          <label class="project-bar-field">
+            <span>Proyecto visible</span>
+            <select onchange="VFX.selectSlotProject(${idx}, this.value)">
+              <option value="">— Selecciona un proyecto —</option>
+              ${projectOptions}
+            </select>
+          </label>
           ${canRemove ? `
-            <button class="btn btn-ghost btn-sm" onclick="VFX.removeSlot(${idx})" style="color:var(--red);margin-left:auto" title="Dejar de visualizar este proyecto">
+            <button class="btn btn-ghost btn-sm project-bar-remove" onclick="VFX.removeSlot(${idx})" title="Dejar de visualizar este proyecto">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           ` : ''}

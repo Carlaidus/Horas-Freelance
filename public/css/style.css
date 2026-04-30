@@ -558,14 +558,42 @@ input, select, textarea { font-family: inherit; }
 /* ── PROJECT SELECTOR ───────────────────────────────────────── */
 .project-bar {
   display: flex; align-items: center; gap: 12px;
-  background: var(--card);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 14px 18px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
+  padding: 12px;
+}
+.project-bar-icon {
+  align-items: center;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text3);
+  display: flex;
+  flex: 0 0 36px;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+.project-bar-icon svg {
+  height: 16px;
+  width: 16px;
+}
+.project-bar-field {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.project-bar-field span {
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
 }
 .project-bar select {
-  flex: 1;
   background: transparent;
   border: none;
   color: var(--text);
@@ -577,6 +605,11 @@ input, select, textarea { font-family: inherit; }
   appearance: none;
 }
 .project-bar select option { background: var(--card2); color: var(--text); }
+.project-bar-remove {
+  color: var(--red);
+  flex: 0 0 auto;
+  margin-left: auto;
+}
 .current-project-slot {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1059,6 +1092,29 @@ tbody td {
   }
   .project-detail-hero-stats div {
     padding: 8px;
+  }
+  .current-project-slot {
+    padding: 14px;
+  }
+  .project-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .project-bar-icon {
+    flex-basis: 34px;
+    height: 34px;
+    width: 34px;
+  }
+  .project-bar-field {
+    flex: 1 1 calc(100% - 86px);
+  }
+  .project-bar select {
+    font-size: 14px;
+  }
+  .project-bar-remove {
+    height: 34px;
+    margin-left: 0;
+    width: 34px;
   }
   .project-summary-grid {
     grid-template-columns: minmax(0, 1fr);
