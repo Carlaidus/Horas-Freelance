@@ -1490,7 +1490,8 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .summary-detail {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 18px;
+  margin-top: 8px;
 }
 .summary-panel {
   background: var(--bg);
