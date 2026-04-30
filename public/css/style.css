@@ -2097,6 +2097,17 @@ tr[data-project-id].row-active td:first-child {
     justify-content: center;
     margin-left: 0 !important;
   }
+  .invoice-form .form-row-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .invoice-form details .form-row-2 {
+    gap: 10px;
+  }
+  .invoice-form input,
+  .invoice-form select,
+  .invoice-form textarea {
+    max-width: 100%;
+  }
   .invoice-table-wrap {
     display: none;
   }
@@ -2105,12 +2116,27 @@ tr[data-project-id].row-active td:first-child {
     gap: 10px;
   }
   .invoice-mobile-actions .btn-icon {
+    flex: 1 1 34px;
     min-width: 34px;
     min-height: 34px;
     justify-content: center;
   }
+  .invoice-mobile-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .invoice-mobile-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+  .invoice-mobile-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
   .invoice-status-select {
-    max-width: 112px;
+    max-width: none;
+    width: 100%;
   }
   .planes-outer      { padding: 0 2px !important; }
   .planes-grid       { grid-template-columns: 1fr !important; }

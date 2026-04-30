@@ -135,6 +135,10 @@ const HELP_CONTENT = [
       {
         q: '¿Para qué sirve Duplicar como nueva?',
         a: '**Duplicar como nueva** copia cliente, líneas, impuestos y notas a un nuevo borrador con el siguiente número disponible y fecha actual. Sirve para ahorrar tiempo cuando necesitas crear otra factura parecida.\n\nImportante: duplicar no corrige, sustituye ni anula legalmente la factura original. La factura anterior queda intacta.'
+      },
+      {
+        q: '¿La vista previa de una factura sirve como factura final?',
+        a: 'No. La vista previa es solo una comprobación visual antes de emitir o descargar. Debe mostrarse como borrador/no válida y no sustituye a la factura final emitida.'
       }
     ]
   },
