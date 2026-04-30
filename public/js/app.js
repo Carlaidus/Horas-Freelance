@@ -2356,7 +2356,10 @@ const VFX = {
     const invoices = await this.api.get('/api/invoices');
     this.state.invoices = invoices;
 
-    const totalEmitidas = invoices.filter(i => i.status === 'issued').reduce((s, i) => s + (i.total || 0), 0);
+    const issuedInvoices = invoices.filter(i => i.status === 'issued');
+    const billedInvoices = invoices.filter(i => i.status === 'issued' || i.status === 'paid');
+    const totalEmitido = billedInvoices.reduce((s, i) => s + (i.total || 0), 0);
+    const totalPendienteCobro = issuedInvoices.reduce((s, i) => s + (i.total || 0), 0);
     const totalBorradores = invoices.filter(i => i.status === 'draft').length;
     const invoiceStatusControl = inv => inv.status === 'draft'
       ? `<span class="badge badge-pending">Borrador</span>`
@@ -2399,14 +2402,14 @@ const VFX = {
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px">
         <div class="metric-card">
-          <div class="metric-label">Total facturado</div>
-          <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(totalEmitidas)}</div>
-          <div class="metric-sub">facturas emitidas</div>
+          <div class="metric-label">Total emitido</div>
+          <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(totalEmitido)}</div>
+          <div class="metric-sub">${billedInvoices.length} factura${billedInvoices.length !== 1 ? 's' : ''}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Facturas emitidas</div>
-          <div class="metric-value" style="color:var(--cyan)">${invoices.filter(i => i.status === 'issued').length}</div>
-          <div class="metric-sub">total histórico</div>
+          <div class="metric-label">Pendiente de cobro</div>
+          <div class="metric-value" style="color:var(--cyan)" data-private>${this.fmt.currency(totalPendienteCobro)}</div>
+          <div class="metric-sub">${issuedInvoices.length} emitida${issuedInvoices.length !== 1 ? 's' : ''}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Borradores</div>
