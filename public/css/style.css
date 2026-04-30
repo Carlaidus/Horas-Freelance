@@ -1046,6 +1046,18 @@ tbody td {
   .project-detail-hero-stats div {
     padding: 8px;
   }
+  .project-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .summary-card {
+    padding: 14px;
+  }
+  .summary-row {
+    align-items: flex-start;
+  }
+  .summary-row span {
+    max-width: 48%;
+  }
 }
 td.mono { font-family: 'Space Mono', monospace; }
 td.dim { color: var(--text2); }
@@ -1239,6 +1251,73 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
   color: var(--text3);
   text-transform: uppercase;
   white-space: nowrap;
+}
+.project-summary-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+}
+.summary-card-title {
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.summary-card-rows {
+  display: grid;
+  gap: 9px;
+}
+.summary-row {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+.summary-row span {
+  color: var(--text2);
+  font-size: 13px;
+}
+.summary-row strong {
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.summary-row strong.gold,
+.summary-row strong.is-open {
+  color: var(--amber);
+}
+.summary-row strong.cyan {
+  color: var(--cyan);
+}
+.summary-row strong.red {
+  color: var(--red);
+}
+.summary-divider {
+  background: var(--border);
+  height: 1px;
+  margin: 2px 0;
+}
+.summary-row-total span {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.summary-row-total strong {
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 700;
 }
 .summary-stats {
   display: grid;
