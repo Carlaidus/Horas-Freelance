@@ -1156,7 +1156,7 @@ const VFX = {
     const customFrom = this.state.statsCustomFrom || `${new Date().getFullYear()}-01-01`;
     const customTo   = this.state.statsCustomTo   || today;
 
-    const tabBtnCls = (v) => `btn btn-sm ${statsView === v ? 'btn-primary' : 'btn-ghost'}`;
+    const tabBtnCls = (v) => `stats-view-tab ${statsView === v ? 'active' : ''}`;
     const projectOptions = this.state.projects.map(p =>
       `<option value="${p.id}" ${p.id === this.state.statsProjectId ? 'selected' : ''}>${p.name} — ${p.company_name}</option>`
     ).join('');
@@ -1169,12 +1169,15 @@ const VFX = {
         </div>
       </div>
 
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
-        ${periodBtns}
-        <button class="btn btn-sm ${period === 'custom' ? 'btn-primary' : 'btn-ghost'}" onclick="VFX.changeStatsPeriod('custom')">Rango</button>
-        <div style="flex:1"></div>
-        <button class="${tabBtnCls('general')}" onclick="VFX.changeStatsView('general')">General</button>
-        <button class="${tabBtnCls('project')}" onclick="VFX.changeStatsView('project')">Por proyecto</button>
+      <div class="stats-toolbar">
+        <div class="stats-periods">
+          ${periodBtns}
+          <button class="btn btn-sm ${period === 'custom' ? 'btn-primary' : 'btn-ghost'}" onclick="VFX.changeStatsPeriod('custom')">Rango</button>
+        </div>
+        <div class="stats-view-tabs">
+          <button class="${tabBtnCls('general')}" onclick="VFX.changeStatsView('general')">General</button>
+          <button class="${tabBtnCls('project')}" onclick="VFX.changeStatsView('project')">Por proyecto</button>
+        </div>
       </div>
 
       <div id="stats-custom-range" style="display:${period==='custom'?'flex':'none'};gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px">

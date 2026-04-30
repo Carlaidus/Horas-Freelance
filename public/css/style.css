@@ -264,14 +264,18 @@ input, select, textarea { font-family: inherit; }
   #view-stats { max-width: 100%; overflow-x: hidden; }
   #view-stats * { min-width: 0; box-sizing: border-box; }
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; width: 100%; }
+  .stats-toolbar { align-items: stretch; flex-direction: column; gap: 8px; }
+  .stats-periods { gap: 5px; }
+  .stats-view-tabs { width: 100%; }
+  .stats-view-tab { flex: 1; justify-content: center; }
   .page-header { padding-left: 44px; }
   .timer-card { flex-direction: column; align-items: center; text-align: center; }
   .timer-card > div:first-child { width: 100%; }
   .timer-card > div:first-child > div:first-child { justify-content: center; flex-wrap: wrap; }
   .timer-card > div:last-child { width: 100%; justify-content: center !important; }
-  .metric-card { min-height: 0; padding: 8px 10px; width: 100%; }
-  .metric-label { font-size: 9px; letter-spacing: 1px; }
-  .metric-value { font-size: clamp(14px, 4.4vw, 18px); line-height: 1.1; overflow-wrap: anywhere; }
+  .metric-card { min-height: 0; padding: 6px 8px; width: 100%; }
+  .metric-label { font-size: 8px; letter-spacing: 0.8px; margin-bottom: 2px; }
+  .metric-value { font-size: clamp(12px, 4vw, 16px); line-height: 1.05; overflow-wrap: anywhere; }
   .metric-sub { font-size: 10px; margin-top: 1px; }
   .stats-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 16px; width: 100%; }
   .stats-grid .chart-card { grid-column: 1 / -1; padding: 14px; max-width: 100%; overflow: hidden; }
@@ -360,6 +364,44 @@ input, select, textarea { font-family: inherit; }
 .metric-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px; }
 .metric-value { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); }
 .metric-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+.stats-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.stats-periods {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stats-view-tabs {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+}
+.stats-view-tab {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+.stats-view-tab.active {
+  background: var(--card2);
+  color: var(--gold);
+}
 
 /* ── BUTTONS ────────────────────────────────────────────────── */
 .btn {
