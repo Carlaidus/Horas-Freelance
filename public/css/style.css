@@ -577,6 +577,18 @@ tbody td {
 }
 .project-detail-entries-table {
   table-layout: fixed;
+  min-width: 760px;
+}
+.entries-table-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.entries-table-container::-webkit-scrollbar {
+  height: 4px;
+}
+.entries-table-container::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 2px;
 }
 .project-detail-entries-table th:nth-child(1),
 .project-detail-entries-table td:nth-child(1) {
@@ -786,6 +798,9 @@ tbody td {
   }
   .project-detail-entries-table tbody td {
     padding: 11px 8px;
+  }
+  .project-detail-entries-table {
+    min-width: 0;
   }
   .project-detail-entries-table .project-detail-date {
     font-size: 11px;

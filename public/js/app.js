@@ -896,7 +896,7 @@ const VFX = {
     });
 
     return `
-      <div class="table-container">
+      <div class="table-container entries-table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
           <div class="entry-table-actions" style="display:flex;gap:6px;align-items:center">
@@ -1702,7 +1702,7 @@ const VFX = {
         ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
       </div>
 
-      <div class="table-container">
+      <div class="table-container entries-table-container">
         <div class="table-header">
           <span class="table-title">ENTRADAS DE TRABAJO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
           <div class="entry-table-actions project-detail-entry-actions" style="display:flex;gap:6px;align-items:center">
