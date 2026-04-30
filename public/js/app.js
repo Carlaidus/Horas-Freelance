@@ -528,7 +528,7 @@ const VFX = {
       : (!slot.projectId && noProjects ? this.renderNoProjectHint() : '');
 
     return `
-      <div style="border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;background:var(--card)">
+      <div class="current-project-slot">
         ${noProjects ? '' : `<div class="project-bar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16" style="color:var(--text3);flex-shrink:0"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
           <select onchange="VFX.selectSlotProject(${idx}, this.value)">
@@ -569,7 +569,7 @@ const VFX = {
           ${!slot.projectId && !t.active ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Selecciona un proyecto para iniciar</div>` : ''}
           ${timerIsForOtherProject ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Viendo entradas de: ${project?.name || '—'}</div>` : ''}
         </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <div class="timer-actions">
           ${!t.active ? `
             <button class="btn btn-primary" onclick="VFX.startTimer(${idx})" ${!slot.projectId ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
