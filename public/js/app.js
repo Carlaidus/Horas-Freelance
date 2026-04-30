@@ -10,6 +10,7 @@ const VFX = {
     view: 'dashboard',
     statsView: 'general',
     statsPeriod: '1m',
+    statsCompareMode: 'none',
     statsCustomFrom: '',
     statsCustomTo: '',
     statsProjectId: null,
@@ -388,6 +389,15 @@ const VFX = {
     return { from: fmt(prevFrom), to: fmt(prevTo), group: range.group };
   },
 
+  previousYearDates(range) {
+    const shift = (date) => {
+      const d = new Date(`${date}T12:00:00`);
+      d.setFullYear(d.getFullYear() - 1);
+      return d.toISOString().split('T')[0];
+    };
+    return { from: shift(range.from), to: shift(range.to), group: range.group };
+  },
+
   async loadStatsRange(period) {
     const range = this.periodDates(period);
     const { from, to, group } = range;
@@ -399,7 +409,14 @@ const VFX = {
       this.api.get(`/api/stats/summary?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`)
     ]);
-    this.state.stats = { periodic, heatmap, clients, summary, previousSummary };
+    let comparison = [];
+    if (this.state.statsCompareMode !== 'none') {
+      const compareRange = this.state.statsCompareMode === 'year'
+        ? this.previousYearDates(range)
+        : prev;
+      comparison = await this.api.get(`/api/stats/monthly?from=${compareRange.from}&to=${compareRange.to}&group=${compareRange.group}`);
+    }
+    this.state.stats = { periodic, heatmap, clients, summary, previousSummary, comparison };
   },
 
   async loadTreasury() {
@@ -1188,7 +1205,7 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, summary } = this.state.stats;
+    const { periodic, heatmap, clients, summary, comparison } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
     const unbilled      = Number(summary?.unbilled_earnings || 0);
@@ -1245,7 +1262,14 @@ const VFX = {
 
       <div class="stats-grid">
         <div class="chart-card full">
-          <div class="chart-title">Ingresos y horas por período</div>
+          <div class="chart-head">
+            <div class="chart-title">Ingresos y horas por período</div>
+            <div class="chart-compare" aria-label="Comparar gráfico">
+              <button class="${this.state.statsCompareMode === 'none' ? 'active' : ''}" title="Sin comparativa" onclick="VFX.changeStatsCompare('none')">Actual</button>
+              <button class="${this.state.statsCompareMode === 'previous' ? 'active' : ''}" title="Comparar con el período anterior" onclick="VFX.changeStatsCompare('previous')">Anterior</button>
+              <button class="${this.state.statsCompareMode === 'year' ? 'active' : ''}" title="Comparar con el año anterior" onclick="VFX.changeStatsCompare('year')">Año -1</button>
+            </div>
+          </div>
           <div class="chart-wrap" style="height:200px">
             <canvas id="chart-monthly"></canvas>
           </div>
@@ -1324,7 +1348,7 @@ const VFX = {
       </div>
     `;
     if (this.applyPrivacy) this.applyPrivacy();
-    this.renderPeriodicChart(periodic, group);
+    this.renderPeriodicChart(periodic, group, comparison || []);
     this.renderHeatmap(heatmap);
     this.renderClientBars(clients);
   },
@@ -1414,12 +1438,17 @@ const VFX = {
     this.renderStats();
   },
 
+  async changeStatsCompare(mode) {
+    this.state.statsCompareMode = mode;
+    this.renderStats();
+  },
+
   async changeStatsProject(id) {
     this.state.statsProjectId = id || null;
     this._renderStatsProject(this.state.statsProjectId);
   },
 
-  renderPeriodicChart(data, group) {
+  renderPeriodicChart(data, group, comparison = []) {
     const ctx = document.getElementById('chart-monthly');
     if (!ctx) return;
     if (this.charts.monthly) this.charts.monthly.destroy();
@@ -1438,11 +1467,40 @@ const VFX = {
     const labels = data.map(m => fmtLabel(m.period));
     const earningsData = data.map(m => m.earnings || 0);
     const hoursData = data.map(m => m.hours || 0);
+    const compareEarningsData = data.map((_, i) => comparison[i]?.earnings || 0);
+    const compareHoursData = data.map((_, i) => comparison[i]?.hours || 0);
+    const compareLabel = this.state.statsCompareMode === 'year' ? 'Año anterior' : 'Periodo anterior';
+    const comparisonDatasets = this.state.statsCompareMode === 'none' ? [] : [
+      {
+        type: 'bar',
+        label: `${compareLabel} (€)`,
+        data: compareEarningsData,
+        backgroundColor: 'rgba(144, 144, 184, 0.13)',
+        borderColor: 'rgba(144, 144, 184, 0.45)',
+        borderWidth: 1,
+        borderRadius: 4,
+        yAxisID: 'y'
+      },
+      {
+        type: 'line',
+        label: `${compareLabel} h`,
+        data: compareHoursData,
+        borderColor: 'rgba(144, 144, 184, 0.75)',
+        backgroundColor: 'transparent',
+        borderDash: [5, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.35,
+        fill: false,
+        yAxisID: 'y2'
+      }
+    ];
 
     this.charts.monthly = new Chart(ctx, {
       data: {
         labels,
         datasets: [
+          ...comparisonDatasets,
           {
             type: 'bar',
             label: 'Ingresos (€)',
