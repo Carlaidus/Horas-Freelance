@@ -1665,29 +1665,29 @@ const VFX = {
     });
 
     el.innerHTML = `
-      <div class="page-header">
-        <div style="display:flex;align-items:center;gap:12px">
-          <button class="btn btn-ghost btn-sm" onclick="VFX.renderProjects()" style="display:flex;align-items:center;gap:6px">
+      <div class="page-header project-detail-header">
+        <div class="project-detail-back">
+          <button class="btn btn-ghost btn-sm project-detail-action-btn" onclick="VFX.renderProjects()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
             Todos los proyectos
           </button>
         </div>
-        <div class="page-actions">
-          <button class="btn btn-ghost btn-sm" onclick="VFX.goToProjectInCurso(${p.id})" style="display:flex;align-items:center;gap:6px">
+        <div class="page-actions project-detail-actions">
+          <button class="btn btn-ghost btn-sm project-detail-action-btn" onclick="VFX.goToProjectInCurso(${p.id})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Ver en Proyecto en curso
+            En curso
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="VFX.modals.editProject(${p.id})" style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-ghost btn-sm project-detail-action-btn" onclick="VFX.modals.editProject(${p.id})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Editar
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="VFX.exportProject(${p.id})" style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-ghost btn-sm project-detail-action-btn" onclick="VFX.exportProject(${p.id})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar JSON
+            Exportar
           </button>
-          <button class="btn btn-primary btn-sm" onclick="VFX.printInvoice(${p.id})" style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-primary btn-sm project-detail-action-btn project-detail-primary-action" onclick="VFX.printInvoice(${p.id})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Generar factura
+            Factura
           </button>
         </div>
       </div>
