@@ -1692,14 +1692,35 @@ const VFX = {
         </div>
       </div>
 
-      <div style="margin-bottom:24px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-          <h2 style="font-size:22px;font-weight:700;color:var(--text)">${p.name}</h2>
+      <div class="project-detail-hero">
+        <div class="project-detail-hero-main">
+          <div>
+            <div class="project-detail-hero-label">Proyecto</div>
+            <h2>${p.name}</h2>
+          </div>
           <span class="badge ${st.cls}">${st.label}</span>
         </div>
-        <div style="color:var(--text2);font-size:14px">${p.company_name || '—'}</div>
-        ${p.purchase_order ? `<div style="color:var(--text3);font-size:12px;margin-top:4px;font-family:'Space Mono',monospace">PO: ${p.purchase_order}</div>` : ''}
-        ${p.notes ? `<div style="color:var(--text3);font-size:13px;margin-top:6px">${p.notes}</div>` : ''}
+        <div class="project-detail-hero-client">${p.company_name || '—'}</div>
+        ${p.notes ? `<div class="project-detail-hero-notes">${p.notes}</div>` : ''}
+        <div class="project-detail-hero-stats">
+          <div>
+            <span>Horas</span>
+            <strong>${this.fmt.hours(p.total_hours)}</strong>
+          </div>
+          <div>
+            <span>Ingresos</span>
+            <strong data-private>${this.fmt.currency(gross)}</strong>
+          </div>
+          <div>
+            <span>Inicio</span>
+            <strong>${this.fmt.date(p.first_entry_date || p.created_at)}</strong>
+          </div>
+          <div>
+            <span>Fin</span>
+            <strong class="${endDate ? '' : 'is-open'}">${endDate ? this.fmt.date(endDate) : 'En curso'}</strong>
+          </div>
+        </div>
+        ${p.purchase_order ? `<div class="project-detail-hero-po">PO: ${p.purchase_order}</div>` : ''}
       </div>
 
       <div class="table-container entries-table-container">

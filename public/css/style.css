@@ -352,6 +352,86 @@ input, select, textarea { font-family: inherit; }
 .project-detail-primary-action {
   min-width: 104px;
 }
+.project-detail-hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 24px;
+  padding: 18px 20px;
+}
+.project-detail-hero-main {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+.project-detail-hero-label {
+  color: var(--text3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.project-detail-hero h2 {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+.project-detail-hero-client {
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.project-detail-hero-notes {
+  border-left: 2px solid var(--border2);
+  color: var(--text3);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 10px;
+  padding-left: 10px;
+}
+.project-detail-hero-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 16px;
+}
+.project-detail-hero-stats div {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+.project-detail-hero-stats span {
+  color: var(--text3);
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.project-detail-hero-stats strong {
+  color: var(--text);
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.project-detail-hero-stats strong.is-open,
+.project-detail-hero-po {
+  color: var(--amber);
+}
+.project-detail-hero-po {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  margin-top: 10px;
+}
 
 /* ── CARDS ──────────────────────────────────────────────────── */
 .card {
@@ -949,6 +1029,22 @@ tbody td {
   }
   .project-detail-primary-action {
     grid-column: 1 / -1;
+  }
+  .project-detail-hero {
+    padding: 14px;
+  }
+  .project-detail-hero-main {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .project-detail-hero h2 {
+    font-size: 18px;
+  }
+  .project-detail-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .project-detail-hero-stats div {
+    padding: 8px;
   }
 }
 td.mono { font-family: 'Space Mono', monospace; }
