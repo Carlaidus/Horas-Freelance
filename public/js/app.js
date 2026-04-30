@@ -679,8 +679,8 @@ const VFX = {
         </div>
 
         <div class="summary-detail desktop-only">
-          <div>
-            <div class="cockpit-section-label" style="margin-bottom:8px">Desglose fiscal</div>
+          <div class="summary-panel">
+            <div class="cockpit-section-label">Desglose fiscal</div>
             <div class="cockpit-row">
               <span class="cockpit-row-label">Base imponible</span>
               <span class="cockpit-row-value" data-private>${this.fmt.currency(subtotal)}</span>
@@ -698,9 +698,10 @@ const VFX = {
               <span class="cockpit-row-value" data-private>${this.fmt.currency(dailyRate)}</span>
             </div>
           </div>
-          <div>
-            <div style="margin-top:16px">
-              <div class="cockpit-section-label" style="margin-bottom:8px">Meta de ingresos mensual</div>
+          <div class="summary-panel">
+            <div class="summary-goals">
+            <div>
+              <div class="cockpit-section-label">Meta de ingresos mensual</div>
               <div class="meter-bar-bg">
                 <div class="meter-bar-fill" style="width:${monthMeterPct}%;background:var(--green)"></div>
               </div>
@@ -708,7 +709,9 @@ const VFX = {
                 <span class="meter-label-text" data-private>${this.fmt.currency(monthEarnings)}</span>
                 <span class="meter-label-text" data-private>${this.fmt.currency(monthlyGoal)}</span>
               </div>
-              <div class="cockpit-section-label" style="margin-bottom:8px;margin-top:16px">Meta de ingresos anual</div>
+            </div>
+            <div>
+              <div class="cockpit-section-label">Meta de ingresos anual</div>
               <div class="meter-bar-bg">
                 <div class="meter-bar-fill" style="width:${meterPct}%;background:var(--cyan)"></div>
               </div>
@@ -717,9 +720,10 @@ const VFX = {
                 <span class="meter-label-text" data-private>${this.fmt.currency(annualGoal)}</span>
               </div>
             </div>
+            </div>
             ${project.budget_type === 'fixed' && project.fixed_budget ? `
-            <div style="margin-top:16px">
-              <div class="cockpit-section-label" style="margin-bottom:8px">Presupuesto cerrado</div>
+            <div class="summary-budget">
+              <div class="cockpit-section-label">Presupuesto cerrado</div>
               <div class="cockpit-row">
                 <span class="cockpit-row-label">Acordado</span>
                 <span class="cockpit-row-value gold" data-private>${this.fmt.currency(project.fixed_budget)}</span>
@@ -741,7 +745,10 @@ const VFX = {
               <div class="cockpit-section-label" style="margin-bottom:8px">Trabajo</div>
               <label class="summary-checkbox-label">
                 <input type="checkbox" ${project.is_completed ? 'checked' : ''} onchange="VFX.setProjectCompleted(${project.id}, this.checked)">
-                Trabajo finalizado
+                <span class="summary-switch-text">
+                  <strong>${project.is_completed ? 'Trabajo finalizado' : 'Trabajo abierto'}</strong>
+                  <small>${project.is_completed ? 'No se esperan más entradas' : 'Aún puede recibir entradas'}</small>
+                </span>
               </label>
             </div>
             <div>

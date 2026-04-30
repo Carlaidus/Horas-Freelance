@@ -1489,8 +1489,27 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .stat-pill-value.gold { color: var(--gold); font-size: 19px; }
 .summary-detail {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.summary-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+.summary-panel .cockpit-section-label {
+  margin-bottom: 10px;
+}
+.summary-goals {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.summary-budget {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding-top: 14px;
 }
 .summary-controls-row {
   display: grid;
@@ -1510,16 +1529,34 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .summary-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   color: var(--text2);
   cursor: pointer;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 400;
-  white-space: nowrap;
+  white-space: normal;
 }
-.summary-checkbox-label input { width: 14px; height: 14px; flex-shrink: 0; }
+.summary-checkbox-label input {
+  accent-color: var(--gold);
+  flex-shrink: 0;
+  height: 18px;
+  width: 18px;
+}
+.summary-switch-text {
+  display: grid;
+  gap: 1px;
+}
+.summary-switch-text strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.summary-switch-text small {
+  color: var(--text3);
+  font-size: 11px;
+}
 .summary-select {
   width: 100%;
   background: var(--card);
