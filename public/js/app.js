@@ -1472,8 +1472,11 @@ const VFX = {
   },
 
   async changeStatsCompare(mode) {
+    const scroller = document.querySelector('.main-content');
+    const scrollTop = scroller?.scrollTop || 0;
     this.state.statsCompareMode = mode;
-    this.renderStats();
+    await this.renderStats();
+    if (scroller) scroller.scrollTop = scrollTop;
   },
 
   async changeStatsProject(id) {
