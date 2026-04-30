@@ -28,6 +28,38 @@ window.CronorasProjectsView = {
       `;
     }).join('');
 
+    const mobileCards = projects.map(p => {
+      const st = VFX._projectStatus(p);
+      const endDate = p.completed_at || (p.is_completed || p.status === 'paid' ? p.last_entry_date : null);
+      return `
+        <button type="button" class="project-mobile-card" onclick="VFX.renderProjectDetail(${p.id})">
+          <div class="project-mobile-top">
+            <div>
+              <div class="project-mobile-label">Proyecto</div>
+              <div class="project-mobile-name">${p.name}</div>
+            </div>
+            <span class="badge ${st.cls}">${st.label}</span>
+          </div>
+          ${p.notes ? `<div class="project-mobile-notes">${p.notes}</div>` : ''}
+          <div class="project-mobile-client">${p.company_name || '—'}</div>
+          <div class="project-mobile-meta">
+            <span>Inicio ${VFX.fmt.date(p.first_entry_date || p.created_at)}</span>
+            <span>${endDate ? `Fin ${VFX.fmt.date(endDate)}` : 'En curso'}</span>
+          </div>
+          <div class="project-mobile-totals">
+            <div>
+              <span>Horas</span>
+              <strong>${VFX.fmt.hours(p.total_hours)}</strong>
+            </div>
+            <div>
+              <span>Ingresos</span>
+              <strong data-private>${VFX.fmt.currency(p.total_amount)}</strong>
+            </div>
+          </div>
+        </button>
+      `;
+    }).join('');
+
     el.innerHTML = `
       <div class="page-header">
         <div>
@@ -45,7 +77,7 @@ window.CronorasProjectsView = {
           <button class="btn btn-primary btn-lg" onclick="VFX.navigate('proyecto')">Ir a Proyecto en curso</button>
         </div>
       ` : `
-        <div class="table-container">
+        <div class="table-container projects-table-wrap">
           <table>
             <thead>
               <tr>
@@ -61,6 +93,7 @@ window.CronorasProjectsView = {
             <tbody>${rows}</tbody>
           </table>
         </div>
+        <div class="project-mobile-list">${mobileCards}</div>
       `}
     `;
   },
