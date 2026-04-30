@@ -1188,7 +1188,7 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, summary, previousSummary } = this.state.stats;
+    const { periodic, heatmap, clients, summary } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
     const unbilled      = Number(summary?.unbilled_earnings || 0);
@@ -1198,14 +1198,6 @@ const VFX = {
     const avgRate       = Number(summary?.avg_rate || 0);
     const totalProjects = Number(summary?.total_projects || 0);
     const totalClients  = Number(summary?.total_clients || 0);
-    const prev = previousSummary || {};
-    const trend = (current, previous) => {
-      const c = Number(current || 0);
-      const p = Number(previous || 0);
-      if (!p) return c ? '+100% ant.' : '0% ant.';
-      const pct = Math.round(((c - p) / Math.abs(p)) * 100);
-      return `${pct >= 0 ? '+' : ''}${pct}% ant.`;
-    };
 
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -1227,27 +1219,22 @@ const VFX = {
         <div class="metric-card">
           <div class="metric-label">Sin facturar</div>
           <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(unbilled)}</div>
-          <div class="metric-sub">${trend(unbilled, prev.unbilled_earnings)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Pendiente</div>
           <div class="metric-value" style="color:var(--red)" data-private>${this.fmt.currency(pendingAmount)}</div>
-          <div class="metric-sub">${trend(pendingAmount, prev.pending_amount)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Cobrado</div>
           <div class="metric-value" style="color:var(--green)" data-private>${this.fmt.currency(paidAmount)}</div>
-          <div class="metric-sub">${trend(paidAmount, prev.paid_amount)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Horas</div>
           <div class="metric-value" style="color:var(--cyan)">${this.fmt.hours(totalHours)}</div>
-          <div class="metric-sub">${trend(totalHours, prev.total_hours)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Tarifa media</div>
-          <div class="metric-value" style="font-size:clamp(17px,1.8vw,24px);white-space:normal;overflow-wrap:anywhere;line-height:1.08" data-private>${this.fmt.currency(avgRate * 8)}<span style="font-size:.72em;color:var(--text2)">/día</span></div>
-          <div class="metric-sub">${trend(avgRate, prev.avg_rate)}</div>
+          <div class="metric-value" style="font-size:clamp(13px,1.25vw,18px);white-space:nowrap;letter-spacing:0" data-private>${this.fmt.currency(avgRate * 8)}/día</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Proyectos</div>
