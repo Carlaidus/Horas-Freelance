@@ -269,12 +269,12 @@ input, select, textarea { font-family: inherit; }
   .timer-card > div:first-child { width: 100%; }
   .timer-card > div:first-child > div:first-child { justify-content: center; flex-wrap: wrap; }
   .timer-card > div:last-child { width: 100%; justify-content: center !important; }
-  .metric-card { padding: 10px 11px; width: 100%; }
+  .metric-card { min-height: 0; padding: 8px 10px; width: 100%; }
   .metric-label { font-size: 9px; letter-spacing: 1px; }
   .metric-value { font-size: clamp(14px, 4.4vw, 18px); line-height: 1.1; overflow-wrap: anywhere; }
-  .metric-sub { font-size: 10px; }
+  .metric-sub { font-size: 10px; margin-top: 1px; }
   .stats-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 16px; width: 100%; }
-  .stats-grid .chart-card { padding: 14px; max-width: 100%; overflow: hidden; }
+  .stats-grid .chart-card { grid-column: 1 / -1; padding: 14px; max-width: 100%; overflow: hidden; }
   .chart-head { align-items: flex-start; flex-direction: column; }
   .chart-compare { width: 100%; }
   .chart-compare button { flex: 1; min-width: 0; padding-left: 6px; padding-right: 6px; }
