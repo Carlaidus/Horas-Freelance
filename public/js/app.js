@@ -573,7 +573,7 @@ const VFX = {
     const timerIsForOtherProject = t.active && slot.timerProjectId && slot.timerProjectId !== slot.projectId;
 
     return `
-      <div class="timer-card ${isRunning ? 'active' : ''}" id="timer-card-${idx}" style="margin-top:14px">
+      <div class="timer-card ${isRunning ? 'active' : ''} ${t.active && t.paused ? 'paused' : ''}" id="timer-card-${idx}" style="margin-top:14px">
         <div>
           <div class="timer-label">
             SESIÓN DE TRABAJO${t.active ? (t.paused ? ' — PAUSADA' : ' — EN CURSO') : ''}
@@ -581,6 +581,9 @@ const VFX = {
           </div>
           <div class="timer-display ${isRunning ? 'running' : ''}" id="timer-display-${idx}">
             ${t.active ? this._slotFmt(idx) : '00:00:00'}
+          </div>
+          <div class="timer-status-line ${isRunning ? 'running' : t.active && t.paused ? 'paused' : ''}">
+            ${isRunning ? 'Registrando tiempo ahora' : t.active && t.paused ? 'Sesión pausada' : 'Listo para iniciar'}
           </div>
           ${!slot.projectId && !t.active ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Selecciona un proyecto para iniciar</div>` : ''}
           ${timerIsForOtherProject ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">Viendo entradas de: ${project?.name || '—'}</div>` : ''}
@@ -665,7 +668,7 @@ const VFX = {
             <div class="stat-pill-label">Días</div>
             <div class="stat-pill-value cyan">${totalDays.toFixed(2)} d</div>
           </div>
-          <div class="stat-pill desktop-only">
+          <div class="stat-pill">
             <div class="stat-pill-label">Entradas</div>
             <div class="stat-pill-value">${entries.length}</div>
           </div>

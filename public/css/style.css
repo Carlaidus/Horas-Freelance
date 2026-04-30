@@ -631,6 +631,9 @@ input, select, textarea { font-family: inherit; }
   margin-bottom: 18px;
 }
 .timer-card.active { border-color: var(--gold2); box-shadow: 0 0 20px var(--gold-glow); }
+.timer-card.paused {
+  border-color: rgba(255,159,67,0.35);
+}
 .timer-actions {
   align-items: center;
   display: flex;
@@ -647,6 +650,13 @@ input, select, textarea { font-family: inherit; }
 }
 .timer-display.running { color: var(--gold); animation: pulse-text 2s ease-in-out infinite; }
 .timer-label { font-size: 11px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+.timer-status-line {
+  color: var(--text3);
+  font-size: 11px;
+  margin-top: 3px;
+}
+.timer-status-line.running { color: var(--gold); }
+.timer-status-line.paused { color: var(--amber); }
 @keyframes pulse-text { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
 /* ── ENTRIES TABLE ──────────────────────────────────────────── */
@@ -662,6 +672,9 @@ input, select, textarea { font-family: inherit; }
   border-bottom: 1px solid var(--border);
 }
 .entry-table-actions { flex-wrap: wrap; justify-content: flex-end; }
+.entries-table-container .table-header {
+  gap: 12px;
+}
 .table-title { font-size: 13px; font-weight: 600; color: var(--text2); letter-spacing: 0.5px; }
 table {
   width: 100%;
@@ -1096,6 +1109,21 @@ tbody td {
   .current-project-slot {
     padding: 14px;
   }
+  .timer-card {
+    padding: 16px;
+  }
+  .timer-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .timer-actions .btn {
+    justify-content: center;
+    width: 100%;
+  }
+  .timer-actions .btn:only-child {
+    grid-column: 1 / -1;
+  }
   .project-bar {
     align-items: stretch;
     flex-wrap: wrap;
@@ -1127,6 +1155,16 @@ tbody td {
   }
   .summary-row span {
     max-width: 48%;
+  }
+  .entries-table-container .table-header {
+    align-items: stretch;
+  }
+  .entries-table-container .table-title {
+    line-height: 1.35;
+  }
+  .entries-table-container .entry-table-actions {
+    display: grid !important;
+    gap: 8px !important;
   }
 }
 td.mono { font-family: 'Space Mono', monospace; }
