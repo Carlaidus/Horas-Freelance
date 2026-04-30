@@ -671,7 +671,19 @@ input, select, textarea { font-family: inherit; }
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
 }
-.entry-table-actions { flex-wrap: wrap; justify-content: flex-end; }
+.entry-table-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.entry-bulk-action {
+  display: inline-flex;
+}
+.entry-bulk-action .btn {
+  width: 100%;
+}
 .entries-table-container .table-header {
   gap: 12px;
 }
@@ -1166,6 +1178,17 @@ tbody td {
     display: grid !important;
     gap: 8px !important;
   }
+  .entries-table-container .entry-table-actions .btn,
+  .entries-table-container .entry-bulk-action {
+    width: 100%;
+  }
+  .summary-stats .stat-pill-gold {
+    grid-column: 1 / -1;
+  }
+  .summary-select,
+  .summary-checkbox-label {
+    min-height: 40px;
+  }
 }
 td.mono { font-family: 'Space Mono', monospace; }
 td.dim { color: var(--text2); }
@@ -1472,11 +1495,17 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .summary-controls-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 12px;
   align-items: start;
 }
 @media (max-width: 560px) {
   .summary-controls-row { grid-template-columns: 1fr; gap: 14px; }
+}
+.summary-controls-row > div {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
 }
 .summary-checkbox-label {
   display: flex;

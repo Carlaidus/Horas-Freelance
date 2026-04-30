@@ -573,7 +573,7 @@ const VFX = {
     const timerIsForOtherProject = t.active && slot.timerProjectId && slot.timerProjectId !== slot.projectId;
 
     return `
-      <div class="timer-card ${isRunning ? 'active' : ''} ${t.active && t.paused ? 'paused' : ''}" id="timer-card-${idx}" style="margin-top:14px">
+      <div class="timer-card ${isRunning ? 'active' : ''} ${t.active && t.paused ? 'paused' : ''}" id="timer-card-${idx}">
         <div>
           <div class="timer-label">
             SESIÓN DE TRABAJO${t.active ? (t.paused ? ' — PAUSADA' : ' — EN CURSO') : ''}
@@ -916,20 +916,20 @@ const VFX = {
 
     return `
       <div class="table-container entries-table-container">
-        <div class="table-header">
+        <div class="table-header entries-header">
           <span class="table-title">ENTRADAS DE TIEMPO — ${entries.length} registro${entries.length !== 1 ? 's' : ''}</span>
-          <div class="entry-table-actions" style="display:flex;gap:6px;align-items:center">
+          <div class="entry-table-actions">
             <button class="btn btn-ghost btn-sm" onclick="VFX.state.currentProjectId=${projectId};${slotIdx!==null?`VFX._pendingSlotIdx=${slotIdx};`:``}VFX.modals.addEntry()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               Añadir entrada
             </button>
-            <span id="bulk-edit-btn-${projectId}" style="display:none">
+            <span class="entry-bulk-action" id="bulk-edit-btn-${projectId}" style="display:none">
               <button class="btn btn-ghost btn-sm" onclick="VFX.editSelectedEntry(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Editar seleccionada
               </button>
             </span>
-            <span id="bulk-delete-btn-${projectId}" style="display:none">
+            <span class="entry-bulk-action" id="bulk-delete-btn-${projectId}" style="display:none">
               <button class="btn btn-danger btn-sm" onclick="VFX.deleteSelectedEntries(${projectId})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 Eliminar seleccionadas
