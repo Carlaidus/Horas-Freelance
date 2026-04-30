@@ -1246,7 +1246,7 @@ const VFX = {
         </div>
         <div class="metric-card">
           <div class="metric-label">Tarifa media</div>
-          <div class="metric-value" style="font-size:clamp(18px,2vw,26px)" data-private>${this.fmt.currency(avgRate * 8)}/día</div>
+          <div class="metric-value" style="font-size:clamp(17px,1.8vw,24px);white-space:normal;overflow-wrap:anywhere;line-height:1.08" data-private>${this.fmt.currency(avgRate * 8)}<span style="font-size:.72em;color:var(--text2)">/día</span></div>
           <div class="metric-sub">${trend(avgRate, prev.avg_rate)}</div>
         </div>
         <div class="metric-card">
