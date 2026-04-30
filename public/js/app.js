@@ -1877,6 +1877,7 @@ const VFX = {
     });
     overlay.classList.add('open');
     setTimeout(() => {
+      if (window.matchMedia('(max-width: 700px)').matches) return;
       const first = document.querySelector('.modal input[autofocus], .modal input:not([type="hidden"])');
       if (first) first.focus();
     }, 100);
@@ -1886,6 +1887,9 @@ const VFX = {
     if (e) {
       if (e.target !== document.getElementById('modal-overlay')) return;
       if (this._modalDragFromInside) { this._modalDragFromInside = false; return; }
+    }
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
     }
     document.getElementById('modal-overlay').classList.remove('open');
   },
