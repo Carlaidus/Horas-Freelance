@@ -1458,7 +1458,21 @@ const VFX = {
       if (rangeEl) rangeEl.style.display = 'flex';
       return;
     }
-    this.renderStats();
+    const rangeEl = document.getElementById('stats-custom-range');
+    if (rangeEl) rangeEl.style.display = 'none';
+    const buttons = document.querySelectorAll('.stats-periods button');
+    buttons.forEach(btn => {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-ghost');
+    });
+    const activeBtn = [...buttons].find(btn => btn.getAttribute('onclick')?.includes(`'${period}'`));
+    if (activeBtn) {
+      activeBtn.classList.add('btn-primary');
+      activeBtn.classList.remove('btn-ghost');
+    }
+    await this.loadStats();
+    if (this.state.statsView === 'general') this._renderStatsGeneral();
+    else this._renderStatsProject(this.state.statsProjectId);
   },
 
   async applyCustomRange() {
