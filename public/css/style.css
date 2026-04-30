@@ -1349,6 +1349,115 @@ select option { background: var(--card2); }
 .chart-compare button.active { background: var(--card2); color: var(--gold); }
 .chart-wrap { position: relative; }
 
+@media (max-width: 768px) {
+  #view-stats {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #view-stats * {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  #view-stats .stats-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #view-stats .stats-periods {
+    gap: 5px;
+  }
+
+  #view-stats .stats-view-tabs {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  #view-stats .stats-view-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 10px;
+  }
+
+  #view-stats .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  #view-stats .metric-card {
+    min-height: 0;
+    padding: 7px 9px;
+    width: 100%;
+  }
+
+  #view-stats .metric-label {
+    font-size: 8px;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+  }
+
+  #view-stats .metric-value {
+    font-size: clamp(12px, 3.9vw, 16px);
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  #view-stats .metric-sub {
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  #view-stats .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  #view-stats .stats-grid .chart-card,
+  #view-stats .stats-grid .chart-card.full {
+    grid-column: 1 / -1;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 14px;
+  }
+
+  #view-stats .chart-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #view-stats .chart-compare {
+    width: 100%;
+  }
+
+  #view-stats .chart-compare button {
+    flex: 1;
+    min-width: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  #view-stats .btn-sm {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  #view-stats .chart-wrap {
+    height: 220px !important;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  #view-stats canvas {
+    max-width: 100% !important;
+  }
+}
+
 /* HEATMAP */
 .heatmap-scroll { overflow-x: auto; padding-bottom: 8px; }
 .heatmap-scroll::-webkit-scrollbar { height: 4px; }
