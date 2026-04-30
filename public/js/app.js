@@ -431,6 +431,15 @@ const VFX = {
     this.state.stats = { periodic, heatmap, clients, summary, previousSummary, paidMonthly, comparison };
   },
 
+  async loadStatsComparison() {
+    if (this.state.statsCompareMode === 'none') return [];
+    const range = this.periodDates(this.state.statsPeriod);
+    const compareRange = this.state.statsCompareMode === 'year'
+      ? this.previousYearDates(range)
+      : this.previousPeriodDates(range);
+    return this.api.get(`/api/stats/monthly?from=${compareRange.from}&to=${compareRange.to}&group=${compareRange.group}`);
+  },
+
   async loadTreasury() {
     try {
       const data = await this.api.get('/api/stats/treasury');
@@ -1290,7 +1299,7 @@ const VFX = {
         <div class="chart-card full">
           <div class="chart-head">
             <div class="chart-title">Ingresos y horas por período</div>
-            <div class="chart-compare" aria-label="Comparar gráfico">
+            <div class="chart-compare" id="stats-compare-controls" aria-label="Comparar gráfico">
               <button class="${this.state.statsCompareMode === 'none' ? 'active' : ''}" title="Sin comparativa" onclick="VFX.changeStatsCompare('none')">Actual</button>
               <button class="${this.state.statsCompareMode === 'previous' ? 'active' : ''}" title="Comparar con el período anterior" onclick="VFX.changeStatsCompare('previous')">Anterior</button>
               <button class="${this.state.statsCompareMode === 'year' ? 'active' : ''}" title="Comparar con el año anterior" onclick="VFX.changeStatsCompare('year')">Año -1</button>
@@ -1472,11 +1481,17 @@ const VFX = {
   },
 
   async changeStatsCompare(mode) {
-    const scroller = document.querySelector('.main-content');
-    const scrollTop = scroller?.scrollTop || 0;
     this.state.statsCompareMode = mode;
-    await this.renderStats();
-    if (scroller) scroller.scrollTop = scrollTop;
+    this.state.stats.comparison = await this.loadStatsComparison();
+    const controls = document.getElementById('stats-compare-controls');
+    if (controls) {
+      controls.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+      const idx = mode === 'previous' ? 1 : mode === 'year' ? 2 : 0;
+      controls.querySelectorAll('button')[idx]?.classList.add('active');
+    }
+    const { periodic, comparison } = this.state.stats;
+    const { group } = this.periodDates(this.state.statsPeriod);
+    this.renderPeriodicChart(periodic || [], group, comparison || []);
   },
 
   async changeStatsProject(id) {
