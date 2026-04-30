@@ -9,7 +9,7 @@ const VFX = {
   state: {
     view: 'dashboard',
     statsView: 'general',
-    statsPeriod: '1y',
+    statsPeriod: '1m',
     statsCustomFrom: '',
     statsCustomTo: '',
     statsProjectId: null,
@@ -372,7 +372,7 @@ const VFX = {
       case '6m':  return { from: ago(180), to: today, group: 'week' };
       case '2y':  return { from: twoYearsAgo, to: today, group: 'month' };
       case 'all': return { from: '2000-01-01', to: today, group: 'month' };
-      default:    return { from: yearStart, to: today, group: 'month' }; // '1y'
+      default:    return { from: ago(30), to: today, group: 'day' }; // '1m'
     }
   },
 
