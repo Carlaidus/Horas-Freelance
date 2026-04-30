@@ -85,7 +85,31 @@ const getSummaryRange = async (userId, from, to) => {
       COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_earnings,
       COUNT(DISTINCT p.id) as total_projects,
       COUNT(DISTINCT p.company_id) as total_clients,
-      COALESCE(AVG(p.hourly_rate), 0) as avg_rate
+      COALESCE(AVG(p.hourly_rate), 0) as avg_rate,
+      COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) FILTER (
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM invoice_lines il
+          JOIN invoices i ON i.id = il.invoice_id
+          WHERE il.project_id = p.id AND i.status IN ('issued', 'paid')
+        )
+      ), 0) as unbilled_earnings,
+      COALESCE((
+        SELECT SUM(i.total)
+        FROM invoices i
+        WHERE i.user_id = $1
+          AND i.status = 'issued'
+          AND i.issue_date >= $2
+          AND i.issue_date <= $3
+      ), 0) as pending_amount,
+      COALESCE((
+        SELECT SUM(i.total)
+        FROM invoices i
+        WHERE i.user_id = $1
+          AND i.status = 'paid'
+          AND i.updated_at::date >= $2
+          AND i.updated_at::date <= $3
+      ), 0) as paid_amount
     FROM entries e
     JOIN projects p ON e.project_id = p.id
     WHERE p.user_id = $1 AND e.date >= $2 AND e.date <= $3

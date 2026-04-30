@@ -376,15 +376,30 @@ const VFX = {
     }
   },
 
+  previousPeriodDates(range) {
+    const fromDate = new Date(`${range.from}T12:00:00`);
+    const toDate = new Date(`${range.to}T12:00:00`);
+    const days = Math.max(1, Math.round((toDate - fromDate) / 86400000) + 1);
+    const prevTo = new Date(fromDate);
+    prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo);
+    prevFrom.setDate(prevFrom.getDate() - days + 1);
+    const fmt = d => d.toISOString().split('T')[0];
+    return { from: fmt(prevFrom), to: fmt(prevTo), group: range.group };
+  },
+
   async loadStatsRange(period) {
-    const { from, to, group } = this.periodDates(period);
-    const [periodic, heatmap, clients, summary] = await Promise.all([
+    const range = this.periodDates(period);
+    const { from, to, group } = range;
+    const prev = this.previousPeriodDates(range);
+    const [periodic, heatmap, clients, summary, previousSummary] = await Promise.all([
       this.api.get(`/api/stats/monthly?from=${from}&to=${to}&group=${group}`),
       this.api.get('/api/stats/heatmap'),
       this.api.get(`/api/stats/clients?from=${from}&to=${to}`),
-      this.api.get(`/api/stats/summary?from=${from}&to=${to}`)
+      this.api.get(`/api/stats/summary?from=${from}&to=${to}`),
+      this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`)
     ]);
-    this.state.stats = { periodic, heatmap, clients, summary };
+    this.state.stats = { periodic, heatmap, clients, summary, previousSummary };
   },
 
   async loadTreasury() {
@@ -1173,14 +1188,24 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, summary } = this.state.stats;
+    const { periodic, heatmap, clients, summary, previousSummary } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
-    const totalEarnings = summary?.total_earnings || 0;
-    const totalHours    = summary?.total_hours || 0;
-    const avgRate       = summary?.avg_rate || 0;
-    const totalProjects = summary?.total_projects || 0;
-    const totalClients  = summary?.total_clients || 0;
+    const unbilled      = Number(summary?.unbilled_earnings || 0);
+    const pendingAmount = Number(summary?.pending_amount || 0);
+    const paidAmount    = Number(summary?.paid_amount || 0);
+    const totalHours    = Number(summary?.total_hours || 0);
+    const avgRate       = Number(summary?.avg_rate || 0);
+    const totalProjects = Number(summary?.total_projects || 0);
+    const totalClients  = Number(summary?.total_clients || 0);
+    const prev = previousSummary || {};
+    const trend = (current, previous) => {
+      const c = Number(current || 0);
+      const p = Number(previous || 0);
+      if (!p) return c ? '+100% ant.' : '0% ant.';
+      const pct = Math.round(((c - p) / Math.abs(p)) * 100);
+      return `${pct >= 0 ? '+' : ''}${pct}% ant.`;
+    };
 
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -1200,19 +1225,29 @@ const VFX = {
     document.getElementById('stats-content').innerHTML = `
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">Ingresos (período)</div>
-          <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(totalEarnings)}</div>
-          <div class="metric-sub">bruto antes de IRPF</div>
+          <div class="metric-label">Sin facturar</div>
+          <div class="metric-value" style="color:var(--gold)" data-private>${this.fmt.currency(unbilled)}</div>
+          <div class="metric-sub">${trend(unbilled, prev.unbilled_earnings)}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Horas trabajadas</div>
+          <div class="metric-label">Pendiente</div>
+          <div class="metric-value" style="color:var(--red)" data-private>${this.fmt.currency(pendingAmount)}</div>
+          <div class="metric-sub">${trend(pendingAmount, prev.pending_amount)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Cobrado</div>
+          <div class="metric-value" style="color:var(--green)" data-private>${this.fmt.currency(paidAmount)}</div>
+          <div class="metric-sub">${trend(paidAmount, prev.paid_amount)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Horas</div>
           <div class="metric-value" style="color:var(--cyan)">${this.fmt.hours(totalHours)}</div>
-          <div class="metric-sub">${(totalHours/8).toFixed(1)} días</div>
+          <div class="metric-sub">${trend(totalHours, prev.total_hours)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Tarifa media</div>
-          <div class="metric-value" data-private>${this.fmt.currency(avgRate * 8)}/día</div>
-          <div class="metric-sub">media entre proyectos</div>
+          <div class="metric-value" style="font-size:clamp(18px,2vw,26px)" data-private>${this.fmt.currency(avgRate * 8)}/día</div>
+          <div class="metric-sub">${trend(avgRate, prev.avg_rate)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Proyectos</div>
