@@ -117,6 +117,29 @@ const getSummaryRange = async (userId, from, to) => {
   return r.rows[0];
 };
 
+const getPaidMonthlyStats = async (userId) => {
+  const r = await q(`
+    WITH months AS (
+      SELECT generate_series(
+        date_trunc('month', CURRENT_DATE) - INTERVAL '11 months',
+        date_trunc('month', CURRENT_DATE),
+        INTERVAL '1 month'
+      )::date AS month_start
+    )
+    SELECT
+      TO_CHAR(m.month_start, 'YYYY-MM') as period,
+      COALESCE(SUM(i.total), 0) as paid
+    FROM months m
+    LEFT JOIN invoices i
+      ON i.user_id = $1
+      AND i.status = 'paid'
+      AND date_trunc('month', i.updated_at)::date = m.month_start
+    GROUP BY m.month_start
+    ORDER BY m.month_start ASC
+  `, [userId]);
+  return r.rows;
+};
+
 const getClientStatsRange = async (userId, from, to) => {
   const r = await q(`
     SELECT c.name as company, c.id as company_id,
@@ -197,5 +220,5 @@ const getTreasuryData = async (userId) => {
 module.exports = {
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
-  getProjectStatsDetail, getTreasuryData
+  getPaidMonthlyStats, getProjectStatsDetail, getTreasuryData
 };

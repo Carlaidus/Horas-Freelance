@@ -32,6 +32,11 @@ const summary = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+const paidMonthly = async (req, res) => {
+  try { res.json(await db.getPaidMonthlyStats(getUserId(req))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+};
+
 const projectDetail = async (req, res) => {
   try {
     const { from, to, group } = req.query;
@@ -44,4 +49,4 @@ const treasury = async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { monthly, heatmap, clients, summary, projectDetail, treasury };
+module.exports = { monthly, heatmap, clients, summary, paidMonthly, projectDetail, treasury };

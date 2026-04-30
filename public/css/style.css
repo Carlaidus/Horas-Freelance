@@ -474,16 +474,21 @@ input, select, textarea { font-family: inherit; }
 .stats-toolbar {
   align-items: center;
   display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 14px;
 }
 .stats-periods {
   align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   display: flex;
-  flex: 1;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
+  justify-content: center;
+  padding: 5px;
 }
 .stats-view-tabs {
   background: var(--bg);
@@ -1801,6 +1806,7 @@ select option { background: var(--card2); }
 
   #view-stats .stats-periods {
     gap: 5px;
+    width: 100%;
   }
 
   #view-stats .stats-view-tabs {

@@ -413,12 +413,13 @@ const VFX = {
     const range = this.periodDates(period);
     const { from, to, group } = range;
     const prev = this.previousPeriodDates(range);
-    const [periodic, heatmap, clients, summary, previousSummary] = await Promise.all([
+    const [periodic, heatmap, clients, summary, previousSummary, paidMonthly] = await Promise.all([
       this.api.get(`/api/stats/monthly?from=${from}&to=${to}&group=${group}`),
       this.api.get('/api/stats/heatmap'),
       this.api.get(`/api/stats/clients?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${from}&to=${to}`),
-      this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`)
+      this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`),
+      this.api.get('/api/stats/paid-monthly')
     ]);
     let comparison = [];
     if (this.state.statsCompareMode !== 'none') {
@@ -427,7 +428,7 @@ const VFX = {
         : prev;
       comparison = await this.api.get(`/api/stats/monthly?from=${compareRange.from}&to=${compareRange.to}&group=${compareRange.group}`);
     }
-    this.state.stats = { periodic, heatmap, clients, summary, previousSummary, comparison };
+    this.state.stats = { periodic, heatmap, clients, summary, previousSummary, paidMonthly, comparison };
   },
 
   async loadTreasury() {
@@ -1230,7 +1231,7 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, summary, comparison } = this.state.stats;
+    const { periodic, heatmap, clients, summary, paidMonthly, comparison } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
     const unbilled      = Number(summary?.unbilled_earnings || 0);
@@ -1297,6 +1298,12 @@ const VFX = {
           </div>
           <div class="chart-wrap" style="height:200px">
             <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+        <div class="chart-card full">
+          <div class="chart-title">Cobrado por mes — últimos 12 meses</div>
+          <div class="chart-wrap" style="height:190px">
+            <canvas id="chart-paid-monthly"></canvas>
           </div>
         </div>
         <div class="chart-card full">
@@ -1374,6 +1381,7 @@ const VFX = {
     `;
     if (this.applyPrivacy) this.applyPrivacy();
     this.renderPeriodicChart(periodic, group, comparison || []);
+    this.renderPaidMonthlyChart(paidMonthly || []);
     this.renderHeatmap(heatmap);
     this.renderClientBars(clients);
   },
@@ -1576,6 +1584,52 @@ const VFX = {
             position: 'right',
             grid: { drawOnChartArea: false },
             ticks: { color: '#4ecdc4', font: { family: 'Space Mono', size: 10 }, callback: v => `${v}h` }
+          }
+        }
+      }
+    });
+  },
+
+  renderPaidMonthlyChart(data = []) {
+    const ctx = document.getElementById('chart-paid-monthly');
+    if (!ctx) return;
+    if (this.charts.paidMonthly) this.charts.paidMonthly.destroy();
+    const labels = data.map(m => this.fmt.month(m.period));
+    const paidData = data.map(m => Number(m.paid || 0));
+
+    this.charts.paidMonthly = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Cobrado (€)',
+          data: paidData,
+          backgroundColor: 'rgba(82, 232, 117, 0.2)',
+          borderColor: 'rgba(82, 232, 117, 0.8)',
+          borderWidth: 1,
+          borderRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#9090b8', font: { family: 'Space Grotesk' }, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: '#13132a',
+            borderColor: '#242445',
+            borderWidth: 1,
+            titleColor: '#dde0f5',
+            bodyColor: '#9090b8',
+            callbacks: { label: ctx => `Cobrado: ${this.fmt.currency(ctx.parsed.y || 0)}` }
+          }
+        },
+        scales: {
+          x: { grid: { color: '#1a1a35' }, ticks: { color: '#555580', font: { family: 'Space Grotesk', size: 11 } } },
+          y: {
+            beginAtZero: true,
+            grid: { color: '#1a1a35' },
+            ticks: { color: '#9090b8', font: { family: 'Space Mono', size: 10 }, callback: v => `${v}€` }
           }
         }
       }
