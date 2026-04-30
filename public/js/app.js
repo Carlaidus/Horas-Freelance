@@ -189,6 +189,17 @@ const VFX = {
     }
   },
 
+  _clearEntrySelection(id) {
+    const entryId = Number(id);
+    this._selectedEntryIdsByProject.forEach(set => set.delete(entryId));
+    document.querySelectorAll(`.entry-cb[data-id="${entryId}"], .project-detail-entry-cb[data-id="${entryId}"]`).forEach(cb => {
+      cb.checked = false;
+      const projectId = Number(cb.dataset.project);
+      if (cb.classList.contains('project-detail-entry-cb')) this._onProjectDetailEntryCbChange(projectId);
+      else this._onEntryCbChange(projectId);
+    });
+  },
+
   togglePrivacy:          window.CronorasPrivacy.togglePrivacy,
   applyPrivacy:           window.CronorasPrivacy.applyPrivacy,
 
@@ -756,11 +767,11 @@ const VFX = {
         <div class="summary-actions" style="margin-top:16px">
           <button class="btn btn-ghost" onclick="VFX.exportProject(${project.id})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar JSON
+            Exportar
           </button>
           <button class="btn btn-ghost" onclick="VFX.printInvoice(${project.id})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir / PDF
+            Factura
           </button>
         </div>
         </div><!-- /summary-collapsible -->
@@ -2027,6 +2038,7 @@ const VFX = {
     });
     const slot = this.state.slots.find(s => s.entries?.some(e => e.id === id));
     const projectId = oldProjectId || slot?.projectId || this.state.currentProjectId || this._projectDetailId;
+    this._clearEntrySelection(id);
     if (projectId) {
       const entries = await this.api.get(`/api/projects/${projectId}/entries`);
       this.state.entries = entries;
