@@ -617,6 +617,10 @@ input, select, textarea { font-family: inherit; }
   margin-bottom: 16px;
   padding: 18px;
 }
+.add-project-view-btn {
+  margin-top: 6px;
+  margin-bottom: 32px;
+}
 
 /* ── TIMER CARD ─────────────────────────────────────────────── */
 .timer-card {
@@ -1120,6 +1124,11 @@ tbody td {
   }
   .current-project-slot {
     padding: 14px;
+  }
+  .add-project-view-btn {
+    justify-content: center;
+    margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    width: 100%;
   }
   .timer-card {
     padding: 16px;
