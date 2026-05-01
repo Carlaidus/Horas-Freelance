@@ -612,18 +612,18 @@ input, select, textarea { font-family: inherit; }
 .project-bar select option { background: var(--card2); color: var(--text); }
 .project-bar-remove {
   align-items: center;
-  background: rgba(255, 85, 118, 0.08);
-  border-color: rgba(255, 85, 118, 0.24);
-  color: var(--red);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border2);
+  color: var(--text2);
   display: inline-flex;
   flex: 0 0 auto;
   gap: 6px;
   margin-left: auto;
 }
 .project-bar-remove:hover {
-  background: rgba(255, 85, 118, 0.14);
-  border-color: rgba(255, 85, 118, 0.42);
-  color: var(--red);
+  background: rgba(255, 85, 118, 0.1);
+  border-color: rgba(255, 85, 118, 0.34);
+  color: var(--text);
 }
 .project-bar-remove span {
   font-size: 11px;
@@ -1180,10 +1180,12 @@ tbody td {
     font-size: 14px;
   }
   .project-bar-remove {
-    height: 36px;
+    flex-basis: 100%;
+    height: 38px;
     justify-content: center;
-    margin-left: 0;
-    min-width: 116px;
+    margin: 4px auto 0;
+    max-width: 180px;
+    min-width: 0;
     padding: 0 12px;
   }
   .project-summary-grid {
