@@ -611,9 +611,23 @@ input, select, textarea { font-family: inherit; }
 }
 .project-bar select option { background: var(--card2); color: var(--text); }
 .project-bar-remove {
+  align-items: center;
+  background: rgba(255, 85, 118, 0.08);
+  border-color: rgba(255, 85, 118, 0.24);
   color: var(--red);
+  display: inline-flex;
   flex: 0 0 auto;
+  gap: 6px;
   margin-left: auto;
+}
+.project-bar-remove:hover {
+  background: rgba(255, 85, 118, 0.14);
+  border-color: rgba(255, 85, 118, 0.42);
+  color: var(--red);
+}
+.project-bar-remove span {
+  font-size: 11px;
+  font-weight: 700;
 }
 .current-project-slot {
   background: var(--card);
@@ -1166,9 +1180,11 @@ tbody td {
     font-size: 14px;
   }
   .project-bar-remove {
-    height: 34px;
+    height: 36px;
+    justify-content: center;
     margin-left: 0;
-    width: 34px;
+    min-width: 116px;
+    padding: 0 12px;
   }
   .project-summary-grid {
     grid-template-columns: minmax(0, 1fr);
