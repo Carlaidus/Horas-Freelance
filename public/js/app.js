@@ -1714,10 +1714,10 @@ const VFX = {
       weeks.push(week);
     }
 
-    grid.innerHTML = weeks.map(week => `
+    grid.innerHTML = weeks.map((week, weekIndex) => `
       <div class="heatmap-col">
         ${week.map((day, dayIndex) => `
-          <div class="heatmap-cell ${dayIndex < 2 ? 'tip-bottom' : ''}"
+          <div class="heatmap-cell ${dayIndex < 2 ? 'tip-bottom' : ''} ${weekIndex < 3 ? 'tip-right' : ''} ${weekIndex >= weeks.length - 3 ? 'tip-left' : ''}"
             data-hours="${day.hours}"
             data-level="${day.future ? -1 : day.level}"
             style="${day.future ? 'opacity:0.2' : ''}"

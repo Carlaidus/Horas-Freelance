@@ -2076,6 +2076,15 @@ select option { background: var(--card2); }
   bottom: auto;
   top: calc(100% + 6px);
 }
+[data-tip].tip-left:hover::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+[data-tip].tip-right:hover::after {
+  left: 0;
+  transform: none;
+}
 
 /* ── ANIMATE NUMBERS ────────────────────────────────────────── */
 .animating { transition: all 0.3s ease; }
