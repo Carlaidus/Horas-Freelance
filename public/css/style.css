@@ -2051,6 +2051,10 @@ select option { background: var(--card2); }
   padding: 4px 8px; border-radius: 5px; z-index: 100;
   pointer-events: none;
 }
+[data-tip].tip-bottom:hover::after {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
 
 /* ── ANIMATE NUMBERS ────────────────────────────────────────── */
 .animating { transition: all 0.3s ease; }
