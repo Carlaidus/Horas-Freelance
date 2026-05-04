@@ -173,6 +173,42 @@ const getProjectStatsRange = async (userId, from, to) => {
   return r.rows;
 };
 
+const getCompanyDayRateStatsRange = async (userId, from, to) => {
+  const r = await q(`
+    SELECT c.id as company_id, c.name as company,
+      SUM(e.hours) as hours,
+      SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) as earnings,
+      (SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) / NULLIF(SUM(e.hours), 0) * 8) as day_rate,
+      COUNT(DISTINCT p.id) as projects
+    FROM entries e
+    JOIN projects p ON e.project_id = p.id
+    JOIN companies c ON p.company_id = c.id
+    WHERE p.user_id = $1 AND e.date >= $2 AND e.date <= $3
+    GROUP BY c.id, c.name
+    HAVING SUM(e.hours) > 0
+    ORDER BY day_rate DESC
+    LIMIT 5
+  `, [userId, from, to]);
+  return r.rows;
+};
+
+const getProjectHoursStatsRange = async (userId, from, to) => {
+  const r = await q(`
+    SELECT p.id as project_id, p.name as project, c.name as company,
+      SUM(e.hours) as hours,
+      SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) as earnings,
+      COUNT(*) as entries
+    FROM entries e
+    JOIN projects p ON e.project_id = p.id
+    LEFT JOIN companies c ON p.company_id = c.id
+    WHERE p.user_id = $1 AND e.date >= $2 AND e.date <= $3
+    GROUP BY p.id, p.name, c.name
+    ORDER BY hours DESC
+    LIMIT 5
+  `, [userId, from, to]);
+  return r.rows;
+};
+
 const getProjectStatsDetail = async (projectId, from, to, group = 'month') => {
   const fmt = group === 'day'  ? `TO_CHAR(e.date::date, 'YYYY-MM-DD')`
             : group === 'week' ? `TO_CHAR(e.date::date, 'IYYY-IW')`
@@ -237,5 +273,6 @@ const getTreasuryData = async (userId) => {
 module.exports = {
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
-  getProjectStatsRange, getPaidMonthlyStats, getProjectStatsDetail, getTreasuryData
+  getProjectStatsRange, getCompanyDayRateStatsRange, getProjectHoursStatsRange,
+  getPaidMonthlyStats, getProjectStatsDetail, getTreasuryData
 };

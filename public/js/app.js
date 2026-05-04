@@ -22,7 +22,7 @@ const VFX = {
     entries: [],
     invoices: [],
     user: {},
-    stats: { periodic: [], heatmap: [], clients: [], projects: [], summary: {} },
+    stats: { periodic: [], heatmap: [], clients: [], projects: [], companyDayRates: [], projectHours: [], summary: {} },
     treasury: [],
     plan: 'free',
     role: 'user',
@@ -413,11 +413,13 @@ const VFX = {
     const range = this.periodDates(period);
     const { from, to, group } = range;
     const prev = this.previousPeriodDates(range);
-    const [periodic, heatmap, clients, projects, summary, previousSummary, paidMonthly] = await Promise.all([
+    const [periodic, heatmap, clients, projects, companyDayRates, projectHours, summary, previousSummary, paidMonthly] = await Promise.all([
       this.api.get(`/api/stats/monthly?from=${from}&to=${to}&group=${group}`),
       this.api.get('/api/stats/heatmap'),
       this.api.get(`/api/stats/clients?from=${from}&to=${to}`),
       this.api.get(`/api/stats/projects?from=${from}&to=${to}`),
+      this.api.get(`/api/stats/company-day-rates?from=${from}&to=${to}`),
+      this.api.get(`/api/stats/project-hours?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`),
       this.api.get('/api/stats/paid-monthly')
@@ -429,7 +431,7 @@ const VFX = {
         : prev;
       comparison = await this.api.get(`/api/stats/monthly?from=${compareRange.from}&to=${compareRange.to}&group=${compareRange.group}`);
     }
-    this.state.stats = { periodic, heatmap, clients, projects, summary, previousSummary, paidMonthly, comparison };
+    this.state.stats = { periodic, heatmap, clients, projects, companyDayRates, projectHours, summary, previousSummary, paidMonthly, comparison };
   },
 
   async loadStatsComparison() {
@@ -1238,7 +1240,7 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, projects, summary, paidMonthly, comparison } = this.state.stats;
+    const { periodic, heatmap, clients, projects, companyDayRates, projectHours, summary, paidMonthly, comparison } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
     const unbilled      = Number(summary?.unbilled_earnings || 0);
@@ -1337,6 +1339,14 @@ const VFX = {
           ${(projects || []).length > 0 ? `<div class="client-bars" id="project-bars"></div>` : `<p style="color:var(--text3);font-size:13px">Sin datos en este período</p>`}
         </div>
         <div class="chart-card">
+          <div class="chart-title">Mejor precio por jornada</div>
+          ${(companyDayRates || []).length > 0 ? `<div class="client-bars" id="company-day-rate-bars"></div>` : `<p style="color:var(--text3);font-size:13px">Sin datos en este período</p>`}
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Trabajos con más horas</div>
+          ${(projectHours || []).length > 0 ? `<div class="client-bars" id="project-hour-bars"></div>` : `<p style="color:var(--text3);font-size:13px">Sin datos en este período</p>`}
+        </div>
+        <div class="chart-card">
           <div class="chart-title">Proyección del mes actual</div>
           <div class="projection-body">
             <div class="projection-ring">
@@ -1396,6 +1406,8 @@ const VFX = {
     this.renderHeatmap(heatmap);
     this.renderClientBars(clients);
     this.renderProjectBars(projects || []);
+    this.renderCompanyDayRateBars(companyDayRates || []);
+    this.renderProjectHourBars(projectHours || []);
   },
 
   async _renderStatsProject(projectId) {
@@ -1750,6 +1762,48 @@ const VFX = {
             <div class="client-bar-fill" style="width:${max > 0 ? (earnings/max*100) : 0}%"></div>
           </div>
           <div style="font-size:11px;color:var(--text3)">${p.company || 'Sin cliente'} · ${this.fmt.hours(p.hours)}</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderCompanyDayRateBars(companies) {
+    const el = document.getElementById('company-day-rate-bars');
+    if (!el || !companies.length) return;
+    const max = Math.max(...companies.map(c => Number(c.day_rate || 0)));
+    el.innerHTML = companies.map(c => {
+      const dayRate = Number(c.day_rate || 0);
+      return `
+        <div class="client-bar-row">
+          <div class="client-bar-info">
+            <span class="client-bar-name">${c.company}</span>
+            <span class="client-bar-value" data-private>${this.fmt.currency(dayRate)}/día</span>
+          </div>
+          <div class="client-bar-bg">
+            <div class="client-bar-fill" style="width:${max > 0 ? (dayRate/max*100) : 0}%"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)">${this.fmt.hours(c.hours)} · ${c.projects} proyecto${c.projects !== 1 ? 's' : ''}</div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  renderProjectHourBars(projects) {
+    const el = document.getElementById('project-hour-bars');
+    if (!el || !projects.length) return;
+    const max = Math.max(...projects.map(p => Number(p.hours || 0)));
+    el.innerHTML = projects.map(p => {
+      const hours = Number(p.hours || 0);
+      return `
+        <div class="client-bar-row">
+          <div class="client-bar-info">
+            <span class="client-bar-name">${p.project}</span>
+            <span class="client-bar-value">${this.fmt.hours(hours)}</span>
+          </div>
+          <div class="client-bar-bg">
+            <div class="client-bar-fill" style="width:${max > 0 ? (hours/max*100) : 0}%"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)" data-private>${p.company || 'Sin cliente'} · ${this.fmt.currency(p.earnings || 0)}</div>
         </div>
       `;
     }).join('');
