@@ -1726,6 +1726,11 @@ const VFX = {
         `).join('')}
       </div>
     `).join('');
+
+    const scroll = grid.closest('.heatmap-scroll');
+    if (scroll) requestAnimationFrame(() => {
+      scroll.scrollLeft = scroll.scrollWidth;
+    });
   },
 
   renderClientBars(clients) {
