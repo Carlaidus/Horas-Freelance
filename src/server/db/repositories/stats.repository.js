@@ -156,6 +156,23 @@ const getClientStatsRange = async (userId, from, to) => {
   return r.rows;
 };
 
+const getProjectStatsRange = async (userId, from, to) => {
+  const r = await q(`
+    SELECT p.id as project_id, p.name as project, c.name as company,
+      SUM(e.hours) as hours,
+      SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) as earnings,
+      COUNT(*) as entries
+    FROM entries e
+    JOIN projects p ON e.project_id = p.id
+    LEFT JOIN companies c ON p.company_id = c.id
+    WHERE p.user_id = $1 AND e.date >= $2 AND e.date <= $3
+    GROUP BY p.id, p.name, c.name
+    ORDER BY earnings DESC
+    LIMIT 5
+  `, [userId, from, to]);
+  return r.rows;
+};
+
 const getProjectStatsDetail = async (projectId, from, to, group = 'month') => {
   const fmt = group === 'day'  ? `TO_CHAR(e.date::date, 'YYYY-MM-DD')`
             : group === 'week' ? `TO_CHAR(e.date::date, 'IYYY-IW')`
@@ -220,5 +237,5 @@ const getTreasuryData = async (userId) => {
 module.exports = {
   getMonthlyStats, getHeatmapData, getClientStats, getYearlySummary,
   getMonthlyStatsRange, getSummaryRange, getClientStatsRange,
-  getPaidMonthlyStats, getProjectStatsDetail, getTreasuryData
+  getProjectStatsRange, getPaidMonthlyStats, getProjectStatsDetail, getTreasuryData
 };

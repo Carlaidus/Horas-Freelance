@@ -22,7 +22,7 @@ const VFX = {
     entries: [],
     invoices: [],
     user: {},
-    stats: { periodic: [], heatmap: [], clients: [], summary: {} },
+    stats: { periodic: [], heatmap: [], clients: [], projects: [], summary: {} },
     treasury: [],
     plan: 'free',
     role: 'user',
@@ -413,10 +413,11 @@ const VFX = {
     const range = this.periodDates(period);
     const { from, to, group } = range;
     const prev = this.previousPeriodDates(range);
-    const [periodic, heatmap, clients, summary, previousSummary, paidMonthly] = await Promise.all([
+    const [periodic, heatmap, clients, projects, summary, previousSummary, paidMonthly] = await Promise.all([
       this.api.get(`/api/stats/monthly?from=${from}&to=${to}&group=${group}`),
       this.api.get('/api/stats/heatmap'),
       this.api.get(`/api/stats/clients?from=${from}&to=${to}`),
+      this.api.get(`/api/stats/projects?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${from}&to=${to}`),
       this.api.get(`/api/stats/summary?from=${prev.from}&to=${prev.to}`),
       this.api.get('/api/stats/paid-monthly')
@@ -428,7 +429,7 @@ const VFX = {
         : prev;
       comparison = await this.api.get(`/api/stats/monthly?from=${compareRange.from}&to=${compareRange.to}&group=${compareRange.group}`);
     }
-    this.state.stats = { periodic, heatmap, clients, summary, previousSummary, paidMonthly, comparison };
+    this.state.stats = { periodic, heatmap, clients, projects, summary, previousSummary, paidMonthly, comparison };
   },
 
   async loadStatsComparison() {
@@ -1237,7 +1238,7 @@ const VFX = {
   },
 
   _renderStatsGeneral() {
-    const { periodic, heatmap, clients, summary, paidMonthly, comparison } = this.state.stats;
+    const { periodic, heatmap, clients, projects, summary, paidMonthly, comparison } = this.state.stats;
     const { group } = this.periodDates(this.state.statsPeriod);
 
     const unbilled      = Number(summary?.unbilled_earnings || 0);
@@ -1332,6 +1333,10 @@ const VFX = {
           ${clients.length > 0 ? `<div class="client-bars" id="client-bars"></div>` : `<p style="color:var(--text3);font-size:13px">Sin datos en este período</p>`}
         </div>
         <div class="chart-card">
+          <div class="chart-title">Ranking de proyectos</div>
+          ${(projects || []).length > 0 ? `<div class="client-bars" id="project-bars"></div>` : `<p style="color:var(--text3);font-size:13px">Sin datos en este período</p>`}
+        </div>
+        <div class="chart-card">
           <div class="chart-title">Proyección del mes actual</div>
           <div class="projection-body">
             <div class="projection-ring">
@@ -1390,6 +1395,7 @@ const VFX = {
     this.renderPaidMonthlyChart(paidMonthly || []);
     this.renderHeatmap(heatmap);
     this.renderClientBars(clients);
+    this.renderProjectBars(projects || []);
   },
 
   async _renderStatsProject(projectId) {
@@ -1726,6 +1732,27 @@ const VFX = {
         <div style="font-size:11px;color:var(--text3)">${this.fmt.hours(c.hours)} · ${c.projects} proyecto${c.projects !== 1 ? 's' : ''}</div>
       </div>
     `).join('');
+  },
+
+  renderProjectBars(projects) {
+    const el = document.getElementById('project-bars');
+    if (!el || !projects.length) return;
+    const max = Math.max(...projects.map(p => Number(p.earnings || 0)));
+    el.innerHTML = projects.map(p => {
+      const earnings = Number(p.earnings || 0);
+      return `
+        <div class="client-bar-row">
+          <div class="client-bar-info">
+            <span class="client-bar-name">${p.project}</span>
+            <span class="client-bar-value" data-private>${this.fmt.currency(earnings)}</span>
+          </div>
+          <div class="client-bar-bg">
+            <div class="client-bar-fill" style="width:${max > 0 ? (earnings/max*100) : 0}%"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3)">${p.company || 'Sin cliente'} · ${this.fmt.hours(p.hours)}</div>
+        </div>
+      `;
+    }).join('');
   },
 
   // ── PROYECTOS (listado histórico) + COMPANIES ─────────────

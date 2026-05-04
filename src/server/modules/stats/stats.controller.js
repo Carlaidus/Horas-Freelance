@@ -24,6 +24,14 @@ const clients = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+const projects = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) return res.json([]);
+    res.json(await db.getProjectStatsRange(getUserId(req), from, to));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
 const summary = async (req, res) => {
   try {
     const { from, to } = req.query;
@@ -49,4 +57,4 @@ const treasury = async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { monthly, heatmap, clients, summary, paidMonthly, projectDetail, treasury };
+module.exports = { monthly, heatmap, clients, projects, summary, paidMonthly, projectDetail, treasury };
