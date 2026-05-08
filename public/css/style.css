@@ -1060,6 +1060,7 @@ tbody td {
     width: fit-content;
   }
   .project-detail-entries-table .entry-invoice-badge span {
+    display: inline;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -1072,6 +1073,12 @@ tbody td {
   .project-day-group-main .entry-invoice-badge {
     display: flex;
     margin-top: 5px;
+  }
+  .project-day-group-main .entry-invoice-badge span {
+    display: inline;
+  }
+  .project-detail-entries-table .project-day-group-row.entry-row-invoiced td {
+    background: rgba(255, 85, 118, 0.055) !important;
   }
   .project-day-group-row .project-detail-hours {
     color: var(--text3);
