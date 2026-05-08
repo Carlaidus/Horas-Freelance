@@ -785,7 +785,9 @@ tbody td {
   background: var(--border2);
 }
 .entry-invoice-badge {
+  align-items: center;
   display: inline-flex;
+  gap: 4px;
   margin-left: 8px;
   padding: 2px 7px;
   border: 1px solid rgba(255,85,118,0.26);
@@ -796,6 +798,11 @@ tbody td {
   letter-spacing: 0.4px;
   text-transform: uppercase;
   white-space: nowrap;
+}
+.entry-invoice-badge svg {
+  flex: 0 0 12px;
+  height: 12px;
+  width: 12px;
 }
 .project-detail-entries-table {
   table-layout: fixed;
@@ -865,6 +872,10 @@ tbody td {
   background: var(--card2);
   border-top: 1px solid rgba(245,200,66,0.18);
   font-size: 12px;
+}
+.project-day-group-row.entry-row-invoiced td,
+.project-day-group-row.entry-row-invoiced:hover td {
+  background: rgba(255, 85, 118, 0.055);
 }
 .project-day-group-row .project-detail-amount {
   font-size: 13px;
@@ -1047,6 +1058,10 @@ tbody td {
     text-overflow: ellipsis;
     white-space: nowrap;
     width: fit-content;
+  }
+  .project-detail-entries-table .entry-invoice-badge span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .project-day-group-main span {
     display: none;

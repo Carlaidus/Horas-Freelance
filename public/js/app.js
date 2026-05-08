@@ -879,7 +879,8 @@ const VFX = {
       const total = hours * effectiveHourly;
       const isInvoiced = !!e.invoice_id;
       const rowClass = `${extraClass} ${isInvoiced ? 'entry-row-invoiced' : ''}`.trim();
-      const invoiceLabel = isInvoiced ? `<span class="entry-invoice-badge">Facturada${e.invoice_number ? ` · ${e.invoice_number}` : ''}</span>` : '';
+      const invoiceIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
+      const invoiceLabel = isInvoiced ? `<span class="entry-invoice-badge">${invoiceIcon}<span>Facturada${e.invoice_number ? ` · ${e.invoice_number}` : ''}</span></span>` : '';
       return `
         <tr class="project-detail-entry-row entry-row ${rowClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${isInvoiced ? '' : mobileEdit(e.id)}>
           <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) && !isInvoiced ? 'checked' : ''} ${isInvoiced ? 'disabled title="Entrada ya facturada"' : ''} onchange="${onCheckboxChange}"></td>
@@ -905,7 +906,8 @@ const VFX = {
       const invoiceNumbers = [...new Set(invoicedEntries.map(e => e.invoice_number).filter(Boolean))];
       const invoiceText = allInvoiced ? 'Facturadas' : 'Parcialmente facturado';
       const invoiceSuffix = invoiceNumbers.length === 1 ? ` · ${invoiceNumbers[0]}` : invoiceNumbers.length > 1 ? ' · varias facturas' : '';
-      const invoiceLabel = hasInvoicedEntries ? `<span class="entry-invoice-badge">${invoiceText}${invoiceSuffix}</span>` : '';
+      const invoiceIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
+      const invoiceLabel = hasInvoicedEntries ? `<span class="entry-invoice-badge">${invoiceIcon}<span>${invoiceText}${invoiceSuffix}</span></span>` : '';
 
       return `
         <tr class="project-day-group-row ${hasInvoicedEntries ? 'entry-row-invoiced' : ''}" onclick="VFX.toggleProjectDayEntries('${key}')">
