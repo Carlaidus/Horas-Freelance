@@ -899,9 +899,16 @@ const VFX = {
       const uniqueRates = [...new Set(group.rates)];
       const rateLabel = uniqueRates.length === 1 ? `${this.fmt.currency(uniqueRates[0] * 8)}/día` : 'varias';
       const isOpen = this._openEntryGroupKeys.has(key);
+      const invoicedEntries = group.entries.filter(e => e.invoice_id);
+      const hasInvoicedEntries = invoicedEntries.length > 0;
+      const allInvoiced = invoicedEntries.length === group.entries.length;
+      const invoiceNumbers = [...new Set(invoicedEntries.map(e => e.invoice_number).filter(Boolean))];
+      const invoiceText = allInvoiced ? 'Facturadas' : 'Parcialmente facturado';
+      const invoiceSuffix = invoiceNumbers.length === 1 ? ` · ${invoiceNumbers[0]}` : invoiceNumbers.length > 1 ? ' · varias facturas' : '';
+      const invoiceLabel = hasInvoicedEntries ? `<span class="entry-invoice-badge">${invoiceText}${invoiceSuffix}</span>` : '';
 
       return `
-        <tr class="project-day-group-row" onclick="VFX.toggleProjectDayEntries('${key}')">
+        <tr class="project-day-group-row ${hasInvoicedEntries ? 'entry-row-invoiced' : ''}" onclick="VFX.toggleProjectDayEntries('${key}')">
           <td class="project-detail-date project-day-group-date" colspan="2">${this.fmt.date(group.dateKey)}</td>
           <td class="project-day-group-description">
             <div class="project-day-group-main">
@@ -909,6 +916,7 @@ const VFX = {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <span class="project-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''}</span>
+              ${invoiceLabel}
             </div>
           </td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(group.totalHours)}</td>
