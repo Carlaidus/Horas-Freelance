@@ -170,13 +170,13 @@ const VFX = {
   },
 
   _toggleAllProjectDetailEntries(checked, projectId) {
-    document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]`).forEach(cb => { cb.checked = checked; });
+    document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:not(:disabled)`).forEach(cb => { cb.checked = checked; });
     this._onProjectDetailEntryCbChange(projectId);
   },
 
   _onProjectDetailEntryCbChange(projectId) {
-    const all = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]`);
-    const checked = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked`);
+    const all = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:not(:disabled)`);
+    const checked = document.querySelectorAll(`.project-detail-entry-cb[data-project="${projectId}"]:checked:not(:disabled)`);
     this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`project-detail-edit-btn-${projectId}`);
     if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
@@ -877,11 +877,14 @@ const VFX = {
       const hours = Number(e.hours || 0);
       const days = hours / 8;
       const total = hours * effectiveHourly;
+      const isInvoiced = !!e.invoice_id;
+      const rowClass = `${extraClass} ${isInvoiced ? 'entry-row-invoiced' : ''}`.trim();
+      const invoiceLabel = isInvoiced ? `<span class="entry-invoice-badge">Facturada${e.invoice_number ? ` · ${e.invoice_number}` : ''}</span>` : '';
       return `
-        <tr class="project-detail-entry-row entry-row ${extraClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${mobileEdit(e.id)}>
-          <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) ? 'checked' : ''} onchange="${onCheckboxChange}"></td>
+        <tr class="project-detail-entry-row entry-row ${rowClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${isInvoiced ? '' : mobileEdit(e.id)}>
+          <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) && !isInvoiced ? 'checked' : ''} ${isInvoiced ? 'disabled title="Entrada ya facturada"' : ''} onchange="${onCheckboxChange}"></td>
           <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
-          <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}</td>
+          <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}${invoiceLabel}</td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}<span class="entry-days-inline">(${days.toFixed(2)}d)</span></td>
           <td class="mono dim project-detail-rate" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
           <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}</td>
@@ -975,13 +978,13 @@ const VFX = {
   },
 
   _toggleAllEntries(checked, projectId) {
-    document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`).forEach(cb => { cb.checked = checked; });
+    document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:not(:disabled)`).forEach(cb => { cb.checked = checked; });
     this._onEntryCbChange(projectId);
   },
 
   _onEntryCbChange(projectId) {
-    const all     = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]`);
-    const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked`);
+    const all     = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:not(:disabled)`);
+    const checked = document.querySelectorAll(`.entry-cb[data-project="${projectId}"]:checked:not(:disabled)`);
     this._selectedEntryIdsByProject.set(projectId, new Set([...checked].map(cb => parseInt(cb.dataset.id))));
     const editBtn = document.getElementById(`bulk-edit-btn-${projectId}`);
     if (editBtn) editBtn.style.display = checked.length === 1 ? 'inline' : 'none';
@@ -1816,6 +1819,9 @@ const VFX = {
 
   // ── PROYECTOS (listado histórico) + COMPANIES ─────────────
   _projectStatus(p) {
+    if (Number(p.invoiced_entries || 0) > 0 && Number(p.uninvoiced_entries || 0) > 0) {
+      return { label: 'Parcialmente facturado', cls: 'badge-partial' };
+    }
     if (p.status === 'paid')        return { label: 'Cobrado',    cls: 'badge-paid' };
     if (p.status === 'sent')        return { label: 'Facturado',  cls: 'badge-sent' };
     if (p.is_completed)             return { label: 'Terminado',  cls: 'badge-completed' };
@@ -2201,6 +2207,10 @@ const VFX = {
 
   async updateEntry(id) {
     const existingEntry = this.state.entries.find(e => e.id === id);
+    if (existingEntry?.invoice_id) {
+      alert('Esta entrada ya está facturada. Anula o elimina la factura para poder modificarla.');
+      return;
+    }
     const oldProjectId = existingEntry?.project_id || this.state.currentProjectId || this._projectDetailId;
     const newProjectId = parseInt(document.getElementById('edit-entry-project').value);
     const dailyOverride = getDailyRateValue('edit-entry-rate');
@@ -2229,6 +2239,11 @@ const VFX = {
   },
 
   async deleteEntry(id) {
+    const existingEntry = this.state.entries.find(e => e.id === id) || this.state.slots.flatMap(s => s.entries || []).find(e => e.id === id);
+    if (existingEntry?.invoice_id) {
+      alert('Esta entrada ya está facturada. Anula o elimina la factura para poder borrarla.');
+      return;
+    }
     if (!confirm('¿Eliminar esta entrada?')) return;
     await this.api.del(`/api/entries/${id}`);
     // Limpiar slot.entries para forzar recarga en renderProyecto
@@ -2993,7 +3008,9 @@ const VFX = {
       const proj = this.state.projects.find(p => p.id === pid);
       if (!proj) continue;
       const entries = await this.api.get(`/api/projects/${pid}/entries`);
-      const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
+      const eligibleEntries = entries.filter(e => !e.invoice_id || Number(e.invoice_id) === Number(this._currentInvoiceId));
+      const totalHours = eligibleEntries.reduce((s, e) => s + (e.hours || 0), 0);
+      if (totalHours <= 0) continue;
       newLines.push({
         description: `Proyecto ${proj.name}`,
         quantity: totalHours,
@@ -3005,6 +3022,8 @@ const VFX = {
     if (newLines.length) {
       this._invoiceFormLines = newLines;
       this._updateInvoiceMode();
+    } else {
+      alert('No hay horas sin facturar en los proyectos seleccionados.');
     }
   },
 
@@ -3322,7 +3341,10 @@ const VFX = {
       ? '¿Seguro que quieres eliminar esta factura emitida? Esta acción no se puede deshacer.'
       : '¿Eliminar este borrador?';
     if (!confirm(msg)) return;
-    await this.api.del(`/api/invoices/${id}`);
+    const releaseEntries = status === 'issued'
+      ? confirm('¿Quieres volver a activar las entradas de tiempo incluidas para poder facturarlas de nuevo?')
+      : true;
+    await this.api.del(`/api/invoices/${id}?releaseEntries=${releaseEntries ? '1' : '0'}`);
     this.renderFacturas();
   },
 

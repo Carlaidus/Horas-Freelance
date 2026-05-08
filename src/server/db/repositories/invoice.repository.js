@@ -111,6 +111,30 @@ const issueInvoice = async (id, userId) => {
     if (!inv.issue_date) throw new Error('Falta la fecha de emisión');
     if (inv.subtotal <= 0) throw new Error('La factura no tiene importe');
 
+    const activeTimers = (await client.query(
+      "SELECT project_id FROM timers WHERE user_id = $1 AND is_active = 1",
+      [userId]
+    )).rows;
+    if (activeTimers.length) throw new Error('Hay un temporizador activo. Páralo antes de emitir una factura.');
+
+    const projectIds = (await client.query(
+      "SELECT DISTINCT project_id FROM invoice_lines WHERE invoice_id = $1 AND project_id IS NOT NULL",
+      [id]
+    )).rows.map(r => Number(r.project_id)).filter(Boolean);
+
+    if (projectIds.length) {
+      const linked = (await client.query(
+        "SELECT COUNT(*)::int as count FROM entries WHERE invoice_id = $1",
+        [id]
+      )).rows[0]?.count || 0;
+      if (!linked) {
+        await client.query(
+          "UPDATE entries SET invoice_id = $1 WHERE user_id = $2 AND invoice_id IS NULL AND project_id = ANY($3::int[])",
+          [id, userId, projectIds]
+        );
+      }
+    }
+
     let number = inv.number;
     let fullNumber = inv.full_number;
 
@@ -156,18 +180,44 @@ const issueInvoice = async (id, userId) => {
 };
 
 const deleteInvoiceDraft = async (id) => {
-  await q("DELETE FROM invoice_lines WHERE invoice_id = $1", [id]);
-  await q("DELETE FROM invoices WHERE id = $1", [id]);
+  await deleteInvoice(id, { releaseEntries: true });
 };
 
 const setInvoiceLines = async (invoiceId, lines) => {
-  await q("DELETE FROM invoice_lines WHERE invoice_id = $1", [invoiceId]);
-  for (let i = 0; i < lines.length; i++) {
-    const l = lines[i];
-    await q(
-      "INSERT INTO invoice_lines (invoice_id, description, quantity, unit_price, line_total, sort_order, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-      [invoiceId, l.description || '', l.quantity || 1, l.unit_price || 0, l.line_total || 0, i, l.project_id ?? null]
-    );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const inv = (await client.query("SELECT * FROM invoices WHERE id = $1", [invoiceId])).rows[0];
+    if (!inv) throw new Error('Factura no encontrada');
+    if (inv.status !== 'draft') throw new Error('Las facturas emitidas o cobradas no se pueden modificar.');
+
+    await client.query("UPDATE entries SET invoice_id = NULL WHERE invoice_id = $1", [invoiceId]);
+    await client.query("DELETE FROM invoice_lines WHERE invoice_id = $1", [invoiceId]);
+
+    const projectIds = [];
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      await client.query(
+        "INSERT INTO invoice_lines (invoice_id, description, quantity, unit_price, line_total, sort_order, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        [invoiceId, l.description || '', l.quantity || 1, l.unit_price || 0, l.line_total || 0, i, l.project_id ?? null]
+      );
+      if (l.project_id != null) projectIds.push(Number(l.project_id));
+    }
+
+    const uniqueProjectIds = [...new Set(projectIds.filter(Boolean))];
+    if (uniqueProjectIds.length) {
+      await client.query(
+        "UPDATE entries SET invoice_id = $1 WHERE user_id = $2 AND invoice_id IS NULL AND project_id = ANY($3::int[])",
+        [invoiceId, inv.user_id, uniqueProjectIds]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
   }
 };
 
@@ -187,6 +237,29 @@ const updateInvoiceStatus = async (id, status) => {
   await q("UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2", [status, id]);
 };
 
+const getInvoiceLinkedEntryCount = async (id) => {
+  const r = await q("SELECT COUNT(*)::int as count FROM entries WHERE invoice_id = $1", [id]);
+  return r.rows[0]?.count || 0;
+};
+
+const deleteInvoice = async (id, { releaseEntries = true } = {}) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    if (releaseEntries) {
+      await client.query("UPDATE entries SET invoice_id = NULL WHERE invoice_id = $1", [id]);
+    }
+    await client.query("DELETE FROM invoice_lines WHERE invoice_id = $1", [id]);
+    await client.query("DELETE FROM invoices WHERE id = $1", [id]);
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+};
+
 const updateInvoiceNumber = async (id, userId, number) => {
   const inv = await getInvoice(id);
   if (!inv) throw new Error('Factura no encontrada');
@@ -203,5 +276,6 @@ module.exports = {
   getInvoiceSeries, getNextInvoiceNumber,
   getInvoices, getInvoice, getInvoiceLines,
   createInvoice, updateInvoice, updateInvoiceStatus, issueInvoice,
-  deleteInvoiceDraft, setInvoiceLines, updateInvoiceNumber, validateInvoiceLines
+  deleteInvoiceDraft, deleteInvoice, getInvoiceLinkedEntryCount,
+  setInvoiceLines, updateInvoiceNumber, validateInvoiceLines
 };

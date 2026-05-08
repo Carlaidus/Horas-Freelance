@@ -294,6 +294,10 @@ window.CronorasModals = {
         }
       }
       if (!entry) return;
+      if (entry.invoice_id) {
+        alert('Esta entrada ya está facturada. Anula o elimina la factura para poder modificarla.');
+        return;
+      }
       const currentProjectId = Number(entry.project_id || VFX.state.currentProjectId || VFX._projectDetailId);
       const projectOptions = VFX.state.projects.map(p =>
         `<option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>${p.name} — ${p.company_name || 'Sin empresa'}</option>`

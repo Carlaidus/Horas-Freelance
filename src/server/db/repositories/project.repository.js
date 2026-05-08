@@ -7,6 +7,8 @@ const getProjects = async (userId) => {
     SELECT p.*, c.name as company_name,
       COALESCE(SUM(e.hours), 0) as total_hours,
       COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount,
+      COUNT(e.id) FILTER (WHERE e.invoice_id IS NOT NULL) as invoiced_entries,
+      COUNT(e.id) FILTER (WHERE e.invoice_id IS NULL) as uninvoiced_entries,
       MIN(e.date) as first_entry_date,
       MAX(e.date) as last_entry_date
     FROM projects p
@@ -26,6 +28,8 @@ const getProject = async (id) => {
       c.phone as company_phone, c.contact_person as company_contact,
       COALESCE(SUM(e.hours), 0) as total_hours,
       COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)), 0) as total_amount,
+      COUNT(e.id) FILTER (WHERE e.invoice_id IS NOT NULL) as invoiced_entries,
+      COUNT(e.id) FILTER (WHERE e.invoice_id IS NULL) as uninvoiced_entries,
       MIN(e.date) as first_entry_date,
       MAX(e.date) as last_entry_date
     FROM projects p
@@ -64,6 +68,8 @@ const updateProject = async (id, data) => {
 };
 
 const deleteProject = async (id) => {
+  const billed = (await q('SELECT COUNT(*)::int as count FROM entries WHERE project_id = $1 AND invoice_id IS NOT NULL', [id])).rows[0]?.count || 0;
+  if (billed) throw new Error('Este proyecto tiene entradas facturadas. Anula o elimina sus facturas antes de borrar el proyecto.');
   await q('DELETE FROM entries WHERE project_id = $1', [id]);
   await q('DELETE FROM projects WHERE id = $1', [id]);
 };

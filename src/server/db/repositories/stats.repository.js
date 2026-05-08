@@ -87,12 +87,7 @@ const getSummaryRange = async (userId, from, to) => {
       COUNT(DISTINCT p.company_id) as total_clients,
       COALESCE(AVG(p.hourly_rate), 0) as avg_rate,
       COALESCE(SUM(e.hours * COALESCE(e.hourly_rate_override, p.hourly_rate)) FILTER (
-        WHERE NOT EXISTS (
-          SELECT 1
-          FROM invoice_lines il
-          JOIN invoices i ON i.id = il.invoice_id
-          WHERE il.project_id = p.id AND i.status IN ('issued', 'paid')
-        )
+        WHERE e.invoice_id IS NULL
       ), 0) as unbilled_earnings,
       COALESCE((
         SELECT SUM(i.total)

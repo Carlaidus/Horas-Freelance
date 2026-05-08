@@ -58,7 +58,11 @@ const issueInvoice = async (req, res) => {
 };
 
 const deleteInvoice = async (req, res) => {
-  try { await db.deleteInvoiceDraft(+req.params.id); res.json({ success: true }); }
+  try {
+    const releaseEntries = req.query.releaseEntries !== '0';
+    await db.deleteInvoice(+req.params.id, { releaseEntries });
+    res.json({ success: true });
+  }
   catch (e) { res.status(400).json({ error: e.message }); }
 };
 
@@ -77,7 +81,7 @@ const getInvoicePdf = async (req, res) => {
     const includeEntryDetails = req.query.entryDetails === '1';
     const projectIds = lines.map(l => l.project_id).filter(id => id != null);
     const entryDetails = includeEntryDetails
-      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      ? await db.getEntriesForInvoiceProjects(projectIds, invoice.user_id, invoice.id)
       : [];
     generateInvoicePdf(invoice, lines, res, { entryDetails });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -93,7 +97,7 @@ const previewInvoicePdf = async (req, res) => {
     };
     const projectIds = lines.map(l => l.project_id).filter(id => id != null);
     const entryDetails = include_entry_details
-      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      ? await db.getEntriesForInvoiceProjects(projectIds, invoice.user_id)
       : [];
     generateInvoicePdf(invoice, lines, res, { entryDetails, preview: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -107,7 +111,7 @@ const previewExistingInvoicePdf = async (req, res) => {
     const includeEntryDetails = req.query.entryDetails === '1';
     const projectIds = lines.map(l => l.project_id).filter(id => id != null);
     const entryDetails = includeEntryDetails
-      ? await db.getEntriesForProjects(projectIds, invoice.user_id)
+      ? await db.getEntriesForInvoiceProjects(projectIds, invoice.user_id, invoice.id)
       : [];
     generateInvoicePdf(invoice, lines, res, { entryDetails, preview: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

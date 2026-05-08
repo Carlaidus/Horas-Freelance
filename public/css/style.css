@@ -732,6 +732,14 @@ tbody tr {
 }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: var(--card2); }
+tbody tr.entry-row-invoiced,
+tbody tr.entry-row-invoiced:hover {
+  background: rgba(255, 85, 118, 0.055);
+  opacity: 0.72;
+}
+tbody tr.entry-row-invoiced td {
+  color: var(--text2);
+}
 tbody td {
   padding: 12px 16px;
   font-size: 13px;
@@ -775,6 +783,19 @@ tbody td {
   width: 5px;
   height: 1px;
   background: var(--border2);
+}
+.entry-invoice-badge {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255,85,118,0.26);
+  border-radius: 999px;
+  color: var(--red);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 .project-detail-entries-table {
   table-layout: fixed;
@@ -1247,6 +1268,8 @@ td.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .badge-pending::before { background: var(--amber); }
 .badge-sent { background: rgba(78,205,196,0.12); color: var(--cyan); border: 1px solid rgba(78,205,196,0.3); }
 .badge-sent::before { background: var(--cyan); }
+.badge-partial { background: rgba(255,85,118,0.12); color: var(--red); border: 1px solid rgba(255,85,118,0.3); }
+.badge-partial::before { background: var(--red); }
 .badge-paid { background: rgba(82,232,117,0.12); color: var(--green); border: 1px solid rgba(82,232,117,0.3); }
 .badge-paid::before { background: var(--green); }
 .badge-completed { background: rgba(150,120,255,0.12); color: #a897ff; border: 1px solid rgba(150,120,255,0.3); }

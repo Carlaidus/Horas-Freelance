@@ -83,6 +83,7 @@ const init = async () => {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
+  await q(`ALTER TABLE entries ADD COLUMN IF NOT EXISTS invoice_id INTEGER DEFAULT NULL`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS invoice_series (

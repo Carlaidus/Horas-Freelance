@@ -133,6 +133,14 @@ const HELP_CONTENT = [
         a: 'Una factura en **borrador** se puede editar libremente. Cuando se emite, la app bloquea sus datos fiscales principales para conservar la trazabilidad del documento original.\n\nSi detectas un error después de emitirla, lo prudente es no modificar la factura original. Crea una nueva factura o una rectificativa según corresponda a tu caso.'
       },
       {
+        q: '\u00bfPuedo facturar parte de un proyecto que sigue en curso?',
+        a: 'S\u00ed. Al crear una factura desde un proyecto, la app usa solo las entradas de tiempo que a\u00fan no est\u00e1n facturadas. Esas entradas quedan marcadas como **Facturadas** y no volver\u00e1n a entrar en otra factura.\n\nSi sigues trabajando en el mismo proyecto, las nuevas horas quedan pendientes para una factura futura y el proyecto puede aparecer como **Parcialmente facturado**.'
+      },
+      {
+        q: '\u00bfPor qu\u00e9 no puedo editar o borrar algunas entradas de tiempo?',
+        a: 'Las entradas incluidas en una factura quedan bloqueadas para evitar cambios accidentales y doble facturaci\u00f3n. Si eliminas o anulas la factura, la app te preguntar\u00e1 si quieres volver a activar esas entradas para poder modificarlas o facturarlas de nuevo.'
+      },
+      {
         q: '¿Para qué sirve Duplicar como nueva?',
         a: '**Duplicar como nueva** copia cliente, líneas, impuestos y notas a un nuevo borrador con el siguiente número disponible y fecha actual. Sirve para ahorrar tiempo cuando necesitas crear otra factura parecida.\n\nImportante: duplicar no corrige, sustituye ni anula legalmente la factura original. La factura anterior queda intacta.'
       },
