@@ -966,7 +966,13 @@ tbody td {
   .entry-table-actions,
   .entry-table-actions > span,
   .entry-table-actions .btn {
+    max-width: 100%;
+    min-width: 0;
     width: 100%;
+  }
+  .entries-table-container .table-header {
+    align-items: stretch;
+    flex-direction: column;
   }
   .entry-table-actions {
     flex-direction: column;
@@ -1223,6 +1229,7 @@ tbody td {
   }
   .entries-table-container .table-header {
     align-items: stretch;
+    flex-direction: column;
   }
   .entries-table-container .table-title {
     line-height: 1.35;
