@@ -1037,11 +1037,26 @@ tbody td {
   .project-detail-entries-table .project-detail-amount {
     font-size: 12px;
   }
+  .project-detail-entries-table .entry-invoice-badge {
+    display: flex;
+    justify-content: center;
+    margin: 5px 0 0;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 2px 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: fit-content;
+  }
   .project-day-group-main span {
     display: none;
   }
   .project-day-group-main .project-day-count {
     display: inline;
+  }
+  .project-day-group-main .entry-invoice-badge {
+    display: flex;
+    margin-top: 5px;
   }
   .project-day-group-row .project-detail-hours {
     color: var(--text3);
