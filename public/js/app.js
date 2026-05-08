@@ -3281,6 +3281,18 @@ const VFX = {
     const errEl = document.getElementById('inv-form-error');
     if (errEl) errEl.style.display = 'none';
     try {
+      const activeTimers = await this.api.get('/api/timers');
+      if (activeTimers.length) {
+        const msg = 'Hay un temporizador activo. Páralo antes de emitir una factura.';
+        alert(msg);
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.style.display = 'block';
+          errEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+        return;
+      }
+
       // Save first
       let id = this._currentInvoiceId;
       if (id) {
@@ -3337,14 +3349,33 @@ const VFX = {
   },
 
   async deleteInvoice(id, status) {
-    const msg = status === 'issued'
-      ? '¿Seguro que quieres eliminar esta factura emitida? Esta acción no se puede deshacer.'
-      : '¿Eliminar este borrador?';
-    if (!confirm(msg)) return;
-    const releaseEntries = status === 'issued'
-      ? confirm('¿Quieres volver a activar las entradas de tiempo incluidas para poder facturarlas de nuevo?')
-      : true;
+    if (status === 'issued' || status === 'paid') {
+      this.openIssuedInvoiceDeleteModal(id);
+      return;
+    }
+    if (!confirm('¿Eliminar este borrador?')) return;
+    await this.executeInvoiceDelete(id, true);
+  },
+
+  openIssuedInvoiceDeleteModal(id) {
+    this.openModal(`
+      <p style="color:var(--text2);margin-bottom:14px">
+        Vas a eliminar una factura emitida. Esta acción no se puede deshacer.
+      </p>
+      <p style="color:var(--text2);margin-bottom:18px">
+        Elige qué hacer con las entradas de tiempo incluidas en esa factura.
+      </p>
+      <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-ghost" onclick="VFX.executeInvoiceDelete(${id}, false)">Eliminar sin reactivar horas</button>
+        <button class="btn btn-danger" onclick="VFX.executeInvoiceDelete(${id}, true)">Eliminar y reactivar horas</button>
+      </div>
+    `, 'Eliminar factura emitida');
+  },
+
+  async executeInvoiceDelete(id, releaseEntries) {
     await this.api.del(`/api/invoices/${id}?releaseEntries=${releaseEntries ? '1' : '0'}`);
+    this.closeModal();
     this.renderFacturas();
   },
 
