@@ -2125,6 +2125,7 @@ const VFX = {
       const compData = {
         name: compName,
         cif: document.getElementById('comp-cif')?.value?.trim() || '',
+        invoice_alias: document.getElementById('comp-invoice-alias')?.value?.trim() || '',
         email: document.getElementById('comp-email')?.value?.trim() || '',
         address: document.getElementById('comp-address')?.value?.trim() || '',
         city: document.getElementById('comp-city')?.value?.trim() || '',
@@ -2324,6 +2325,7 @@ const VFX = {
     const data = {
       name: document.getElementById('c-name').value.trim(),
       cif: document.getElementById('c-cif').value.trim(),
+      invoice_alias: document.getElementById('c-invoice-alias')?.value?.trim() || '',
       email: document.getElementById('c-email').value.trim(),
       address: document.getElementById('c-address').value.trim(),
       city: document.getElementById('c-city').value.trim(),
@@ -3245,10 +3247,13 @@ const VFX = {
     const t = this._invoiceFormTotals || { subtotal: 0, ivaAmount: 0, irpfAmount: 0, total: 0 };
     const ivaVal = parseFloat(document.getElementById('inv-iva')?.value ?? 21);
     const u = this.state.user;
+    const companyId = parseInt(document.getElementById('inv-company')?.value) || null;
+    const company = this.state.companies.find(c => c.id === companyId);
     return {
       number: parseInt(document.getElementById('inv-number')?.value) || null,
       full_number: String(document.getElementById('inv-number')?.value || ''),
-      company_id: parseInt(document.getElementById('inv-company')?.value) || null,
+      company_id: companyId,
+      company_invoice_alias: company?.invoice_alias || '',
       issue_date: document.getElementById('inv-date')?.value || new Date().toISOString().split('T')[0],
       issuer_name: u.name || '',
       issuer_nif: u.nif || '',

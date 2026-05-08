@@ -46,7 +46,12 @@ const getInvoices = async (userId) => {
 };
 
 const getInvoice = async (id) => {
-  const r = await q("SELECT * FROM invoices WHERE id = $1", [id]);
+  const r = await q(`
+    SELECT i.*, c.invoice_alias as company_invoice_alias
+    FROM invoices i
+    LEFT JOIN companies c ON i.company_id = c.id
+    WHERE i.id = $1
+  `, [id]);
   return r.rows[0] || null;
 };
 

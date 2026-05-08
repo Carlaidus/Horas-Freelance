@@ -131,6 +131,10 @@ window.CronorasModals = {
                 <input type="text" id="comp-cif" placeholder="B12345678">
               </div>
               <div class="form-group">
+                <label>Clave para facturas</label>
+                <input type="text" id="comp-invoice-alias" placeholder="METRO, XR, ME">
+              </div>
+              <div class="form-group">
                 <label>Email</label>
                 <input type="email" id="comp-email" placeholder="facturacion@empresa.com">
               </div>
@@ -350,6 +354,10 @@ window.CronorasModals = {
           <div class="form-group">
             <label>CIF / NIF</label>
             <input type="text" id="c-cif" value="${c?.cif||''}" placeholder="B12345678">
+          </div>
+          <div class="form-group">
+            <label>Clave para facturas</label>
+            <input type="text" id="c-invoice-alias" value="${c?.invoice_alias||''}" placeholder="METRO, XR, ME">
           </div>
           <div class="form-group">
             <label>Email</label>
