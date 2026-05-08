@@ -23,8 +23,12 @@ const getInvoiceSeries = async (userId) => {
 };
 
 const getNextInvoiceNumber = async (userId) => {
-  const s = await getOrCreateDefaultSeries(userId);
-  return s.next_number;
+  await getOrCreateDefaultSeries(userId);
+  const r = await q(
+    "SELECT COALESCE(MAX(number), 0)::int + 1 AS next_number FROM invoices WHERE user_id = $1 AND number IS NOT NULL",
+    [userId]
+  );
+  return r.rows[0]?.next_number || 1;
 };
 
 const getInvoices = async (userId) => {
@@ -55,15 +59,24 @@ const getInvoiceLines = async (invoiceId) => {
 };
 
 const createInvoice = async (data) => {
+  const number = data.number ? Number(data.number) : null;
+  const fullNumber = data.full_number || (number ? String(number) : null);
+  if (fullNumber) {
+    const dup = (await q(
+      "SELECT id FROM invoices WHERE user_id=$1 AND full_number=$2",
+      [data.user_id ?? 1, fullNumber]
+    )).rows[0];
+    if (dup) throw new Error(`El número ${fullNumber} ya está en uso`);
+  }
   const r = await q(`
-    INSERT INTO invoices (user_id, series_id, company_id, project_id, issue_date, operation_date,
+    INSERT INTO invoices (user_id, series_id, number, full_number, company_id, project_id, issue_date, operation_date,
       issuer_name, issuer_nif, issuer_address, issuer_city, issuer_postal_code,
       customer_name, customer_nif, customer_address, customer_city, customer_postal_code, customer_country,
       subtotal, iva_rate, iva_exempt, iva_amount, irpf_rate, irpf_amount, total, notes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
     RETURNING id
   `, [
-    data.user_id ?? 1, data.series_id ?? null, data.company_id ?? null, data.project_id ?? null,
+    data.user_id ?? 1, data.series_id ?? null, number, fullNumber, data.company_id ?? null, data.project_id ?? null,
     data.issue_date ?? new Date().toISOString().split('T')[0], data.operation_date ?? null,
     data.issuer_name ?? '', data.issuer_nif ?? '', data.issuer_address ?? '',
     data.issuer_city ?? '', data.issuer_postal_code ?? '',
@@ -78,17 +91,26 @@ const createInvoice = async (data) => {
 const updateInvoice = async (id, data) => {
   const inv = await getInvoice(id);
   if (inv?.status !== 'draft') throw new Error('Las facturas emitidas o cobradas no se pueden modificar. Crea una nueva factura o una rectificativa si necesitas corregirla.');
+  const number = data.number ? Number(data.number) : null;
+  const fullNumber = data.full_number || (number ? String(number) : null);
+  if (fullNumber) {
+    const dup = (await q(
+      "SELECT id FROM invoices WHERE user_id=$1 AND full_number=$2 AND id!=$3",
+      [inv.user_id, fullNumber, id]
+    )).rows[0];
+    if (dup) throw new Error(`El número ${fullNumber} ya está en uso`);
+  }
   await q(`
     UPDATE invoices SET
-      company_id=$1, project_id=$2, issue_date=$3, operation_date=$4,
-      issuer_name=$5, issuer_nif=$6, issuer_address=$7, issuer_city=$8, issuer_postal_code=$9,
-      customer_name=$10, customer_nif=$11, customer_address=$12, customer_city=$13,
-      customer_postal_code=$14, customer_country=$15,
-      subtotal=$16, iva_rate=$17, iva_exempt=$18, iva_amount=$19,
-      irpf_rate=$20, irpf_amount=$21, total=$22, notes=$23, updated_at=NOW()
-    WHERE id=$24 AND status='draft'
+      number=$1, full_number=$2, company_id=$3, project_id=$4, issue_date=$5, operation_date=$6,
+      issuer_name=$7, issuer_nif=$8, issuer_address=$9, issuer_city=$10, issuer_postal_code=$11,
+      customer_name=$12, customer_nif=$13, customer_address=$14, customer_city=$15,
+      customer_postal_code=$16, customer_country=$17,
+      subtotal=$18, iva_rate=$19, iva_exempt=$20, iva_amount=$21,
+      irpf_rate=$22, irpf_amount=$23, total=$24, notes=$25, updated_at=NOW()
+    WHERE id=$26 AND status='draft'
   `, [
-    data.company_id ?? null, data.project_id ?? null, data.issue_date, data.operation_date ?? null,
+    number, fullNumber, data.company_id ?? null, data.project_id ?? null, data.issue_date, data.operation_date ?? null,
     data.issuer_name ?? '', data.issuer_nif ?? '', data.issuer_address ?? '',
     data.issuer_city ?? '', data.issuer_postal_code ?? '',
     data.customer_name ?? '', data.customer_nif ?? '', data.customer_address ?? '',
@@ -139,33 +161,32 @@ const issueInvoice = async (id, userId) => {
     let fullNumber = inv.full_number;
 
     if (!number) {
-      let series = (await client.query(
-        "SELECT * FROM invoice_series WHERE user_id = $1 AND is_active = 1 ORDER BY id LIMIT 1",
+      number = (await client.query(
+        "SELECT COALESCE(MAX(number), 0)::int + 1 AS next_number FROM invoices WHERE user_id = $1 AND number IS NOT NULL",
         [userId]
-      )).rows[0];
-      if (!series) {
-        const sr = await client.query(
-          "INSERT INTO invoice_series (user_id, description, next_number) VALUES ($1,'Serie general',354) RETURNING id",
-          [userId]
-        );
-        series = (await client.query("SELECT * FROM invoice_series WHERE id = $1", [sr.rows[0].id])).rows[0];
-      }
-      number = series.next_number;
+      )).rows[0]?.next_number || 1;
       fullNumber = String(number);
       const dup = (await client.query(
-        "SELECT id FROM invoices WHERE user_id=$1 AND full_number=$2 AND status='issued' AND id!=$3",
+        "SELECT id FROM invoices WHERE user_id=$1 AND full_number=$2 AND id!=$3",
         [userId, fullNumber, id]
       )).rows[0];
       if (dup) throw new Error(`El número ${fullNumber} ya está en uso`);
-      await client.query(
-        "UPDATE invoice_series SET next_number = next_number + 1 WHERE id = $1",
-        [series.id]
-      );
     }
+    if (!fullNumber) fullNumber = String(number);
+
+    const manualDup = (await client.query(
+      "SELECT id FROM invoices WHERE user_id=$1 AND full_number=$2 AND id!=$3",
+      [userId, fullNumber, id]
+    )).rows[0];
+    if (manualDup) throw new Error(`El numero ${fullNumber} ya esta en uso`);
 
     await client.query(
       "UPDATE invoices SET status='issued', number=$1, full_number=$2, issued_at=NOW(), updated_at=NOW() WHERE id=$3",
       [number, fullNumber, id]
+    );
+    await client.query(
+      "UPDATE invoice_series SET next_number = GREATEST(next_number, $1) WHERE user_id = $2 AND is_active = 1",
+      [Number(number) + 1, userId]
     );
 
     const result = (await client.query("SELECT * FROM invoices WHERE id = $1", [id])).rows[0];
