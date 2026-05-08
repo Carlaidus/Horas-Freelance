@@ -887,10 +887,10 @@ const VFX = {
         <tr class="project-detail-entry-row entry-row ${rowClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${isInvoiced ? '' : mobileEdit(e.id)}>
           <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) && !isInvoiced ? 'checked' : ''} ${isInvoiced ? 'disabled title="Entrada ya facturada"' : ''} onchange="${onCheckboxChange}"></td>
           <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
-          <td class="project-detail-description"><div class="entry-description-line"><span class="entry-description-text">${description}</span>${invoiceLabel}</div></td>
+          <td class="project-detail-description"><div class="entry-description-line"><span class="entry-description-text">${description}</span>${invoiceLabel}${invoiceMobileLabel}</div></td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}<span class="entry-days-inline">(${days.toFixed(2)}d)</span></td>
           <td class="mono dim project-detail-rate" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}${invoiceMobileLabel}</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}</td>
         </tr>
       `;
     };
@@ -922,12 +922,12 @@ const VFX = {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <span class="project-day-count">${group.entries.length} entrada${group.entries.length !== 1 ? 's' : ''}</span>
-              ${invoiceLabel}
+              ${invoiceLabel}${invoiceMobileLabel}
             </div>
           </td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(group.totalHours)}</td>
           <td class="mono dim project-detail-rate">${rateLabel}</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}${invoiceMobileLabel}</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}</td>
         </tr>
         ${group.entries.map(e => renderEntryRow(e, 'project-day-child-row', key, isOpen)).join('')}
       `;
