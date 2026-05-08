@@ -804,6 +804,9 @@ tbody td {
   height: 12px;
   width: 12px;
 }
+.entry-invoice-mobile-badge {
+  display: none;
+}
 .project-detail-entries-table {
   table-layout: fixed;
   min-width: 760px;
@@ -853,6 +856,18 @@ tbody td {
 }
 .project-detail-description {
   color: var(--text2);
+}
+.entry-description-line {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+}
+.entry-description-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .project-detail-hours,
 .project-detail-rate,
@@ -1049,17 +1064,35 @@ tbody td {
     font-size: 12px;
   }
   .project-detail-entries-table .entry-invoice-badge {
-    display: flex;
+    display: none;
+  }
+  .project-detail-entries-table .entry-invoice-mobile-badge {
+    align-items: center;
+    border: 1px solid rgba(255,85,118,0.34);
+    border-radius: 999px;
+    color: var(--red);
+    display: inline-flex;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    gap: 3px;
     justify-content: center;
-    margin: 5px 0 0;
+    line-height: 1;
+    margin: 5px 0 0 auto;
     max-width: 100%;
+    min-height: 20px;
     overflow: hidden;
-    padding: 2px 6px;
-    text-overflow: ellipsis;
+    padding: 3px 6px;
+    text-transform: uppercase;
     white-space: nowrap;
     width: fit-content;
   }
-  .project-detail-entries-table .entry-invoice-badge span {
+  .project-detail-entries-table .entry-invoice-mobile-badge svg {
+    flex: 0 0 12px;
+    height: 12px;
+    width: 12px;
+  }
+  .project-detail-entries-table .entry-invoice-mobile-badge span {
     display: inline;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1070,14 +1103,13 @@ tbody td {
   .project-day-group-main .project-day-count {
     display: inline;
   }
-  .project-day-group-main .entry-invoice-badge {
-    display: flex;
-    margin-top: 5px;
-  }
-  .project-day-group-main .entry-invoice-badge span {
-    display: inline;
+  .project-detail-entries-table .entry-description-line {
+    display: block;
   }
   .project-detail-entries-table .project-day-group-row.entry-row-invoiced td {
+    background: rgba(255, 85, 118, 0.055) !important;
+  }
+  .project-detail-entries-table .project-day-group-row.entry-row-invoiced .project-detail-amount {
     background: rgba(255, 85, 118, 0.055) !important;
   }
   .project-day-group-row .project-detail-hours {

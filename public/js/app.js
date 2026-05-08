@@ -881,14 +881,16 @@ const VFX = {
       const rowClass = `${extraClass} ${isInvoiced ? 'entry-row-invoiced' : ''}`.trim();
       const invoiceIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
       const invoiceLabel = isInvoiced ? `<span class="entry-invoice-badge">${invoiceIcon}<span>Facturada${e.invoice_number ? ` · ${e.invoice_number}` : ''}</span></span>` : '';
+      const invoiceMobileLabel = isInvoiced ? `<span class="entry-invoice-mobile-badge">${invoiceIcon}<span>${e.invoice_number || ''}</span></span>` : '';
+      const description = e.description || '<span style="color:var(--text3)">Sin descripción</span>';
       return `
         <tr class="project-detail-entry-row entry-row ${rowClass}" ${hiddenKey ? `data-project-day-children="${hiddenKey}" style="display:${initiallyOpen ? 'table-row' : 'none'}"` : ''}${isInvoiced ? '' : mobileEdit(e.id)}>
           <td class="project-detail-check"><input type="checkbox" class="${checkboxClass}" data-id="${e.id}" data-project="${projectId}" ${selectedIds.has(Number(e.id)) && !isInvoiced ? 'checked' : ''} ${isInvoiced ? 'disabled title="Entrada ya facturada"' : ''} onchange="${onCheckboxChange}"></td>
           <td class="project-detail-date dim">${this.fmt.date(e.date)}</td>
-          <td class="project-detail-description">${e.description || '<span style="color:var(--text3)">Sin descripción</span>'}${invoiceLabel}</td>
+          <td class="project-detail-description"><div class="entry-description-line"><span class="entry-description-text">${description}</span>${invoiceLabel}</div></td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(hours)}<span class="entry-days-inline">(${days.toFixed(2)}d)</span></td>
           <td class="mono dim project-detail-rate" data-private>${this.fmt.currency(effectiveDaily)}/día</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(total)}${invoiceMobileLabel}</td>
         </tr>
       `;
     };
@@ -908,6 +910,8 @@ const VFX = {
       const invoiceSuffix = invoiceNumbers.length === 1 ? ` · ${invoiceNumbers[0]}` : invoiceNumbers.length > 1 ? ' · varias facturas' : '';
       const invoiceIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
       const invoiceLabel = hasInvoicedEntries ? `<span class="entry-invoice-badge">${invoiceIcon}<span>${invoiceText}${invoiceSuffix}</span></span>` : '';
+      const invoiceMobileText = invoiceNumbers.length === 1 ? invoiceNumbers[0] : invoiceNumbers.length > 1 ? 'Varias' : '';
+      const invoiceMobileLabel = hasInvoicedEntries ? `<span class="entry-invoice-mobile-badge">${invoiceIcon}<span>${invoiceMobileText}</span></span>` : '';
 
       return `
         <tr class="project-day-group-row ${hasInvoicedEntries ? 'entry-row-invoiced' : ''}" onclick="VFX.toggleProjectDayEntries('${key}')">
@@ -923,7 +927,7 @@ const VFX = {
           </td>
           <td class="mono dim project-detail-hours">${this.fmt.hours(group.totalHours)}</td>
           <td class="mono dim project-detail-rate">${rateLabel}</td>
-          <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}</td>
+          <td class="gold project-detail-amount" data-private>${this.fmt.currency(group.totalAmount)}${invoiceMobileLabel}</td>
         </tr>
         ${group.entries.map(e => renderEntryRow(e, 'project-day-child-row', key, isOpen)).join('')}
       `;
