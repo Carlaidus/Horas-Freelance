@@ -47,10 +47,12 @@ const init = async () => {
       notes TEXT DEFAULT '',
       invoice_alias TEXT DEFAULT '',
       payment_days INTEGER DEFAULT 30,
+      confirming_available INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
   await q(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS invoice_alias TEXT DEFAULT ''`);
+  await q(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS confirming_available INTEGER DEFAULT 0`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS projects (

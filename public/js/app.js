@@ -2126,6 +2126,7 @@ const VFX = {
         name: compName,
         cif: document.getElementById('comp-cif')?.value?.trim() || '',
         invoice_alias: document.getElementById('comp-invoice-alias')?.value?.trim() || '',
+        confirming_available: !!document.getElementById('comp-confirming-available')?.checked,
         email: document.getElementById('comp-email')?.value?.trim() || '',
         address: document.getElementById('comp-address')?.value?.trim() || '',
         city: document.getElementById('comp-city')?.value?.trim() || '',
@@ -2333,7 +2334,8 @@ const VFX = {
       phone: document.getElementById('c-phone').value.trim(),
       contact_person: document.getElementById('c-contact').value.trim(),
       notes: document.getElementById('c-notes').value.trim(),
-      payment_days: parseInt(document.getElementById('c-payment-days')?.value) || 30
+      payment_days: parseInt(document.getElementById('c-payment-days')?.value) || 30,
+      confirming_available: !!document.getElementById('c-confirming-available')?.checked
     };
     if (!data.name) return alert('El nombre es obligatorio');
     if (id) {
@@ -2812,7 +2814,7 @@ const VFX = {
     const isReadOnly = !!inv && inv.status !== 'draft';
 
     const companyOptions = companies.map(c =>
-      `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" data-payment-days="${c.payment_days ?? 30}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
+      `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" data-payment-days="${c.payment_days ?? 30}" data-confirming="${c.confirming_available ? '1' : '0'}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
     ).join('');
 
     const linesHtml = () => lines.map((l, i) => `
@@ -3031,6 +3033,7 @@ const VFX = {
     set('inv-cust-city', company.city);
     set('inv-cust-postal', company.postal_code);
     this._setInvoiceDueDateFromCompany(true);
+    this._setInvoiceConfirmingFromCompany();
     this._renderInvoiceProjectSelector(parseInt(id));
   },
 
@@ -3045,6 +3048,18 @@ const VFX = {
     if (Number.isNaN(date.getTime())) return;
     date.setDate(date.getDate() + days);
     dueEl.value = date.toISOString().split('T')[0];
+  },
+
+  _setInvoiceConfirmingFromCompany() {
+    const companyId = document.getElementById('inv-company')?.value;
+    const methodEl = document.getElementById('inv-payment-method');
+    const confirmingEl = document.getElementById('inv-confirming-available');
+    if (!companyId || !methodEl || methodEl.disabled) return;
+    const company = this.state.companies.find(c => c.id == companyId);
+    const hasConfirming = !!company?.confirming_available;
+    methodEl.value = hasConfirming ? 'confirming' : 'transfer';
+    if (confirmingEl && !confirmingEl.disabled) confirmingEl.checked = hasConfirming;
+    this._toggleInvoiceConfirmingFields();
   },
 
   _toggleInvoiceConfirmingFields() {
