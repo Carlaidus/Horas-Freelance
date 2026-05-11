@@ -2812,7 +2812,7 @@ const VFX = {
     const isReadOnly = !!inv && inv.status !== 'draft';
 
     const companyOptions = companies.map(c =>
-      `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
+      `<option value="${c.id}" data-nif="${c.cif||''}" data-address="${c.address||''}" data-city="${c.city||''}" data-postal="${c.postal_code||''}" data-country="${c.country||'España'}" data-payment-days="${c.payment_days ?? 30}" ${prefillCompanyId == c.id ? 'selected' : ''}>${c.name}</option>`
     ).join('');
 
     const linesHtml = () => lines.map((l, i) => `
@@ -2849,7 +2849,7 @@ const VFX = {
           </div>
           <div class="form-group">
             <label>Fecha de emisión</label>
-            <input type="date" id="inv-date" value="${inv?.issue_date || today}" ${isReadOnly?'disabled':''}>
+            <input type="date" id="inv-date" value="${inv?.issue_date || today}" ${isReadOnly?'disabled':''} onchange="VFX._setInvoiceDueDateFromCompany()">
           </div>
         </div>
 
@@ -2915,14 +2915,14 @@ const VFX = {
               </select>
             </div>
             <div class="form-group">
-              <label>Vencimiento pactado</label>
+              <label>Fecha prevista de cobro</label>
               <input type="date" id="inv-due-date" value="${inv?.due_date ? String(inv.due_date).slice(0, 10) : ''}" ${isReadOnly?'disabled':''}>
             </div>
           </div>
           <div id="inv-confirming-fields" style="display:${inv?.payment_method === 'confirming' ? 'block' : 'none'};margin-top:6px">
             <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
               <input type="checkbox" id="inv-confirming-available" ${inv?.confirming_available ? 'checked' : ''} ${isReadOnly?'disabled':''}>
-              Confirming disponible
+              Confirming ofrecido por la empresa
             </label>
           </div>
         </details>
@@ -3030,7 +3030,21 @@ const VFX = {
     set('inv-cust-address', company.address);
     set('inv-cust-city', company.city);
     set('inv-cust-postal', company.postal_code);
+    this._setInvoiceDueDateFromCompany(true);
     this._renderInvoiceProjectSelector(parseInt(id));
+  },
+
+  _setInvoiceDueDateFromCompany(force = false) {
+    const dueEl = document.getElementById('inv-due-date');
+    const dateEl = document.getElementById('inv-date');
+    const companyId = document.getElementById('inv-company')?.value;
+    if (!dueEl || dueEl.disabled || (!force && dueEl.value) || !dateEl?.value || !companyId) return;
+    const company = this.state.companies.find(c => c.id == companyId);
+    const days = Number(company?.payment_days ?? 30);
+    const date = new Date(`${dateEl.value}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return;
+    date.setDate(date.getDate() + days);
+    dueEl.value = date.toISOString().split('T')[0];
   },
 
   _toggleInvoiceConfirmingFields() {
@@ -3467,6 +3481,14 @@ const VFX = {
     const inv = this.state.invoices.find(i => Number(i.id) === Number(id));
     if (!inv) return;
     const dateValue = v => v ? String(v).slice(0, 10) : '';
+    const suggestedDueDate = () => {
+      if (inv.due_date) return inv.due_date;
+      if (!inv.issue_date) return '';
+      const date = new Date(`${String(inv.issue_date).slice(0, 10)}T12:00:00`);
+      if (Number.isNaN(date.getTime())) return '';
+      date.setDate(date.getDate() + Number(inv.payment_days || 30));
+      return date.toISOString().split('T')[0];
+    };
     const financeCost = Number(inv.finance_cost || 0);
     const net = Number(inv.total || 0) - financeCost;
     this.openModal(`
@@ -3489,30 +3511,30 @@ const VFX = {
       </div>
       <div class="form-row-2">
         <div class="form-group">
-          <label>Vencimiento pactado</label>
-          <input type="date" id="invoice-collection-due-date" value="${dateValue(inv.due_date)}">
+          <label>Fecha prevista de cobro</label>
+          <input type="date" id="invoice-collection-due-date" value="${dateValue(suggestedDueDate())}">
         </div>
         <div class="form-group">
-          <label>Fecha de cobro</label>
+          <label>Fecha real de cobro</label>
           <input type="date" id="invoice-collection-paid-date" value="${dateValue(inv.paid_date || inv.advance_date)}">
         </div>
       </div>
       <div id="invoice-collection-confirming-fields" style="display:${inv.payment_method === 'confirming' ? 'block' : 'none'}">
         <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin:4px 0 10px">
           <input type="checkbox" id="invoice-collection-confirming-available" ${inv.confirming_available ? 'checked' : ''}>
-          Confirming disponible
+          Confirming ofrecido por la empresa
         </label>
         <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
           <input type="checkbox" id="invoice-collection-advance-accepted" ${inv.advance_accepted ? 'checked' : ''} onchange="VFX._updateInvoiceCollectionPreview(${id})">
-          Anticipar cobro con coste financiero
+          He adelantado el cobro con el banco
         </label>
         <div class="form-row-2">
           <div class="form-group">
-            <label>Fecha de anticipo</label>
+            <label>Fecha del adelanto</label>
             <input type="date" id="invoice-collection-advance-date" value="${dateValue(inv.advance_date)}">
           </div>
           <div class="form-group">
-            <label>Coste financiero</label>
+            <label>Coste del adelanto</label>
             <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._updateInvoiceCollectionPreview(${id})">
           </div>
         </div>

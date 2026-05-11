@@ -137,6 +137,10 @@ const HELP_CONTENT = [
         a: 'S\u00ed. Al crear una factura desde un proyecto, la app usa solo las entradas de tiempo que a\u00fan no est\u00e1n facturadas. Esas entradas quedan marcadas como **Facturadas** y no volver\u00e1n a entrar en otra factura.\n\nSi sigues trabajando en el mismo proyecto, las nuevas horas quedan pendientes para una factura futura y el proyecto puede aparecer como **Parcialmente facturado**.'
       },
       {
+        q: '\u00bfC\u00f3mo funciona el cobro y el confirming?',
+        a: '**Fecha prevista de cobro:** la app la calcula con los d\u00edas de pago de la empresa, por ejemplo fecha de factura + 60 d\u00edas. Puedes cambiarla en una factura concreta.\n\n**Confirming ofrecido por la empresa:** indica que la empresa permite cobrar esa factura mediante confirming, pero a\u00fan no significa que hayas cobrado.\n\n**He adelantado el cobro con el banco:** \u00fasalo solo si aceptas el anticipo. En ese caso anota la fecha del adelanto y el coste del adelanto; la app calcula el neto cobrado restando ese coste.'
+      },
+      {
         q: '\u00bfPor qu\u00e9 no puedo editar o borrar algunas entradas de tiempo?',
         a: 'Las entradas incluidas en una factura quedan bloqueadas para evitar cambios accidentales y doble facturaci\u00f3n. Si eliminas o anulas la factura, la app te preguntar\u00e1 si quieres volver a activar esas entradas para poder modificarlas o facturarlas de nuevo.'
       },
