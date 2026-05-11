@@ -5,7 +5,9 @@ window.CronorasFormatters = {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0);
   },
   hours(h) {
-    return `${parseFloat(h || 0).toFixed(1)} h`;
+    const value = Math.round((parseFloat(h || 0) + Number.EPSILON) * 100) / 100;
+    const minimumFractionDigits = Number.isInteger(value) ? 1 : 0;
+    return `${new Intl.NumberFormat('es-ES', { minimumFractionDigits, maximumFractionDigits: 2 }).format(value)} h`;
   },
   days(h) {
     const d = parseFloat(h || 0) / 8;
