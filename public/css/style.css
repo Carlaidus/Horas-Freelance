@@ -2276,7 +2276,14 @@ select option { background: var(--card2); }
   margin-top: 3px;
   font-size: 11px;
   line-height: 1.35;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: inherit;
   color: var(--text3);
+}
+.invoice-collection-note {
+  padding: 2px 0 12px;
 }
 .invoice-collection-panel {
   margin-top: 12px;
