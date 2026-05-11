@@ -33,7 +33,7 @@ const getNextInvoiceNumber = async (userId) => {
 
 const getInvoices = async (userId) => {
   const r = await q(`
-    SELECT i.*, c.name as company_display_name
+    SELECT i.*, c.name as company_display_name, COALESCE(c.payment_days, 30) as payment_days
     FROM invoices i
     LEFT JOIN companies c ON i.company_id = c.id
     WHERE i.user_id = $1

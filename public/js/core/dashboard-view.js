@@ -8,23 +8,47 @@ window.CronorasDashboardView = {
     await VFX.loadTreasury();
     const all = VFX.state.treasury;
     const filter = VFX.state.dashboardFilter;
+    const today = new Date();
+    const yearStart = `${today.getFullYear()}-01-01`;
+    const yearEnd = `${today.getFullYear()}-12-31`;
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+    let invoices = [];
+    let yearSummary = {};
+    try {
+      [invoices, yearSummary] = await Promise.all([
+        VFX.api.get('/api/invoices'),
+        VFX.api.get(`/api/stats/summary?from=${yearStart}&to=${yearEnd}`)
+      ]);
+    } catch (_) {
+      invoices = [];
+      yearSummary = {};
+    }
 
     const pending = all.filter(p => p.status === 'pending');
     const sent    = all.filter(p => p.status === 'sent');
     const paid    = all.filter(p => p.status === 'paid');
 
-    const sumAmount = (arr) => arr.reduce((s, p) => s + (p.budget_type === 'fixed' && p.fixed_budget ? p.fixed_budget : p.total_amount), 0);
-
-    const totalPendiente = sumAmount(pending) + sumAmount(sent);
-    const totalEspera    = sumAmount(sent);
-    const totalCobrado   = sumAmount(paid);
-
-    const today = new Date();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-    const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
-    const previsionMes = sent
-      .filter(p => p.forecast_date && p.forecast_date >= monthStart && p.forecast_date <= monthEnd)
-      .reduce((s, p) => s + (p.budget_type === 'fixed' && p.fixed_budget ? p.fixed_budget : p.total_amount), 0);
+    const issuedInvoices = invoices.filter(i => i.status === 'issued');
+    const paidInvoices = invoices.filter(i => i.status === 'paid');
+    const paidYearInvoices = paidInvoices.filter(i => String(i.updated_at || '').slice(0, 10) >= yearStart && String(i.updated_at || '').slice(0, 10) <= yearEnd);
+    const invoiceTotal = (arr) => arr.reduce((s, i) => s + Number(i.total || 0), 0);
+    const addDays = (date, days) => {
+      if (!date) return null;
+      const d = new Date(`${String(date).slice(0, 10)}T12:00:00`);
+      if (Number.isNaN(d.getTime())) return null;
+      d.setDate(d.getDate() + Number(days || 30));
+      return d.toISOString().split('T')[0];
+    };
+    const unbilledAmount = Number(yearSummary?.unbilled_earnings || 0);
+    const pendingInvoiceAmount = invoiceTotal(issuedInvoices);
+    const paidYearAmount = Number(yearSummary?.paid_amount || invoiceTotal(paidInvoices));
+    const forecastMonthAmount = issuedInvoices
+      .filter(i => {
+        const due = addDays(i.issue_date, i.payment_days);
+        return due && due >= monthStart && due <= monthEnd;
+      })
+      .reduce((s, i) => s + Number(i.total || 0), 0);
 
     const filtered = filter === 'all' ? all
       : filter === 'open' ? all.filter(p => p.status !== 'paid')
@@ -44,24 +68,24 @@ window.CronorasDashboardView = {
 
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">Por cobrar (total)</div>
-          <div class="metric-value" style="color:var(--gold)" data-private>${VFX.fmt.currency(totalPendiente)}</div>
-          <div class="metric-sub">${pending.length + sent.length} proyecto${pending.length + sent.length !== 1 ? 's' : ''} abiertos</div>
+          <div class="metric-label">Trabajo sin facturar</div>
+          <div class="metric-value" style="color:var(--gold)" data-private>${VFX.fmt.currency(unbilledAmount)}</div>
+          <div class="metric-sub">horas registradas este año aún sin factura</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">En espera</div>
-          <div class="metric-value" style="color:var(--cyan)" data-private>${VFX.fmt.currency(totalEspera)}</div>
-          <div class="metric-sub">${sent.length} factura${sent.length !== 1 ? 's' : ''} enviada${sent.length !== 1 ? 's' : ''} pendiente de cobro</div>
+          <div class="metric-label">Facturas pendientes</div>
+          <div class="metric-value" style="color:var(--cyan)" data-private>${VFX.fmt.currency(pendingInvoiceAmount)}</div>
+          <div class="metric-sub">${issuedInvoices.length} emitida${issuedInvoices.length !== 1 ? 's' : ''} pendiente${issuedInvoices.length !== 1 ? 's' : ''} de cobro</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Previsión este mes</div>
-          <div class="metric-value" style="color:var(--green)" data-private>${VFX.fmt.currency(previsionMes)}</div>
-          <div class="metric-sub">facturas previstas en ${today.toLocaleDateString('es-ES',{month:'long'})}</div>
+          <div class="metric-label">Cobro previsto este mes</div>
+          <div class="metric-value" style="color:var(--green)" data-private>${VFX.fmt.currency(forecastMonthAmount)}</div>
+          <div class="metric-sub">según fecha de emisión + días de pago</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Cobrado este año</div>
-          <div class="metric-value" style="color:var(--text)" data-private>${VFX.fmt.currency(totalCobrado)}</div>
-          <div class="metric-sub">${paid.length} proyecto${paid.length !== 1 ? 's' : ''} cobrados</div>
+          <div class="metric-value" style="color:var(--text)" data-private>${VFX.fmt.currency(paidYearAmount)}</div>
+          <div class="metric-sub">${paidYearInvoices.length} factura${paidYearInvoices.length !== 1 ? 's' : ''} marcada${paidYearInvoices.length !== 1 ? 's' : ''} como cobrada</div>
         </div>
       </div>
 
@@ -89,7 +113,7 @@ window.CronorasDashboardView = {
                 <th>Estado</th>
                 <th>Horas</th>
                 <th>Importe</th>
-                <th>Previsión cobro</th>
+                <th>Cobro previsto</th>
                 <th></th>
               </tr>
             </thead>
