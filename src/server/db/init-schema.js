@@ -130,11 +130,25 @@ const init = async () => {
       irpf_amount FLOAT DEFAULT 0,
       total FLOAT DEFAULT 0,
       notes TEXT DEFAULT '',
+      payment_method TEXT DEFAULT 'transfer',
+      due_date DATE DEFAULT NULL,
+      confirming_available INTEGER DEFAULT 0,
+      advance_accepted INTEGER DEFAULT 0,
+      advance_date DATE DEFAULT NULL,
+      finance_cost FLOAT DEFAULT 0,
+      paid_date DATE DEFAULT NULL,
       issued_at TIMESTAMP DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'transfer'`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS due_date DATE DEFAULT NULL`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS confirming_available INTEGER DEFAULT 0`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS advance_accepted INTEGER DEFAULT 0`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS advance_date DATE DEFAULT NULL`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS finance_cost FLOAT DEFAULT 0`);
+  await q(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_date DATE DEFAULT NULL`);
 
   await q(`
     CREATE TABLE IF NOT EXISTS invoice_lines (

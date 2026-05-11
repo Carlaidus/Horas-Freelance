@@ -98,12 +98,12 @@ const getSummaryRange = async (userId, from, to) => {
           AND i.issue_date <= $3
       ), 0) as pending_amount,
       COALESCE((
-        SELECT SUM(i.total)
+        SELECT SUM(i.total - COALESCE(i.finance_cost, 0))
         FROM invoices i
         WHERE i.user_id = $1
           AND i.status = 'paid'
-          AND i.updated_at::date >= $2
-          AND i.updated_at::date <= $3
+          AND COALESCE(i.paid_date, i.updated_at::date) >= $2
+          AND COALESCE(i.paid_date, i.updated_at::date) <= $3
       ), 0) as paid_amount
     FROM entries e
     JOIN projects p ON e.project_id = p.id
@@ -123,12 +123,12 @@ const getPaidMonthlyStats = async (userId) => {
     )
     SELECT
       TO_CHAR(m.month_start, 'YYYY-MM') as period,
-      COALESCE(SUM(i.total), 0) as paid
+      COALESCE(SUM(i.total - COALESCE(i.finance_cost, 0)), 0) as paid
     FROM months m
     LEFT JOIN invoices i
       ON i.user_id = $1
       AND i.status = 'paid'
-      AND date_trunc('month', i.updated_at)::date = m.month_start
+      AND date_trunc('month', COALESCE(i.paid_date, i.updated_at::date))::date = m.month_start
     GROUP BY m.month_start
     ORDER BY m.month_start ASC
   `, [userId]);

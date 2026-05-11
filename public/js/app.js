@@ -2617,6 +2617,21 @@ const VFX = {
     const totalEmitido = billedInvoices.reduce((s, i) => s + (i.total || 0), 0);
     const totalPendienteCobro = issuedInvoices.reduce((s, i) => s + (i.total || 0), 0);
     const totalBorradores = invoices.filter(i => i.status === 'draft').length;
+    const collectionNet = inv => Number(inv.total || 0) - Number(inv.finance_cost || 0);
+    const invoiceCollectionInfo = inv => {
+      if (inv.status === 'draft') return '';
+      const method = inv.payment_method || 'transfer';
+      if (method === 'confirming' && inv.advance_accepted) {
+        return `<div style="margin-top:4px;color:var(--green);font-size:12px">Confirming anticipado · neto ${this.fmt.currency(collectionNet(inv))}</div>`;
+      }
+      if (method === 'confirming' && inv.confirming_available) {
+        return `<div style="margin-top:4px;color:var(--cyan);font-size:12px">Confirming disponible${inv.due_date ? ` · vence ${this.fmt.date(inv.due_date)}` : ''}</div>`;
+      }
+      if (method === 'confirming') {
+        return `<div style="margin-top:4px;color:var(--text2);font-size:12px">Confirming${inv.due_date ? ` · vence ${this.fmt.date(inv.due_date)}` : ''}</div>`;
+      }
+      return inv.due_date ? `<div style="margin-top:4px;color:var(--text2);font-size:12px">Vence ${this.fmt.date(inv.due_date)}</div>` : '';
+    };
     const invoiceStatusControl = inv => inv.status === 'draft'
       ? `<span class="badge badge-pending">Borrador</span>`
       : `<select class="invoice-status-select" onchange="VFX.updateInvoiceStatus(${inv.id}, this.value)">
@@ -2625,6 +2640,9 @@ const VFX = {
         </select>`;
     const invoiceActions = inv => `
       ${inv.status !== 'draft' ? `
+        <button class="btn-icon" title="Cobro / confirming" onclick="VFX.openInvoiceCollectionModal(${inv.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/></svg>
+        </button>
         <button class="btn-icon" title="Descargar PDF" onclick="VFX.downloadInvoicePdf(${inv.id})">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
@@ -2692,7 +2710,7 @@ const VFX = {
               invoices.map(inv => `
                 <tr>
                   <td><span class="mono">${inv.full_number || '—'}</span></td>
-                  <td>${inv.customer_name || inv.company_display_name || '—'}</td>
+                  <td>${inv.customer_name || inv.company_display_name || '—'}${invoiceCollectionInfo(inv)}</td>
                   <td>${this.fmt.date(inv.issue_date)}</td>
                   <td style="text-align:right">${this.fmt.currency(inv.subtotal)}</td>
                   <td style="text-align:right"><strong>${this.fmt.currency(inv.total)}</strong></td>
@@ -2720,6 +2738,7 @@ const VFX = {
                 <div class="invoice-mobile-total" data-private>${this.fmt.currency(inv.total)}</div>
               </div>
               <div class="invoice-mobile-client">${inv.customer_name || inv.company_display_name || '—'}</div>
+              ${invoiceCollectionInfo(inv)}
               <div class="invoice-mobile-meta">
                 <span>${this.fmt.date(inv.issue_date)}</span>
                 <span>${this.fmt.currency(inv.subtotal)} base</span>
@@ -2884,6 +2903,30 @@ const VFX = {
           </div>
         </details>
 
+        <details style="margin:12px 0" ${isReadOnly || inv?.payment_method === 'confirming' ? 'open' : ''}>
+          <summary style="cursor:pointer;color:var(--text2);font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase">Cobro</summary>
+          <div style="margin-top:10px" class="form-row-2">
+            <div class="form-group">
+              <label>Método de cobro</label>
+              <select id="inv-payment-method" ${isReadOnly?'disabled':''} onchange="VFX._toggleInvoiceConfirmingFields()">
+                <option value="transfer" ${(inv?.payment_method || 'transfer') === 'transfer' ? 'selected' : ''}>Transferencia</option>
+                <option value="confirming" ${inv?.payment_method === 'confirming' ? 'selected' : ''}>Confirming</option>
+                <option value="other" ${inv?.payment_method === 'other' ? 'selected' : ''}>Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Vencimiento pactado</label>
+              <input type="date" id="inv-due-date" value="${inv?.due_date ? String(inv.due_date).slice(0, 10) : ''}" ${isReadOnly?'disabled':''}>
+            </div>
+          </div>
+          <div id="inv-confirming-fields" style="display:${inv?.payment_method === 'confirming' ? 'block' : 'none'};margin-top:6px">
+            <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
+              <input type="checkbox" id="inv-confirming-available" ${inv?.confirming_available ? 'checked' : ''} ${isReadOnly?'disabled':''}>
+              Confirming disponible
+            </label>
+          </div>
+        </details>
+
         <div id="inv-lines-label" style="margin:16px 0 8px;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2)">Líneas de factura</div>
         <div class="table-wrap invoice-lines-table-wrap" style="margin-bottom:8px">
           <table class="data-table" id="inv-lines-table">
@@ -2934,6 +2977,7 @@ const VFX = {
 
     this._updateInvoiceTotals();
     this._rerenderLines();
+    this._toggleInvoiceConfirmingFields();
     if (prefillCompanyId) this._fillInvoiceCustomer(prefillCompanyId);
 
     this._currentInvoiceId = invoiceId || null;
@@ -2987,6 +3031,12 @@ const VFX = {
     set('inv-cust-city', company.city);
     set('inv-cust-postal', company.postal_code);
     this._renderInvoiceProjectSelector(parseInt(id));
+  },
+
+  _toggleInvoiceConfirmingFields() {
+    const method = document.getElementById('inv-payment-method')?.value;
+    const fields = document.getElementById('inv-confirming-fields');
+    if (fields) fields.style.display = method === 'confirming' ? 'block' : 'none';
   },
 
   _renderInvoiceProjectSelector(companyId) {
@@ -3255,6 +3305,13 @@ const VFX = {
       company_id: companyId,
       company_invoice_alias: company?.invoice_alias || '',
       issue_date: document.getElementById('inv-date')?.value || new Date().toISOString().split('T')[0],
+      payment_method: document.getElementById('inv-payment-method')?.value || 'transfer',
+      due_date: document.getElementById('inv-due-date')?.value || null,
+      confirming_available: !!document.getElementById('inv-confirming-available')?.checked,
+      advance_accepted: false,
+      advance_date: null,
+      finance_cost: 0,
+      paid_date: null,
       issuer_name: u.name || '',
       issuer_nif: u.nif || '',
       issuer_address: u.address || '',
@@ -3406,9 +3463,127 @@ const VFX = {
     this.renderFacturas();
   },
 
-  async updateInvoiceStatus(id, status) {
+  openInvoiceCollectionModal(id) {
+    const inv = this.state.invoices.find(i => Number(i.id) === Number(id));
+    if (!inv) return;
+    const dateValue = v => v ? String(v).slice(0, 10) : '';
+    const financeCost = Number(inv.finance_cost || 0);
+    const net = Number(inv.total || 0) - financeCost;
+    this.openModal(`
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="invoice-collection-status">
+            <option value="issued" ${inv.status === 'issued' ? 'selected' : ''}>Emitida, pendiente</option>
+            <option value="paid" ${inv.status === 'paid' ? 'selected' : ''}>Cobrada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Método</label>
+          <select id="invoice-collection-method" onchange="VFX._toggleCollectionConfirmingFields()">
+            <option value="transfer" ${(inv.payment_method || 'transfer') === 'transfer' ? 'selected' : ''}>Transferencia</option>
+            <option value="confirming" ${inv.payment_method === 'confirming' ? 'selected' : ''}>Confirming</option>
+            <option value="other" ${inv.payment_method === 'other' ? 'selected' : ''}>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>Vencimiento pactado</label>
+          <input type="date" id="invoice-collection-due-date" value="${dateValue(inv.due_date)}">
+        </div>
+        <div class="form-group">
+          <label>Fecha de cobro</label>
+          <input type="date" id="invoice-collection-paid-date" value="${dateValue(inv.paid_date || inv.advance_date)}">
+        </div>
+      </div>
+      <div id="invoice-collection-confirming-fields" style="display:${inv.payment_method === 'confirming' ? 'block' : 'none'}">
+        <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin:4px 0 10px">
+          <input type="checkbox" id="invoice-collection-confirming-available" ${inv.confirming_available ? 'checked' : ''}>
+          Confirming disponible
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
+          <input type="checkbox" id="invoice-collection-advance-accepted" ${inv.advance_accepted ? 'checked' : ''} onchange="VFX._updateInvoiceCollectionPreview(${id})">
+          Anticipar cobro con coste financiero
+        </label>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Fecha de anticipo</label>
+            <input type="date" id="invoice-collection-advance-date" value="${dateValue(inv.advance_date)}">
+          </div>
+          <div class="form-group">
+            <label>Coste financiero</label>
+            <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._updateInvoiceCollectionPreview(${id})">
+          </div>
+        </div>
+      </div>
+      <div id="invoice-collection-preview" style="margin-top:8px;padding:12px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px">
+        Total factura: <strong style="color:var(--text)">${this.fmt.currency(inv.total)}</strong>
+        ${financeCost ? ` · Neto estimado: <strong style="color:var(--green)">${this.fmt.currency(net)}</strong>` : ''}
+      </div>
+      <div class="modal-footer" style="padding:16px 0 0;border-top:1px solid var(--border);margin-top:20px">
+        <button class="btn btn-ghost" onclick="VFX.closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="VFX.saveInvoiceCollection(${id})">Guardar cobro</button>
+      </div>
+    `, 'Cobro de factura');
+  },
+
+  _toggleCollectionConfirmingFields() {
+    const method = document.getElementById('invoice-collection-method')?.value;
+    const fields = document.getElementById('invoice-collection-confirming-fields');
+    if (fields) fields.style.display = method === 'confirming' ? 'block' : 'none';
+  },
+
+  _updateInvoiceCollectionPreview(id) {
+    const inv = this.state.invoices.find(i => Number(i.id) === Number(id));
+    const el = document.getElementById('invoice-collection-preview');
+    if (!inv || !el) return;
+    const financeCost = Number(document.getElementById('invoice-collection-finance-cost')?.value || 0);
+    const advanceAccepted = !!document.getElementById('invoice-collection-advance-accepted')?.checked;
+    const net = Number(inv.total || 0) - (advanceAccepted ? financeCost : 0);
+    el.innerHTML = `
+      Total factura: <strong style="color:var(--text)">${this.fmt.currency(inv.total)}</strong>
+      ${advanceAccepted ? ` · Neto estimado: <strong style="color:var(--green)">${this.fmt.currency(net)}</strong>` : ''}
+    `;
+  },
+
+  async saveInvoiceCollection(id) {
+    const method = document.getElementById('invoice-collection-method')?.value || 'transfer';
+    const advanceAccepted = method === 'confirming' && !!document.getElementById('invoice-collection-advance-accepted')?.checked;
+    const selectedStatus = document.getElementById('invoice-collection-status')?.value || 'issued';
+    const data = {
+      status: advanceAccepted ? 'paid' : selectedStatus,
+      payment_method: method,
+      due_date: document.getElementById('invoice-collection-due-date')?.value || null,
+      confirming_available: method === 'confirming' && !!document.getElementById('invoice-collection-confirming-available')?.checked,
+      advance_accepted: advanceAccepted,
+      advance_date: advanceAccepted ? (document.getElementById('invoice-collection-advance-date')?.value || document.getElementById('invoice-collection-paid-date')?.value || null) : null,
+      finance_cost: advanceAccepted ? Number(document.getElementById('invoice-collection-finance-cost')?.value || 0) : 0,
+      paid_date: (advanceAccepted || selectedStatus === 'paid') ? (document.getElementById('invoice-collection-paid-date')?.value || document.getElementById('invoice-collection-advance-date')?.value || new Date().toISOString().split('T')[0]) : null
+    };
     try {
-      await this.api.patch(`/api/invoices/${id}/status`, { status });
+      await this.api.patch(`/api/invoices/${id}/status`, data);
+      this.closeModal();
+      this.renderFacturas();
+      if (this.state.view === 'dashboard') this.renderDashboard();
+    } catch (e) {
+      alert(e.message || 'Error al guardar cobro');
+    }
+  },
+
+  async updateInvoiceStatus(id, status) {
+    const inv = this.state.invoices.find(i => Number(i.id) === Number(id)) || {};
+    try {
+      await this.api.patch(`/api/invoices/${id}/status`, {
+        status,
+        payment_method: inv.payment_method || 'transfer',
+        due_date: inv.due_date || null,
+        confirming_available: !!inv.confirming_available,
+        advance_accepted: !!inv.advance_accepted,
+        advance_date: inv.advance_date || null,
+        finance_cost: Number(inv.finance_cost || 0),
+        paid_date: status === 'paid' ? (inv.paid_date || inv.advance_date || new Date().toISOString().split('T')[0]) : null
+      });
       this.renderFacturas();
     } catch (e) {
       alert(e.message || 'Error al actualizar estado');

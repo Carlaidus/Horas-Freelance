@@ -31,8 +31,12 @@ window.CronorasDashboardView = {
 
     const issuedInvoices = invoices.filter(i => i.status === 'issued');
     const paidInvoices = invoices.filter(i => i.status === 'paid');
-    const paidYearInvoices = paidInvoices.filter(i => String(i.updated_at || '').slice(0, 10) >= yearStart && String(i.updated_at || '').slice(0, 10) <= yearEnd);
+    const paidYearInvoices = paidInvoices.filter(i => {
+      const paidDate = String(i.paid_date || i.advance_date || i.updated_at || '').slice(0, 10);
+      return paidDate >= yearStart && paidDate <= yearEnd;
+    });
     const invoiceTotal = (arr) => arr.reduce((s, i) => s + Number(i.total || 0), 0);
+    const invoiceNetTotal = (arr) => arr.reduce((s, i) => s + Number(i.total || 0) - Number(i.finance_cost || 0), 0);
     const addDays = (date, days) => {
       if (!date) return null;
       const d = new Date(`${String(date).slice(0, 10)}T12:00:00`);
@@ -42,10 +46,10 @@ window.CronorasDashboardView = {
     };
     const unbilledAmount = Number(yearSummary?.unbilled_earnings || 0);
     const pendingInvoiceAmount = invoiceTotal(issuedInvoices);
-    const paidYearAmount = Number(yearSummary?.paid_amount || invoiceTotal(paidInvoices));
+    const paidYearAmount = Number(yearSummary?.paid_amount || invoiceNetTotal(paidYearInvoices));
     const forecastMonthAmount = issuedInvoices
       .filter(i => {
-        const due = addDays(i.issue_date, i.payment_days);
+        const due = i.due_date ? String(i.due_date).slice(0, 10) : addDays(i.issue_date, i.payment_days);
         return due && due >= monthStart && due <= monthEnd;
       })
       .reduce((s, i) => s + Number(i.total || 0), 0);

@@ -77,8 +77,9 @@ const createInvoice = async (data) => {
     INSERT INTO invoices (user_id, series_id, number, full_number, company_id, project_id, issue_date, operation_date,
       issuer_name, issuer_nif, issuer_address, issuer_city, issuer_postal_code,
       customer_name, customer_nif, customer_address, customer_city, customer_postal_code, customer_country,
-      subtotal, iva_rate, iva_exempt, iva_amount, irpf_rate, irpf_amount, total, notes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
+      subtotal, iva_rate, iva_exempt, iva_amount, irpf_rate, irpf_amount, total, notes,
+      payment_method, due_date, confirming_available, advance_accepted, advance_date, finance_cost, paid_date)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34)
     RETURNING id
   `, [
     data.user_id ?? 1, data.series_id ?? null, number, fullNumber, data.company_id ?? null, data.project_id ?? null,
@@ -88,7 +89,9 @@ const createInvoice = async (data) => {
     data.customer_name ?? '', data.customer_nif ?? '', data.customer_address ?? '',
     data.customer_city ?? '', data.customer_postal_code ?? '', data.customer_country ?? 'España',
     data.subtotal ?? 0, data.iva_rate ?? 21, data.iva_exempt ?? 0, data.iva_amount ?? 0,
-    data.irpf_rate ?? 15, data.irpf_amount ?? 0, data.total ?? 0, data.notes ?? ''
+    data.irpf_rate ?? 15, data.irpf_amount ?? 0, data.total ?? 0, data.notes ?? '',
+    data.payment_method ?? 'transfer', data.due_date ?? null, data.confirming_available ? 1 : 0,
+    data.advance_accepted ? 1 : 0, data.advance_date ?? null, data.finance_cost ?? 0, data.paid_date ?? null
   ]);
   return r.rows[0].id;
 };
@@ -112,8 +115,10 @@ const updateInvoice = async (id, data) => {
       customer_name=$12, customer_nif=$13, customer_address=$14, customer_city=$15,
       customer_postal_code=$16, customer_country=$17,
       subtotal=$18, iva_rate=$19, iva_exempt=$20, iva_amount=$21,
-      irpf_rate=$22, irpf_amount=$23, total=$24, notes=$25, updated_at=NOW()
-    WHERE id=$26 AND status='draft'
+      irpf_rate=$22, irpf_amount=$23, total=$24, notes=$25,
+      payment_method=$26, due_date=$27, confirming_available=$28, advance_accepted=$29,
+      advance_date=$30, finance_cost=$31, paid_date=$32, updated_at=NOW()
+    WHERE id=$33 AND status='draft'
   `, [
     number, fullNumber, data.company_id ?? null, data.project_id ?? null, data.issue_date, data.operation_date ?? null,
     data.issuer_name ?? '', data.issuer_nif ?? '', data.issuer_address ?? '',
@@ -121,7 +126,10 @@ const updateInvoice = async (id, data) => {
     data.customer_name ?? '', data.customer_nif ?? '', data.customer_address ?? '',
     data.customer_city ?? '', data.customer_postal_code ?? '', data.customer_country ?? 'España',
     data.subtotal ?? 0, data.iva_rate ?? 21, data.iva_exempt ?? 0, data.iva_amount ?? 0,
-    data.irpf_rate ?? 15, data.irpf_amount ?? 0, data.total ?? 0, data.notes ?? '', id
+    data.irpf_rate ?? 15, data.irpf_amount ?? 0, data.total ?? 0, data.notes ?? '',
+    data.payment_method ?? 'transfer', data.due_date ?? null, data.confirming_available ? 1 : 0,
+    data.advance_accepted ? 1 : 0, data.advance_date ?? null, data.finance_cost ?? 0,
+    data.paid_date ?? null, id
   ]);
 };
 
@@ -257,10 +265,44 @@ const validateInvoiceLines = async (lines, companyId) => {
   if (wrong.length) throw new Error('Todos los proyectos deben pertenecer a la misma empresa');
 };
 
-const updateInvoiceStatus = async (id, status) => {
+const updateInvoiceStatus = async (id, status, data = {}) => {
   const allowed = ['issued', 'paid'];
   if (!allowed.includes(status)) throw new Error('Estado no válido');
-  await q("UPDATE invoices SET status=$1, updated_at=NOW() WHERE id=$2", [status, id]);
+  const current = await getInvoice(id);
+  if (!current) throw new Error('Factura no encontrada');
+  const has = (key) => Object.prototype.hasOwnProperty.call(data, key);
+  const paymentMethod = has('payment_method') ? (data.payment_method || 'transfer') : (current.payment_method || 'transfer');
+  const dueDate = has('due_date') ? (data.due_date || null) : (current.due_date || null);
+  const confirmingAvailable = has('confirming_available') ? (data.confirming_available ? 1 : 0) : (current.confirming_available ? 1 : 0);
+  const advanceAccepted = has('advance_accepted') ? (data.advance_accepted ? 1 : 0) : (current.advance_accepted ? 1 : 0);
+  const advanceDate = has('advance_date') ? (data.advance_date || null) : (current.advance_date || null);
+  const financeCost = has('finance_cost') ? Number(data.finance_cost || 0) : Number(current.finance_cost || 0);
+  const paidDate = status === 'paid'
+    ? (data.paid_date || advanceDate || current.paid_date || new Date().toISOString().split('T')[0])
+    : null;
+  await q(`
+    UPDATE invoices SET
+      status=$1,
+      payment_method=$2,
+      due_date=$3,
+      confirming_available=$4,
+      advance_accepted=$5,
+      advance_date=$6,
+      finance_cost=$7,
+      paid_date=$8,
+      updated_at=NOW()
+    WHERE id=$9
+  `, [
+    status,
+    paymentMethod,
+    dueDate,
+    confirmingAvailable,
+    advanceAccepted,
+    advanceDate,
+    financeCost,
+    paidDate,
+    id
+  ]);
 };
 
 const getInvoiceLinkedEntryCount = async (id) => {

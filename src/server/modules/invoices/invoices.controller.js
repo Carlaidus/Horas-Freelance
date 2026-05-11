@@ -68,7 +68,7 @@ const deleteInvoice = async (req, res) => {
 
 const patchInvoiceStatus = async (req, res) => {
   try {
-    await db.updateInvoiceStatus(+req.params.id, req.body.status);
+    await db.updateInvoiceStatus(+req.params.id, req.body.status, req.body);
     res.json({ success: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 };
