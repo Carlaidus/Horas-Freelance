@@ -138,7 +138,7 @@ const HELP_CONTENT = [
       },
       {
         q: '\u00bfC\u00f3mo funciona el cobro y el confirming?',
-        a: '**Fecha prevista de cobro:** la app la calcula con los d\u00edas de pago de la empresa, por ejemplo fecha de factura + 60 d\u00edas. Puedes cambiarla en una factura concreta.\n\n**Confirming ofrecido por la empresa:** indica que la empresa permite cobrar esa factura mediante confirming, pero a\u00fan no significa que hayas cobrado. Puedes dejarlo marcado por defecto en la ficha de cada empresa.\n\n**He adelantado el cobro con el banco:** \u00fasalo solo si aceptas el anticipo. En ese caso anota la fecha del adelanto y el coste del adelanto; la app calcula el neto cobrado restando ese coste.'
+        a: '**Fecha prevista de cobro:** la app la calcula con los d\u00edas de pago de la empresa, por ejemplo fecha de factura + 60 d\u00edas. Puedes cambiarla en una factura concreta.\n\n**Confirming ofrecido por la empresa:** indica que la empresa permite cobrar esa factura mediante confirming, pero a\u00fan no significa que hayas cobrado. Puedes dejarlo marcado por defecto en la ficha de cada empresa.\n\n**Cobro adelantado por el banco:** \u00fasalo solo si aceptas el anticipo. La fecha de cobro pasa a ser el d\u00eda en que el banco te paga, y el neto cobrado se calcula restando el coste del adelanto.'
       },
       {
         q: '\u00bfPor qu\u00e9 no puedo editar o borrar algunas entradas de tiempo?',

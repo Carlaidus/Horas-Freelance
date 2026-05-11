@@ -2256,6 +2256,45 @@ select option { background: var(--card2); }
   transform: translateX(18px); background: var(--gold);
 }
 
+.form-toggle-card {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: rgba(120,120,180,0.06);
+}
+.form-toggle-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.form-toggle-card-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text3);
+}
+.invoice-collection-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: rgba(120,120,180,0.06);
+}
+.invoice-collection-panel .form-toggle-card {
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.invoice-collection-panel .form-toggle-card + .form-toggle-card {
+  border-top: 1px solid var(--border);
+}
+
 .no-project-hint {
   text-align: center;
   padding: 60px 24px;

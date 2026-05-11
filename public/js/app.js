@@ -2921,11 +2921,17 @@ const VFX = {
               <input type="date" id="inv-due-date" value="${inv?.due_date ? String(inv.due_date).slice(0, 10) : ''}" ${isReadOnly?'disabled':''}>
             </div>
           </div>
-          <div id="inv-confirming-fields" style="display:${inv?.payment_method === 'confirming' ? 'block' : 'none'};margin-top:6px">
-            <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
-              <input type="checkbox" id="inv-confirming-available" ${inv?.confirming_available ? 'checked' : ''} ${isReadOnly?'disabled':''}>
-              Confirming ofrecido por la empresa
-            </label>
+          <div id="inv-confirming-fields" style="display:${inv?.payment_method === 'confirming' ? 'block' : 'none'};margin-top:10px">
+            <div class="form-toggle-card">
+              <div>
+                <div class="form-toggle-card-title">Confirming ofrecido por la empresa</div>
+                <div class="form-toggle-card-sub">Déjalo marcado si esta factura puede cobrarse mediante confirming.</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="inv-confirming-available" ${inv?.confirming_available ? 'checked' : ''} ${isReadOnly?'disabled':''}>
+                <div class="toggle-switch-track"></div>
+              </label>
+            </div>
           </div>
         </details>
 
@@ -3506,6 +3512,7 @@ const VFX = {
     };
     const financeCost = Number(inv.finance_cost || 0);
     const net = Number(inv.total || 0) - financeCost;
+    const paymentDate = dateValue(inv.paid_date || inv.advance_date);
     this.openModal(`
       <div class="form-row-2">
         <div class="form-group">
@@ -3530,28 +3537,34 @@ const VFX = {
           <input type="date" id="invoice-collection-due-date" value="${dateValue(suggestedDueDate())}">
         </div>
         <div class="form-group">
-          <label>Fecha real de cobro</label>
-          <input type="date" id="invoice-collection-paid-date" value="${dateValue(inv.paid_date || inv.advance_date)}">
+          <label id="invoice-collection-payment-date-label">${inv.advance_accepted ? 'Fecha en que el banco me paga' : 'Fecha de cobro'}</label>
+          <input type="date" id="invoice-collection-payment-date" value="${paymentDate}">
         </div>
       </div>
-      <div id="invoice-collection-confirming-fields" style="display:${inv.payment_method === 'confirming' ? 'block' : 'none'}">
-        <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin:4px 0 10px">
-          <input type="checkbox" id="invoice-collection-confirming-available" ${inv.confirming_available ? 'checked' : ''}>
-          Confirming ofrecido por la empresa
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin-bottom:10px">
-          <input type="checkbox" id="invoice-collection-advance-accepted" ${inv.advance_accepted ? 'checked' : ''} onchange="VFX._updateInvoiceCollectionPreview(${id})">
-          He adelantado el cobro con el banco
-        </label>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label>Fecha del adelanto</label>
-            <input type="date" id="invoice-collection-advance-date" value="${dateValue(inv.advance_date)}">
+      <div id="invoice-collection-confirming-fields" class="invoice-collection-panel" style="display:${inv.payment_method === 'confirming' ? 'block' : 'none'}">
+        <div class="form-toggle-card">
+          <div>
+            <div class="form-toggle-card-title">Confirming ofrecido por la empresa</div>
+            <div class="form-toggle-card-sub">La empresa permite cobrar esta factura mediante confirming.</div>
           </div>
-          <div class="form-group">
-            <label>Coste del adelanto</label>
-            <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._updateInvoiceCollectionPreview(${id})">
+          <label class="toggle-switch">
+            <input type="checkbox" id="invoice-collection-confirming-available" ${inv.confirming_available ? 'checked' : ''}>
+            <div class="toggle-switch-track"></div>
+          </label>
+        </div>
+        <div class="form-toggle-card">
+          <div>
+            <div class="form-toggle-card-title">Cobro adelantado por el banco</div>
+            <div class="form-toggle-card-sub">Márcalo solo si el banco ya te adelanta el dinero. La fecha de cobro será la del pago del banco.</div>
           </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="invoice-collection-advance-accepted" ${inv.advance_accepted ? 'checked' : ''} onchange="VFX._toggleCollectionAdvanceFields(${id})">
+            <div class="toggle-switch-track"></div>
+          </label>
+        </div>
+        <div id="invoice-collection-advance-fields" class="form-group" style="display:${inv.advance_accepted ? 'flex' : 'none'};margin-top:12px">
+          <label>Coste del adelanto</label>
+          <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._updateInvoiceCollectionPreview(${id})">
         </div>
       </div>
       <div id="invoice-collection-preview" style="margin-top:8px;padding:12px 14px;background:rgba(120,120,180,0.07);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px">
@@ -3563,12 +3576,24 @@ const VFX = {
         <button class="btn btn-primary" onclick="VFX.saveInvoiceCollection(${id})">Guardar cobro</button>
       </div>
     `, 'Cobro de factura');
+    this._toggleCollectionAdvanceFields(id);
   },
 
   _toggleCollectionConfirmingFields() {
     const method = document.getElementById('invoice-collection-method')?.value;
     const fields = document.getElementById('invoice-collection-confirming-fields');
     if (fields) fields.style.display = method === 'confirming' ? 'block' : 'none';
+    this._toggleCollectionAdvanceFields();
+  },
+
+  _toggleCollectionAdvanceFields(id = null) {
+    const method = document.getElementById('invoice-collection-method')?.value;
+    const accepted = method === 'confirming' && !!document.getElementById('invoice-collection-advance-accepted')?.checked;
+    const fields = document.getElementById('invoice-collection-advance-fields');
+    const label = document.getElementById('invoice-collection-payment-date-label');
+    if (fields) fields.style.display = accepted ? 'flex' : 'none';
+    if (label) label.textContent = accepted ? 'Fecha en que el banco me paga' : 'Fecha de cobro';
+    if (id) this._updateInvoiceCollectionPreview(id);
   },
 
   _updateInvoiceCollectionPreview(id) {
@@ -3588,15 +3613,16 @@ const VFX = {
     const method = document.getElementById('invoice-collection-method')?.value || 'transfer';
     const advanceAccepted = method === 'confirming' && !!document.getElementById('invoice-collection-advance-accepted')?.checked;
     const selectedStatus = document.getElementById('invoice-collection-status')?.value || 'issued';
+    const paymentDate = document.getElementById('invoice-collection-payment-date')?.value || null;
     const data = {
       status: advanceAccepted ? 'paid' : selectedStatus,
       payment_method: method,
       due_date: document.getElementById('invoice-collection-due-date')?.value || null,
       confirming_available: method === 'confirming' && !!document.getElementById('invoice-collection-confirming-available')?.checked,
       advance_accepted: advanceAccepted,
-      advance_date: advanceAccepted ? (document.getElementById('invoice-collection-advance-date')?.value || document.getElementById('invoice-collection-paid-date')?.value || null) : null,
+      advance_date: advanceAccepted ? paymentDate : null,
       finance_cost: advanceAccepted ? Number(document.getElementById('invoice-collection-finance-cost')?.value || 0) : 0,
-      paid_date: (advanceAccepted || selectedStatus === 'paid') ? (document.getElementById('invoice-collection-paid-date')?.value || document.getElementById('invoice-collection-advance-date')?.value || new Date().toISOString().split('T')[0]) : null
+      paid_date: (advanceAccepted || selectedStatus === 'paid') ? (paymentDate || new Date().toISOString().split('T')[0]) : null
     };
     try {
       await this.api.patch(`/api/invoices/${id}/status`, data);

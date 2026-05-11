@@ -138,10 +138,16 @@ window.CronorasModals = {
                 <label>Email</label>
                 <input type="email" id="comp-email" placeholder="facturacion@empresa.com">
               </div>
-              <label class="form-group span2" style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px">
-                <input type="checkbox" id="comp-confirming-available">
-                <span>Esta empresa suele ofrecer confirming</span>
-              </label>
+              <div class="form-toggle-card">
+                <div>
+                  <div class="form-toggle-card-title">Confirming habitual</div>
+                  <div class="form-toggle-card-sub">Se marcará por defecto al crear facturas para esta empresa.</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="comp-confirming-available">
+                  <div class="toggle-switch-track"></div>
+                </label>
+              </div>
               <div class="form-group span2">
                 <label>Dirección</label>
                 <input type="text" id="comp-address" placeholder="Calle Mayor 1, 28001 Madrid">
@@ -392,10 +398,16 @@ window.CronorasModals = {
             <input type="number" id="c-payment-days" value="${c?.payment_days ?? 30}" placeholder="30" min="0" max="365"
               title="Días que suele tardar en pagar (para la previsión de cobro)">
           </div>
-          <label class="form-group" style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px">
-            <input type="checkbox" id="c-confirming-available" ${c?.confirming_available ? 'checked' : ''}>
-            <span>Esta empresa suele ofrecer confirming</span>
-          </label>
+          <div class="form-toggle-card">
+            <div>
+              <div class="form-toggle-card-title">Confirming habitual</div>
+              <div class="form-toggle-card-sub">Se marcará por defecto al crear facturas para esta empresa.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="c-confirming-available" ${c?.confirming_available ? 'checked' : ''}>
+              <div class="toggle-switch-track"></div>
+            </label>
+          </div>
           <div class="form-group span2">
             <label>Notas</label>
             <textarea id="c-notes">${c?.notes||''}</textarea>
