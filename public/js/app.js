@@ -3512,6 +3512,9 @@ const VFX = {
     };
     const financeCost = Number(inv.finance_cost || 0);
     const net = Number(inv.total || 0) - financeCost;
+    const financePercent = Number(inv.total || 0) > 0 && financeCost > 0
+      ? ((financeCost / Number(inv.total || 0)) * 100).toFixed(2)
+      : '';
     const advanceDate = dateValue(inv.advance_date);
     const paidDate = dateValue(inv.paid_date);
     this.openModal(`
@@ -3558,7 +3561,16 @@ const VFX = {
           </div>
           <div class="form-group">
             <label>Coste del adelanto</label>
-            <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._updateInvoiceCollectionPreview(${id})">
+            <div class="invoice-finance-cost-grid">
+              <div>
+                <span>Importe</span>
+                <input type="number" id="invoice-collection-finance-cost" value="${financeCost}" min="0" step="0.01" oninput="VFX._syncFinanceCostFromAmount(${id})">
+              </div>
+              <div>
+                <span>% factura</span>
+                <input type="number" id="invoice-collection-finance-percent" value="${financePercent}" min="0" max="100" step="0.01" oninput="VFX._syncFinanceCostFromPercent(${id})">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3617,6 +3629,26 @@ const VFX = {
       Total factura: <strong style="color:var(--text)">${this.fmt.currency(inv.total)}</strong>
       ${advanceAccepted ? ` · Neto estimado: <strong style="color:var(--green)">${this.fmt.currency(net)}</strong>` : ''}
     `;
+  },
+
+  _syncFinanceCostFromAmount(id) {
+    const inv = this.state.invoices.find(i => Number(i.id) === Number(id));
+    const costEl = document.getElementById('invoice-collection-finance-cost');
+    const percentEl = document.getElementById('invoice-collection-finance-percent');
+    const total = Number(inv?.total || 0);
+    const cost = Number(costEl?.value || 0);
+    if (percentEl) percentEl.value = total > 0 && cost > 0 ? ((cost / total) * 100).toFixed(2) : '';
+    this._updateInvoiceCollectionPreview(id);
+  },
+
+  _syncFinanceCostFromPercent(id) {
+    const inv = this.state.invoices.find(i => Number(i.id) === Number(id));
+    const costEl = document.getElementById('invoice-collection-finance-cost');
+    const percentEl = document.getElementById('invoice-collection-finance-percent');
+    const total = Number(inv?.total || 0);
+    const percent = Number(percentEl?.value || 0);
+    if (costEl) costEl.value = total > 0 && percent > 0 ? ((total * percent) / 100).toFixed(2) : 0;
+    this._updateInvoiceCollectionPreview(id);
   },
 
   async saveInvoiceCollection(id) {

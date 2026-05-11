@@ -2309,6 +2309,22 @@ select option { background: var(--card2); }
 .invoice-collection-panel .form-toggle-card + .form-toggle-card {
   border-top: 1px solid var(--border);
 }
+.invoice-finance-cost-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.invoice-finance-cost-grid span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: var(--text3);
+}
+@media (max-width: 520px) {
+  .invoice-finance-cost-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .no-project-hint {
   text-align: center;
