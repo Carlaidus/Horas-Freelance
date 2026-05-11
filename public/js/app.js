@@ -3562,7 +3562,7 @@ const VFX = {
           </div>
         </div>
       </div>
-      <div id="invoice-collection-paid-date-row" class="form-group" style="display:${inv.status === 'paid' || inv.advance_accepted ? 'flex' : 'none'};margin-top:12px">
+      <div id="invoice-collection-paid-date-row" class="form-group" style="display:${inv.status === 'paid' ? 'flex' : 'none'};margin-top:12px">
         <label>Fecha en la que se ha pagado</label>
         <input type="date" id="invoice-collection-paid-date" value="${paidDate}">
       </div>
@@ -3584,8 +3584,7 @@ const VFX = {
     const status = document.getElementById('invoice-collection-status')?.value;
     const paidRow = document.getElementById('invoice-collection-paid-date-row');
     const paidInput = document.getElementById('invoice-collection-paid-date');
-    const advanceAccepted = !!document.getElementById('invoice-collection-advance-accepted')?.checked;
-    const shouldShow = status === 'paid' || advanceAccepted;
+    const shouldShow = status === 'paid';
     if (paidRow) paidRow.style.display = shouldShow ? 'flex' : 'none';
     if (shouldShow && paidInput && !paidInput.value) paidInput.value = new Date().toISOString().split('T')[0];
     if (!shouldShow && paidInput) paidInput.value = '';
@@ -3627,14 +3626,14 @@ const VFX = {
     const paidDate = document.getElementById('invoice-collection-paid-date')?.value || null;
     const advanceDate = document.getElementById('invoice-collection-advance-date')?.value || null;
     const data = {
-      status: advanceAccepted ? 'paid' : selectedStatus,
+      status: selectedStatus,
       payment_method: method,
       due_date: document.getElementById('invoice-collection-due-date')?.value || null,
       confirming_available: method === 'confirming',
       advance_accepted: advanceAccepted,
       advance_date: advanceAccepted ? advanceDate : null,
       finance_cost: advanceAccepted ? Number(document.getElementById('invoice-collection-finance-cost')?.value || 0) : 0,
-      paid_date: (advanceAccepted || selectedStatus === 'paid') ? (paidDate || advanceDate || new Date().toISOString().split('T')[0]) : null
+      paid_date: selectedStatus === 'paid' ? (paidDate || new Date().toISOString().split('T')[0]) : null
     };
     try {
       await this.api.patch(`/api/invoices/${id}/status`, data);
