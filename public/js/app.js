@@ -3525,7 +3525,7 @@ const VFX = {
         </div>
         <div class="form-group">
           <label>Fecha prevista de cobro</label>
-          <input type="date" id="invoice-collection-due-date" value="${dateValue(suggestedDueDate())}">
+          <input type="date" id="invoice-collection-due-date" value="${dateValue(suggestedDueDate())}" tabindex="-1">
         </div>
       </div>
       <div class="form-group" style="margin-top:12px">
@@ -3546,7 +3546,7 @@ const VFX = {
             <div class="form-toggle-card-title">Cobro adelantado por el banco</div>
             <div class="form-toggle-card-sub">Márcalo solo si el banco te adelanta el dinero antes de la fecha prevista.</div>
           </div>
-          <label class="toggle-switch">
+          <label class="toggle-switch toggle-switch-subtle">
             <input type="checkbox" id="invoice-collection-advance-accepted" ${inv.advance_accepted ? 'checked' : ''} onchange="VFX._toggleCollectionAdvanceFields(${id})">
             <div class="toggle-switch-track"></div>
           </label>
@@ -3562,7 +3562,7 @@ const VFX = {
           </div>
         </div>
       </div>
-      <div class="form-group" style="margin-top:12px">
+      <div id="invoice-collection-paid-date-row" class="form-group" style="display:${inv.status === 'paid' || inv.advance_accepted ? 'flex' : 'none'};margin-top:12px">
         <label>Fecha en la que se ha pagado</label>
         <input type="date" id="invoice-collection-paid-date" value="${paidDate}">
       </div>
@@ -3575,7 +3575,20 @@ const VFX = {
         <button class="btn btn-primary" onclick="VFX.saveInvoiceCollection(${id})">Guardar cobro</button>
       </div>
     `, 'Cobro de factura');
+    document.getElementById('invoice-collection-status')?.addEventListener('change', () => this._toggleCollectionPaidDate());
     this._toggleCollectionAdvanceFields(id);
+    setTimeout(() => document.activeElement?.blur?.(), 0);
+  },
+
+  _toggleCollectionPaidDate() {
+    const status = document.getElementById('invoice-collection-status')?.value;
+    const paidRow = document.getElementById('invoice-collection-paid-date-row');
+    const paidInput = document.getElementById('invoice-collection-paid-date');
+    const advanceAccepted = !!document.getElementById('invoice-collection-advance-accepted')?.checked;
+    const shouldShow = status === 'paid' || advanceAccepted;
+    if (paidRow) paidRow.style.display = shouldShow ? 'flex' : 'none';
+    if (shouldShow && paidInput && !paidInput.value) paidInput.value = new Date().toISOString().split('T')[0];
+    if (!shouldShow && paidInput) paidInput.value = '';
   },
 
   _toggleCollectionConfirmingFields() {
@@ -3590,6 +3603,7 @@ const VFX = {
     const accepted = method === 'confirming' && !!document.getElementById('invoice-collection-advance-accepted')?.checked;
     const fields = document.getElementById('invoice-collection-advance-fields');
     if (fields) fields.style.display = accepted ? 'grid' : 'none';
+    this._toggleCollectionPaidDate();
     if (id) this._updateInvoiceCollectionPreview(id);
   },
 

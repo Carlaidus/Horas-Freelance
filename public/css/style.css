@@ -2246,11 +2246,19 @@ select option { background: var(--card2); }
   border-radius: 11px; cursor: pointer; transition: background 0.2s;
 }
 .toggle-switch input:checked + .toggle-switch-track { background: var(--gold2); }
+.toggle-switch.toggle-switch-subtle input:checked + .toggle-switch-track {
+  background: rgba(212, 170, 74, 0.22);
+  border: 1px solid rgba(212, 170, 74, 0.42);
+}
 .toggle-switch-track::after {
   content: ''; position: absolute;
   width: 16px; height: 16px; border-radius: 50%;
   background: var(--text3); top: 3px; left: 3px;
   transition: transform 0.2s, background 0.2s;
+}
+.toggle-switch.toggle-switch-subtle .toggle-switch-track::after {
+  top: 2px;
+  left: 2px;
 }
 .toggle-switch input:checked + .toggle-switch-track::after {
   transform: translateX(18px); background: var(--gold);
